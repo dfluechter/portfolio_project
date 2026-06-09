@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
+from typing import Any
 
 # Lädt die .env Datei falls vorhanden
 load_dotenv()
@@ -13,9 +14,11 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-unsafe-key-for-dev')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['dfluechter.ipv64.de', 'localhost', '127.0.0.1']
+
 # Render fügt standardmäßig eine eigene URL hinzu
-if os.getenv('RENDER_EXTERNAL_HOSTNAME'):
-    ALLOWED_HOSTS.append(os.getenv('RENDER_EXTERNAL_HOSTNAME'))
+render_host = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if render_host is not None:
+    ALLOWED_HOSTS.append(render_host)
 
 
 INSTALLED_APPS = [
@@ -65,7 +68,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # ==============================================================================
 # DATENBANK CONFIGURATION (SQLite vs. Neon PostgreSQL)
 # ==============================================================================
-DATABASES = {
+DATABASES: dict[str, Any] = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
