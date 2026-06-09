@@ -14,10 +14,10 @@ jobs:
     - name: Code auschecken
       uses: actions/checkout@v4
 
-    - name: Python 3.12 aufsetzen
+    - name: Python 3.14 aufsetzen
       uses: actions/setup-python@v5
       with:
-        python-version: "3.14"
+        python-version: "3.14.3"
         cache: "pip"
 
     - name: Abhängigkeiten installieren
