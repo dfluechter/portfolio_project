@@ -1,38 +1,46 @@
 import os
-import re
 from django.db import models
 from django.utils.text import slugify
+from django.core.exceptions import ValidationError
 
+# ==============================================================================
+# VALIDATOREN (Security & Limits)
+# ==============================================================================
+def validate_file_extension(value):
+    """Prüft, ob die Dateiendung .pdf oder .png ist."""
+    ext = os.path.splitext(value.name)[1].lower()
+    valid_extensions = ['.pdf', '.png']
+    if ext not in valid_extensions:
+        raise ValidationError(f'Ungültiges Format! Erlaubt sind nur: {", ".join(valid_extensions)}')
+
+def validate_file_size(value):
+    """Prüft, ob die Datei kleiner als 5 MB ist."""
+    limit = 5 * 1024 * 1024  # 5 MB in Bytes
+    if value.size > limit:
+        raise ValidationError('Die Datei ist zu groß! Maximal erlaubt sind 5 MB.')
+
+
+# ==============================================================================
+# MODELLE
+# ==============================================================================
 def certificate_upload_path(instance, filename):
-    """
-    Generiert dynamisch den Speicherpfad: certificates/<Aussteller_Name>/<Dateiname>
-    Nutzt einen bereinigten Ordnernamen, um Betriebssystem-Fehler zu vermeiden.
-    """
     clean_issuer = slugify(instance.issuer)
     if not clean_issuer:
         clean_issuer = "unsorted"
-    
-    # WICHTIG: Nutze immer '/', da S3-Cloud-Speicher keine Windows-Backslashes (\) unterstützt!
     return f"certificates/{clean_issuer}/{filename}"
 
 
 class Certificate(models.Model):
-    title = models.CharField(
-        max_length=255, 
-        verbose_name="Titel des Zertifikats"
-    )
-    issuer = models.CharField(
-        max_length=255, 
-        verbose_name="Aussteller / Organisation"
-    )
+    title = models.CharField(max_length=255, verbose_name="Titel des Zertifikats")
+    issuer = models.CharField(max_length=255, verbose_name="Aussteller / Organisation")
+    
+    # NEU: Die Validatoren wurden hier hinzugefügt!
     pdf_file = models.FileField(
         upload_to=certificate_upload_path, 
-        verbose_name="PDF Datei"
+        verbose_name="PDF / PNG Datei",
+        validators=[validate_file_extension, validate_file_size]
     )
-    uploaded_at = models.DateTimeField(
-        auto_now_add=True, 
-        verbose_name="Hochgeladen am"
-    )
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Hochgeladen am")
 
     class Meta:
         verbose_name = "Zertifikat"
