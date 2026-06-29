@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Project – Architektur</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b27;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #4f8ef7;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --accent5: #ef4444;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 40px 32px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    color: var(--text2);
+    font-size: 0.9rem;
+    font-family: var(--mono);
+    margin-bottom: 40px;
+  }
+
+  /* ── SECTION LABELS ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+
+  /* ── GRID LAYOUT ── */
+  .diagram-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .diagram-grid.two-col { grid-template-columns: 1fr 1fr; }
+  .diagram-grid.four-col { grid-template-columns: repeat(4, 1fr); }
+  .diagram-grid.full { grid-template-columns: 1fr; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+  }
+  .card.blue::before   { background: var(--accent); }
+  .card.purple::before { background: var(--accent2); }
+  .card.green::before  { background: var(--accent3); }
+  .card.amber::before  { background: var(--accent4); }
+  .card.red::before    { background: var(--accent5); }
+  .card.multi::before  { background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3)); }
+
+  .card-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: var(--mono);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot.blue   { background: var(--accent); }
+  .dot.purple { background: var(--accent2); }
+  .dot.green  { background: var(--accent3); }
+  .dot.amber  { background: var(--accent4); }
+  .dot.red    { background: var(--accent5); }
+
+  /* ── ITEMS ── */
+  .item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .item:hover { border-color: var(--border); }
+  .item-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .item-text { font-size: 0.78rem; font-family: var(--mono); }
+  .item-label { color: var(--text); font-weight: 600; display: block; }
+  .item-desc  { color: var(--text2); font-size: 0.7rem; margin-top: 2px; }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+  .flow-step {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-align: center;
+    min-width: 100px;
+  }
+  .flow-step .fs-icon { font-size: 1.2rem; display: block; margin-bottom: 4px; }
+  .flow-step .fs-label { color: var(--text); font-weight: 600; }
+  .flow-step .fs-sub   { color: var(--text2); font-size: 0.65rem; }
+  .flow-arrow {
+    color: var(--text2);
+    font-size: 1.1rem;
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+  .flow-arrow.green { color: var(--accent3); }
+  .flow-arrow.blue  { color: var(--accent); }
+
+  /* ── FILE TREE ── */
+  .tree {
+    font-family: var(--mono);
+    font-size: 0.73rem;
+    line-height: 1.7;
+    color: var(--text2);
+  }
+  .tree .dir  { color: var(--accent); font-weight: 600; }
+  .tree .file { color: var(--text); }
+  .tree .note { color: var(--text2); font-size: 0.65rem; }
+  .tree .py   { color: var(--accent3); }
+  .tree .yml  { color: var(--accent4); }
+  .tree .env  { color: var(--accent5); }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .badge.blue   { background: #1e3a5f; color: var(--accent); }
+  .badge.green  { background: #064e3b; color: var(--accent3); }
+  .badge.amber  { background: #451a03; color: var(--accent4); }
+  .badge.purple { background: #2e1065; color: #a78bfa; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 28px 0;
+  }
+
+  /* ── DB SCHEMA ── */
+  .schema-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    margin-top: 8px;
+  }
+  .schema-table th {
+    background: var(--surface2);
+    color: var(--text2);
+    padding: 6px 10px;
+    text-align: left;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+  }
+  .schema-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  .schema-table tr:last-child td { border-bottom: none; }
+  .pk { color: var(--accent4); font-weight: 700; }
+  .fk { color: var(--accent); }
+  .dtype { color: var(--accent3); }
+  .nullable { color: var(--text2); }
+
+  /* ── MCP GRID ── */
+  .mcp-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 14px 10px;
+    background: var(--surface2);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+  }
+  .mcp-icon { font-size: 1.6rem; }
+  .mcp-name { color: var(--text); font-weight: 700; }
+  .mcp-desc { color: var(--text2); font-size: 0.62rem; line-height: 1.4; }
+
+  /* ── DNS ── */
+  .dns-row {
+    display: grid;
+    grid-template-columns: 180px 80px 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+  .dns-host { color: var(--accent4); }
+  .dns-type { color: var(--accent2); font-weight: 700; text-align: center; }
+  .dns-value { color: var(--accent3); }
+
+  footer {
+    margin-top: 40px;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text2);
+    text-align: center;
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Portfolio Project — Systemarchitektur</h1>
+<p class="subtitle">dfluechter.ipv64.de · Django · SQLite/PostgreSQL · Render · GitHub Actions</p>
+
+<!-- ══════════════════════════════════════════════
+     1. CI/CD FLOW
+══════════════════════════════════════════════ -->
+<div class="section-label" style="background:#1e2535;color:#4f8ef7;">01 — CI/CD Pipeline</div>
+<div class="card multi" style="margin-bottom:20px;">
+  <div class="card-title"><span class="dot blue"></span>ENTWICKLUNGS- & DEPLOYMENT-FLOW</div>
+  <div class="flow">
+    <div class="flow-step">
+      <span class="fs-icon">💻</span>
+      <span class="fs-label">Local Dev</span>
+      <span class="fs-sub">VS Code + SQLite</span>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="fs-icon">🌿</span>
+      <span class="fs-label">feature-branch</span>
+      <span class="fs-sub">git checkout -b</span>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="fs-icon">🔀</span>
+      <span class="fs-label">Merge → main</span>
+      <span class="fs-sub">git merge</span>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="fs-icon">📤</span>
+      <span class="fs-label">git push</span>
+      <span class="fs-sub">GitHub</span>
+    </div>
+    <div class="flow-arrow blue">→</div>
+    <div class="flow-step" style="border-color:#4f8ef7;">
+      <span class="fs-icon">⚙️</span>
+      <span class="fs-label">GitHub Actions</span>
+      <span class="fs-sub">pytest + lint</span>
+    </div>
+    <div class="flow-arrow green">→</div>
+    <div class="flow-step" style="border-color:#10b981;">
+      <span class="fs-icon">🚀</span>
+      <span class="fs-label">Render Deploy</span>
+      <span class="fs-sub">auto (on success)</span>
+    </div>
+    <div class="flow-arrow green">→</div>
+    <div class="flow-step" style="border-color:#10b981;">
+      <span class="fs-icon">🌐</span>
+      <span class="fs-label">Live</span>
+      <span class="fs-sub">dfluechter.ipv64.de</span>
+    </div>
+  </div>
+  <div style="margin-top:14px; padding:10px 14px; background:var(--surface2); border-radius:8px; font-family:var(--mono); font-size:0.72rem; color:var(--text2);">
+    ⚠️ Render Deploy wird nur ausgelöst wenn <span style="color:var(--accent3);">alle pytest Tests grün</span> sind · Branch-Schutz auf <span style="color:var(--accent4);">main</span> · Render Deploy Hook via GitHub Actions Secret
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     2. STACK
+══════════════════════════════════════════════ -->
+<div class="section-label" style="background:#1e2535;color:#4f8ef7;">02 — Tech Stack</div>
+<div class="diagram-grid" style="margin-bottom:20px;">
+
+  <div class="card blue">
+    <div class="card-title"><span class="dot blue"></span>BACKEND</div>
+    <div class="item"><span class="item-icon">🐍</span><div class="item-text"><span class="item-label">Django 5.x</span><span class="item-desc">Hauptframework · ORM · Admin · Auth</span></div></div>
+    <div class="item"><span class="item-icon">🗄️</span><div class="item-text"><span class="item-label">SQLite <span class="badge amber">lokal</span></span><span class="item-desc">Entwicklung · kein Setup nötig</span></div></div>
+    <div class="item"><span class="item-icon">🐘</span><div class="item-text"><span class="item-label">PostgreSQL <span class="badge green">Neon</span></span><span class="item-desc">Produktion · serverless · free tier</span></div></div>
+    <div class="item"><span class="item-icon">🦄</span><div class="item-text"><span class="item-label">Gunicorn</span><span class="item-desc">WSGI Server für Render</span></div></div>
+    <div class="item"><span class="item-icon">📦</span><div class="item-text"><span class="item-label">WhiteNoise</span><span class="item-desc">Static files in Produktion</span></div></div>
+    <div class="item"><span class="item-icon">🔐</span><div class="item-text"><span class="item-label">python-decouple</span><span class="item-desc">.env Management</span></div></div>
+  </div>
+
+  <div class="card purple">
+    <div class="card-title"><span class="dot purple"></span>FRONTEND (Phase 1)</div>
+    <div class="item"><span class="item-icon">🎨</span><div class="item-text"><span class="item-label">Django Templates</span><span class="item-desc">Jinja2-kompatibel · Server-Side Rendering</span></div></div>
+    <div class="item"><span class="item-icon">💅</span><div class="item-text"><span class="item-label">TailwindCSS</span><span class="item-desc">via CDN oder npm build</span></div></div>
+    <div class="item"><span class="item-icon">🎞️</span><div class="item-text"><span class="item-label">Lottie Web</span><span class="item-desc">Animationen via lottie-player</span></div></div>
+    <div class="item"><span class="item-icon">🔤</span><div class="item-text"><span class="item-label">Google Fonts / Bunny</span><span class="item-desc">Self-hosted möglich via fonttools</span></div></div>
+    <div class="item"><span class="item-icon">🖼️</span><div class="item-text"><span class="item-label">Pillow</span><span class="item-desc">Bildverarbeitung · Thumbnails</span></div></div>
+    <div class="item"><span class="item-icon">⚛️</span><div class="item-text"><span class="item-label">React <span class="badge purple">Phase 2</span></span><span class="item-desc">Vite · als Django-SPA integriert</span></div></div>
+  </div>
+
+  <div class="card green">
+    <div class="card-title"><span class="dot green"></span>INFRASTRUKTUR</div>
+    <div class="item"><span class="item-icon">🚀</span><div class="item-text"><span class="item-label">Render</span><span class="item-desc">Hosting · Web Service · SSL automatisch</span></div></div>
+    <div class="item"><span class="item-icon">🐙</span><div class="item-text"><span class="item-label">GitHub</span><span class="item-desc">Source Control · Actions CI/CD</span></div></div>
+    <div class="item"><span class="item-icon">🌐</span><div class="item-text"><span class="item-label">ipv64.net</span><span class="item-desc">DNS · CNAME → Render · kein SSL nötig</span></div></div>
+    <div class="item"><span class="item-icon">🔒</span><div class="item-text"><span class="item-label">Let's Encrypt via Render</span><span class="item-desc">Auto-Renewal · HTTP-01 Challenge</span></div></div>
+    <div class="item"><span class="item-icon">📁</span><div class="item-text"><span class="item-label">Render Disk / S3</span><span class="item-desc">Uploads (PDFs · Bilder) · persistent</span></div></div>
+    <div class="item"><span class="item-icon">🧪</span><div class="item-text"><span class="item-label">pytest + pytest-django</span><span class="item-desc">CI Tests vor jedem Deployment</span></div></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     3. PROJEKTSTRUKTUR
+══════════════════════════════════════════════ -->
+<div class="section-label" style="background:#1e2535;color:#4f8ef7;">03 — Projektstruktur (Django)</div>
+<div class="diagram-grid two-col" style="margin-bottom:20px;">
+  <div class="card blue">
+    <div class="card-title"><span class="dot blue"></span>VERZEICHNISBAUM</div>
+    <div class="tree">
+<pre style="margin:0;background:transparent;border:none;line-height:1.8;">
+<span class="dir">portfolio_project/</span>         <span class="note"># Git Root</span>
+├── <span class="dir">.github/</span>
+│   └── <span class="dir">workflows/</span>
+│       └── <span class="yml">ci-cd.yml</span>         <span class="note"># GitHub Actions</span>
+│
+├── <span class="dir">portfolio/</span>              <span class="note"># Django Project</span>
+│   ├── <span class="py">settings/</span>
+│   │   ├── <span class="py">base.py</span>
+│   │   ├── <span class="py">local.py</span>           <span class="note"># SQLite</span>
+│   │   └── <span class="py">production.py</span>      <span class="note"># PostgreSQL/Neon</span>
+│   ├── <span class="py">urls.py</span>
+│   ├── <span class="py">wsgi.py</span>
+│   └── <span class="py">asgi.py</span>
+│
+├── <span class="dir">apps/</span>
+│   ├── <span class="dir">certificates/</span>          <span class="note"># Zertifikats-App</span>
+│   │   ├── <span class="py">models.py</span>
+│   │   ├── <span class="py">views.py</span>
+│   │   ├── <span class="py">urls.py</span>
+│   │   ├── <span class="py">admin.py</span>
+│   │   ├── <span class="py">forms.py</span>
+│   │   ├── <span class="dir">templates/certificates/</span>
+│   │   └── <span class="dir">tests/</span>
+│   │
+│   ├── <span class="dir">projects/</span>              <span class="note"># Projekte-App</span>
+│   │   ├── <span class="py">models.py</span>
+│   │   ├── <span class="py">views.py</span>
+│   │   ├── <span class="py">urls.py</span>
+│   │   ├── <span class="py">admin.py</span>
+│   │   ├── <span class="dir">templates/projects/</span>
+│   │   └── <span class="dir">tests/</span>
+│   │
+│   └── <span class="dir">core/</span>                  <span class="note"># Startseite, Nav</span>
+│       ├── <span class="py">views.py</span>
+│       ├── <span class="dir">templates/core/</span>
+│       └── <span class="dir">tests/</span>
+│
+├── <span class="dir">static/</span>
+│   ├── <span class="dir">css/</span>
+│   ├── <span class="dir">js/</span>
+│   ├── <span class="dir">images/</span>
+│   ├── <span class="dir">fonts/</span>
+│   └── <span class="dir">lottie/</span>               <span class="note"># .json Animationen</span>
+│
+├── <span class="dir">media/</span>                     <span class="note"># Uploads (lokal)</span>
+│   └── <span class="dir">certificates/</span>
+│       ├── <span class="dir">Udemy/</span>
+│       ├── <span class="dir">Coursera/</span>
+│       └── <span class="dir">...</span>
+│
+├── <span class="dir">templates/</span>                 <span class="note"># Globale Base-Templates</span>
+│   ├── base.html
+│   └── partials/
+│
+├── <span class="env">.env</span>                       <span class="note"># NICHT in Git!</span>
+├── <span class="env">.env.example</span>
+├── <span class="yml">.gitignore</span>
+├── <span class="yml">requirements.txt</span>
+├── <span class="yml">requirements-dev.txt</span>
+├── <span class="yml">render.yaml</span>               <span class="note"># Render IaC</span>
+├── <span class="yml">build.sh</span>                   <span class="note"># Render Build Script</span>
+├── <span class="py">manage.py</span>
+└── <span class="yml">pytest.ini</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="card purple">
+    <div class="card-title"><span class="dot purple"></span>APP-DETAILS</div>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent4);font-weight:700;margin-bottom:6px;">📜 APP: certificates</div>
+      <div class="item"><span class="item-icon">🏢</span><div class="item-text"><span class="item-label">Issuer (Aussteller)</span><span class="item-desc">name · website · logo_image</span></div></div>
+      <div class="item"><span class="item-icon">📄</span><div class="item-text"><span class="item-label">Certificate</span><span class="item-desc">title · issuer(FK) · pdf_file · date · url</span></div></div>
+      <div class="item"><span class="item-icon">📁</span><div class="item-text"><span class="item-label">Upload-Pfad</span><span class="item-desc">media/certificates/{issuer_name}/{filename}.pdf</span></div></div>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent);font-weight:700;margin-bottom:6px;">🚀 APP: projects</div>
+      <div class="item"><span class="item-icon">📋</span><div class="item-text"><span class="item-label">Project</span><span class="item-desc">title · description · tech_stack · image</span></div></div>
+      <div class="item"><span class="item-icon">🔗</span><div class="item-text"><span class="item-label">Links</span><span class="item-desc">github_url · live_url · is_featured</span></div></div>
+      <div class="item"><span class="item-icon">🏷️</span><div class="item-text"><span class="item-label">Tag / Category</span><span class="item-desc">Filterung nach Technologie</span></div></div>
+    </div>
+
+    <div>
+      <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent3);font-weight:700;margin-bottom:6px;">🏠 APP: core</div>
+      <div class="item"><span class="item-icon">🏠</span><div class="item-text"><span class="item-label">Home View</span><span class="item-desc">Landing Page · Hero · Featured Projects</span></div></div>
+      <div class="item"><span class="item-icon">👤</span><div class="item-text"><span class="item-label">About / Profile</span><span class="item-desc">Bio · Skills · Social Links</span></div></div>
+      <div class="item"><span class="item-icon">📬</span><div class="item-text"><span class="item-label">Contact</span><span class="item-desc">Formular · optional Email-Backend</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     4. DB SCHEMA
+══════════════════════════════════════════════ -->
+<div class="section-label" style="background:#1e2535;color:#4f8ef7;">04 — Datenbankschema</div>
+<div class="diagram-grid two-col" style="margin-bottom:20px;">
+
+  <div class="card amber">
+    <div class="card-title"><span class="dot amber"></span>certificates_issuer & certificates_certificate</div>
+    <table class="schema-table">
+      <tr><th>Feld</th><th>Typ</th><th>Info</th></tr>
+      <tr><td><span class="pk">id</span></td><td><span class="dtype">AutoField</span></td><td>PK</td></tr>
+      <tr><td>name</td><td><span class="dtype">CharField(100)</span></td><td>z.B. "Udemy"</td></tr>
+      <tr><td>slug</td><td><span class="dtype">SlugField</span></td><td>für URL + Pfad</td></tr>
+      <tr><td>website</td><td><span class="dtype">URLField</span></td><td class="nullable">nullable</td></tr>
+      <tr><td>logo</td><td><span class="dtype">ImageField</span></td><td>optional</td></tr>
+    </table>
+    <div style="height:12px;"></div>
+    <table class="schema-table">
+      <tr><th>Feld</th><th>Typ</th><th>Info</th></tr>
+      <tr><td><span class="pk">id</span></td><td><span class="dtype">AutoField</span></td><td>PK</td></tr>
+      <tr><td>title</td><td><span class="dtype">CharField(200)</span></td><td></td></tr>
+      <tr><td><span class="fk">issuer</span></td><td><span class="dtype">FK → Issuer</span></td><td>CASCADE</td></tr>
+      <tr><td>pdf_file</td><td><span class="dtype">FileField</span></td><td>Upload-Pfad</td></tr>
+      <tr><td>issue_date</td><td><span class="dtype">DateField</span></td><td></td></tr>
+      <tr><td>credential_url</td><td><span class="dtype">URLField</span></td><td class="nullable">nullable</td></tr>
+      <tr><td>description</td><td><span class="dtype">TextField</span></td><td class="nullable">nullable</td></tr>
+      <tr><td>is_visible</td><td><span class="dtype">BooleanField</span></td><td>default=True</td></tr>
+    </table>
+  </div>
+
+  <div class="card blue">
+    <div class="card-title"><span class="dot blue"></span>projects_project & projects_tag</div>
+    <table class="schema-table">
+      <tr><th>Feld</th><th>Typ</th><th>Info</th></tr>
+      <tr><td><span class="pk">id</span></td><td><span class="dtype">AutoField</span></td><td>PK</td></tr>
+      <tr><td>title</td><td><span class="dtype">CharField(200)</span></td><td></td></tr>
+      <tr><td>slug</td><td><span class="dtype">SlugField</span></td><td>für URL</td></tr>
+      <tr><td>description</td><td><span class="dtype">TextField</span></td><td></td></tr>
+      <tr><td>short_desc</td><td><span class="dtype">CharField(300)</span></td><td>für Cards</td></tr>
+      <tr><td>image</td><td><span class="dtype">ImageField</span></td><td class="nullable">nullable</td></tr>
+      <tr><td>github_url</td><td><span class="dtype">URLField</span></td><td class="nullable">nullable</td></tr>
+      <tr><td>live_url</td><td><span class="dtype">URLField</span></td><td class="nullable">nullable</td></tr>
+      <tr><td>is_featured</td><td><span class="dtype">BooleanField</span></td><td>Startseite</td></tr>
+      <tr><td>order</td><td><span class="dtype">PositiveIntegerField</span></td><td>Sortierung</td></tr>
+      <tr><td><span class="fk">tags</span></td><td><span class="dtype">M2M → Tag</span></td><td></td></tr>
+      <tr><td>created_at</td><td><span class="dtype">DateTimeField</span></td><td>auto_now_add</td></tr>
+    </table>
+    <div style="height:12px;"></div>
+    <table class="schema-table">
+      <tr><th>Feld</th><th>Typ</th><th>Info</th></tr>
+      <tr><td><span class="pk">id</span></td><td><span class="dtype">AutoField</span></td><td>PK</td></tr>
+      <tr><td>name</td><td><span class="dtype">CharField(50)</span></td><td>z.B. "Django"</td></tr>
+      <tr><td>color</td><td><span class="dtype">CharField(7)</span></td><td>#hex für Badge</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     5. MCP SERVER
+══════════════════════════════════════════════ -->
+<div class="section-label" style="background:#1e2535;color:#4f8ef7;">05 — MCP Server Integration (VS Code)</div>
+<div class="card multi" style="margin-bottom:20px;">
+  <div class="card-title"><span class="dot blue"></span>MCP SERVERS — .vscode/mcp.json</div>
+  <div class="diagram-grid four-col" style="margin-top:8px;">
+    <div class="mcp-item">
+      <span class="mcp-icon">🐘</span>
+      <span class="mcp-name">Neon</span>
+      <span class="mcp-desc">PostgreSQL Verwaltung · Schema Browsing · SQL Ausführung direkt in VS Code</span>
+    </div>
+    <div class="mcp-item">
+      <span class="mcp-icon">🚀</span>
+      <span class="mcp-name">Render</span>
+      <span class="mcp-desc">Deployments überwachen · Logs · Services · Env Vars verwalten</span>
+    </div>
+    <div class="mcp-item">
+      <span class="mcp-icon">🎨</span>
+      <span class="mcp-name">Figma</span>
+      <span class="mcp-desc">Design Tokens abrufen · Components · Farben & Fonts direkt in Code übertragen</span>
+    </div>
+    <div class="mcp-item">
+      <span class="mcp-icon">🐙</span>
+      <span class="mcp-name">GitHub</span>
+      <span class="mcp-desc">PRs · Issues · Actions Status · Branch Management aus VS Code</span>
+    </div>
+    <div class="mcp-item">
+      <span class="mcp-icon">🌌</span>
+      <span class="mcp-name">Antigravity</span>
+      <span class="mcp-desc">CLI Integration · spezifische Projekt-Tools · Phase 2</span>
+    </div>
+    <div class="mcp-item">
+      <span class="mcp-icon">🎞️</span>
+      <span class="mcp-name">Lottie</span>
+      <span class="mcp-desc">Animation Assets durchsuchen · JSON einbinden · Preview in Editor</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     6. DNS / SSL
+══════════════════════════════════════════════ -->
+<div class="section-label" style="background:#1e2535;color:#4f8ef7;">06 — DNS & SSL Konfiguration</div>
+<div class="diagram-grid two-col" style="margin-bottom:20px;">
+
+  <div class="card green">
+    <div class="card-title"><span class="dot green"></span>ipv64.net DNS RECORDS</div>
+    <div class="dns-row">
+      <span class="dns-host">dfluechter.ipv64.de</span>
+      <span class="dns-type">CNAME</span>
+      <span class="dns-value">portfolio-project.onrender.com</span>
+    </div>
+    <div class="dns-row" style="opacity:0.5;">
+      <span class="dns-host">dfluechter.ipv64.de</span>
+      <span class="dns-type">A</span>
+      <span class="dns-value">nur falls CNAME nicht möglich</span>
+    </div>
+    <div style="margin-top:14px;padding:10px;background:var(--surface2);border-radius:8px;font-family:var(--mono);font-size:0.68rem;color:var(--text2);">
+      ✅ CNAME ist bevorzugt — Render's IP kann sich ändern<br>
+      ✅ Let's Encrypt via Render — keine manuelle Erneuerung<br>
+      ✅ HTTPS automatisch nach Domain-Verifizierung (~2-5 Min)<br>
+      ⚠️ Bei Root-Domain (@) muss A-Record gesetzt werden
+    </div>
+  </div>
+
+  <div class="card amber">
+    <div class="card-title"><span class="dot amber"></span>SSL FLOW</div>
+    <div class="flow" style="flex-direction:column;align-items:flex-start;gap:8px;">
+      <div class="flow-step" style="width:100%;">
+        <span class="fs-icon">1️⃣</span>
+        <span class="fs-label">CNAME setzen bei ipv64</span>
+        <span class="fs-sub">dfluechter.ipv64.de → *.onrender.com</span>
+      </div>
+      <div class="flow-step" style="width:100%;">
+        <span class="fs-icon">2️⃣</span>
+        <span class="fs-label">Custom Domain in Render eintragen</span>
+        <span class="fs-sub">Dashboard → Settings → Custom Domains</span>
+      </div>
+      <div class="flow-step" style="width:100%;">
+        <span class="fs-icon">3️⃣</span>
+        <span class="fs-label">Render verifiziert DNS</span>
+        <span class="fs-sub">HTTP-01 ACME Challenge automatisch</span>
+      </div>
+      <div class="flow-step" style="width:100%;border-color:var(--accent3);">
+        <span class="fs-icon">🔒</span>
+        <span class="fs-label">Zertifikat ausgestellt & aktiv</span>
+        <span class="fs-sub">Auto-Renewal alle 60 Tage · kein Aufwand</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     7. GITHUB ACTIONS
+══════════════════════════════════════════════ -->
+<div class="section-label" style="background:#1e2535;color:#4f8ef7;">07 — GitHub Actions Workflow</div>
+<div class="card blue" style="margin-bottom:20px;">
+  <div class="card-title"><span class="dot blue"></span>.github/workflows/ci-cd.yml — ABLAUF</div>
+  <div class="flow">
+    <div class="flow-step">
+      <span class="fs-icon">📤</span>
+      <span class="fs-label">push → main</span>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="fs-icon">🐍</span>
+      <span class="fs-label">Setup Python</span>
+      <span class="fs-sub">3.12</span>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="fs-icon">📦</span>
+      <span class="fs-label">pip install</span>
+      <span class="fs-sub">requirements-dev.txt</span>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="fs-icon">🔍</span>
+      <span class="fs-label">flake8 / ruff</span>
+      <span class="fs-sub">Linting</span>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="fs-icon">🧪</span>
+      <span class="fs-label">pytest</span>
+      <span class="fs-sub">alle Tests</span>
+    </div>
+    <div class="flow-arrow green">→ ✅</div>
+    <div class="flow-step" style="border-color:var(--accent3);">
+      <span class="fs-icon">🪝</span>
+      <span class="fs-label">Deploy Hook</span>
+      <span class="fs-sub">curl → Render</span>
+    </div>
+    <div class="flow-arrow green">→</div>
+    <div class="flow-step" style="border-color:var(--accent3);">
+      <span class="fs-icon">🚀</span>
+      <span class="fs-label">Render baut</span>
+      <span class="fs-sub">build.sh</span>
+    </div>
+  </div>
+  <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div style="padding:10px;background:var(--surface2);border-radius:8px;font-family:var(--mono);font-size:0.7rem;">
+      <span style="color:var(--accent3);">build.sh (Render):</span><br>
+      <span style="color:var(--text2);">pip install -r requirements.txt<br>
+      python manage.py collectstatic --no-input<br>
+      python manage.py migrate</span>
+    </div>
+    <div style="padding:10px;background:var(--surface2);border-radius:8px;font-family:var(--mono);font-size:0.7rem;">
+      <span style="color:var(--accent4);">GitHub Secrets benötigt:</span><br>
+      <span style="color:var(--text2);">RENDER_DEPLOY_HOOK_URL<br>
+      DJANGO_SECRET_KEY<br>
+      DATABASE_URL (Neon)</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     8. PHASE 2 REACT
+══════════════════════════════════════════════ -->
+<div class="section-label" style="background:#1e2535;color:#7c3aed;">08 — Phase 2: React Frontend Integration</div>
+<div class="card purple" style="margin-bottom:20px;">
+  <div class="card-title"><span class="dot purple"></span>REACT ALS DJANGO-FRONTEND (Vite + DRF)</div>
+  <div class="diagram-grid" style="margin-top:8px;">
+    <div class="item"><span class="item-icon">⚛️</span><div class="item-text"><span class="item-label">Vite + React</span><span class="item-desc">Build Output → Django static/dist/ · kein separater Server</span></div></div>
+    <div class="item"><span class="item-icon">🔌</span><div class="item-text"><span class="item-label">Django REST Framework</span><span class="item-desc">API Endpoints für Projects & Certificates</span></div></div>
+    <div class="item"><span class="item-icon">🌌</span><div class="item-text"><span class="item-label">Antigravity CLI</span><span class="item-desc">Einbindung als Python-Package oder CLI-Tool</span></div></div>
+    <div class="item" style="opacity:0.6;"><span class="item-icon">📱</span><div class="item-text"><span class="item-label">Stufenweise Migration</span><span class="item-desc">Templates bleiben · React ersetzt einzelne Seiten nach und nach</span></div></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════
+     9. NÄCHSTE SCHRITTE
+══════════════════════════════════════════════ -->
+<div class="section-label" style="background:#1e2535;color:#10b981;">09 — Empfohlene Reihenfolge</div>
+<div class="card green">
+  <div class="card-title"><span class="dot green"></span>SCHRITT-FÜR-SCHRITT PLAN</div>
+  <div class="diagram-grid two-col" style="margin-top:4px;">
+    <div>
+      <div class="item"><span class="item-icon">1️⃣</span><div class="item-text"><span class="item-label">Git Repo einrichten</span><span class="item-desc">.gitignore · Branch-Strategie · README</span></div></div>
+      <div class="item"><span class="item-icon">2️⃣</span><div class="item-text"><span class="item-label">Django Projektstruktur</span><span class="item-desc">django-admin startproject · Apps anlegen · Settings splitten</span></div></div>
+      <div class="item"><span class="item-icon">3️⃣</span><div class="item-text"><span class="item-label">Models & Migrations</span><span class="item-desc">Certificate · Issuer · Project · Tag · Admin konfigurieren</span></div></div>
+      <div class="item"><span class="item-icon">4️⃣</span><div class="item-text"><span class="item-label">GitHub Actions CI</span><span class="item-desc">pytest workflow · Secrets anlegen</span></div></div>
+    </div>
+    <div>
+      <div class="item"><span class="item-icon">5️⃣</span><div class="item-text"><span class="item-label">Render einrichten</span><span class="item-desc">Web Service · render.yaml · build.sh · Deploy Hook</span></div></div>
+      <div class="item"><span class="item-icon">6️⃣</span><div class="item-text"><span class="item-label">Neon PostgreSQL</span><span class="item-desc">Projekt anlegen · DATABASE_URL in Render Env Vars</span></div></div>
+      <div class="item"><span class="item-icon">7️⃣</span><div class="item-text"><span class="item-label">DNS + SSL</span><span class="item-desc">CNAME bei ipv64 · Custom Domain in Render</span></div></div>
+      <div class="item"><span class="item-icon">8️⃣</span><div class="item-text"><span class="item-label">MCP Server konfigurieren</span><span class="item-desc">.vscode/mcp.json · Neon · Render · GitHub · Figma · Lottie</span></div></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  portfolio_project · dfluechter · Architekturdiagramm v1.0 · Django 5 · Render · Neon · GitHub Actions
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+core/__init__.py
+core/asgi.py
+core/settings.py
+core/urls.py
+core/wsgi.py
+portfolio/__init__.py
+portfolio/admin.py
+portfolio/apps.py
+portfolio/models.py
+portfolio/views.py
+portfolio_project.egg-info/PKG-INFO
+portfolio_project.egg-info/SOURCES.txt
+portfolio_project.egg-info/dependency_links.txt
+portfolio_project.egg-info/requires.txt
+portfolio_project.egg-info/top_level.txt

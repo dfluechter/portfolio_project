@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "portfolio_project"
+version = "0.1.0"
+description = "Mein Portfolio Backend"
+dependencies = [
+    "django>=5.2",
+    "django-storages[boto3]",
+    "psycopg2-binary",
+    "python-dotenv",
+    "pillow",
+    "pytest-django",
+]
+
+# Konfiguration für Mypy (löst deine Fehler-Meldungen)
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+check_untyped_defs = true
+
+# Konfiguration für Tools, die du eventuell noch nutzt
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "core.settings"
+python_files = ["tests.py", "test_*.py"]
+
+[tool.ruff]
+# Ruff ist ein extrem schneller Linter/Formatter, der Mypy/Pylance ergänzt
+line-length = 88
+
+[tool.setuptools]
+packages = ["portfolio", "core"]
