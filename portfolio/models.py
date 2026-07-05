@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 def validate_file_extension(value):
     """Prüft, ob die Dateiendung .pdf oder .png ist."""
     ext = os.path.splitext(value.name)[1].lower()
-    valid_extensions = ['.pdf', '.png']
+    valid_extensions = ['.pdf', '.png', '.jpg', '.jpeg']
     if ext not in valid_extensions:
         raise ValidationError(f'Ungültiges Format! Erlaubt sind nur: {", ".join(valid_extensions)}')
 
