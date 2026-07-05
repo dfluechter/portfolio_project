@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: portfolio-backend
+    env: python
+    plan: free
+    buildCommand: "bash build.sh"    
+    startCommand: "poetry run gunicorn core.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+
+      - key: DEBUG
+        value: "False"
+
+      - key: SECRET_KEY
+        generateValue: true
+
+      - key: DATABASE_URL
+        sync: false
+
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false
+
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+
+      - key: USE_SUPABASE_S3
+        value: "True"
+
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+
+      - key: AWS_STORAGE_BUCKET_NAME
+        value: "portfolio-media"
+
+      - key: AWS_S3_ENDPOINT_URL
+        value: "https://pqtzscmkaxjhhfssppdf.supabase.co/storage/v1/s3"
+
+      - key: AWS_S3_REGION_NAME
+        value: "eu-central-1"
+
+      - key: SUPABASE_PUBLIC_MEDIA_URL
+        sync: false

@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-# Exit on error
 set -o errexit
 
-echo "Installiere Abhängigkeiten..."
-pip install -r requirements.txt
+poetry install --only main --no-root
 
-echo "Sammle statische Dateien..."
-python manage.py collectstatic --no-input
+poetry run python manage.py collectstatic --noinput
 
-echo "Führe Datenbank-Migrationen aus..."
-python manage.py migrate
+poetry run python manage.py migrate
