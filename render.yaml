@@ -1,13 +1,13 @@
 services:
   - type: web
     name: portfolio-backend
-    env: python
+    runtime: python
     plan: free
-    buildCommand: "bash build.sh"    
+    buildCommand: "bash build.sh"
     startCommand: "poetry run gunicorn core.wsgi:application"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.13.0
+        value: "3.13.0"
 
       - key: DEBUG
         value: "False"
