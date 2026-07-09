@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: "bash build.sh"
-    startCommand: "poetry run gunicorn core.wsgi:application"
+    startCommand: "uv run gunicorn core.wsgi:application"
     envVars:
       - key: PYTHON_VERSION
         value: "3.13.0"

@@ -16,14 +16,11 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pytest>=9.1.1,<10.0.0",
     "pytest-django>=4.8",
     "mypy>=1.10",
     "ruff>=0.5",
-    "pytest (>=9.1.1,<10.0.0)",
 ]
-
-[tool.poetry]
-package-mode = false
 
 [tool.mypy]
 python_version = "3.13"
@@ -39,7 +36,3 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
