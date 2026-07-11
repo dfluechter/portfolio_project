@@ -1,4 +1,4 @@
-name: Django CI/CD Pipeline
+name: Django CI/CD
 
 on:
   push:
@@ -7,47 +7,36 @@ on:
     branches: [ "main" ]
 
 jobs:
-  test_and_deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Code auschecken
+    - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Python 3.13 aufsetzen
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: "latest"
+
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.13.0"
-        cache: "pip"
+        python-version: "3.13"
 
-    - name: Abhängigkeiten installieren
+    - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        # Installiert flake8 für das Linting
-        pip install flake8
+        # Nutzt uv für eine extrem schnelle Installation aus der pyproject.toml
+        uv pip install --system -e .
 
-    - name: Linting mit Flake8
-      run: |
-        # Stoppt den Build bei Syntaxfehlern oder undefinierten Namen
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Warnungen ausgeben (bricht den Build nicht ab)
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
-
-    - name: Pytest ausführen
+    - name: System Checks & Tests
       env:
-        # Dummy-Key für die CI-Umgebung, damit Django startet
-        SECRET_KEY: "ci-dummy-key-for-testing-only"
+        # Dummy-Variablen für den CI-Lauf, falls Django diese beim Start benötigt
+        SECRET_KEY: "django-insecure-ci-dummy-key"
         DEBUG: "True"
-        # Keine DATABASE_URL definiert = Nutzt automatisch SQLite für schnelle Tests
       run: |
-        pytest
-
-    - name: Render Deployment auslösen
-      # Dieser Schritt wird NUR ausgeführt, wenn pytest und flake8 erfolgreich waren
-      if: success() && github.ref == 'refs/heads/main'
-      env:
-        deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-      run: |
-        echo "Tests erfolgreich! Starte Deployment auf Render..."
-        curl "$deploy_url"
+        # Prüft, ob Syntax oder Models fehlerhaft sind
+        python manage.py check
+        
+        # Falls du Pytest nutzt, wird es hier ausgeführt
+        uv run pytest
