@@ -47,9 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "storages",
-
     "portfolio",
 ]
 
@@ -61,7 +59,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -102,8 +99,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
     DATABASES = {
-        "default": dj_database_url.parse(
-            DATABASE_URL,
+        "default": dj_database_url.config(
+            default="sqlite:///db.sqlite3",  # Fallback, falls DATABASE_URL leer ist
             conn_max_age=600,
             ssl_require=True,
         )
