@@ -14,7 +14,10 @@ dependencies = [
     "pillow",
     "pytest-django",
     "dj-database-url",
-    "whitenoise"
+    "whitenoise",
+    "djoser>=2.3.3",
+    "djangorestframework>=3.17.1",
+    "djangorestframework-simplejwt>=5.5.1",
 ]
 
 # Konfiguration für Mypy (löst deine Fehler-Meldungen)
@@ -25,7 +28,7 @@ check_untyped_defs = true
 
 # Konfiguration für Tools, die du eventuell noch nutzt
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "core.settings"
+DJANGO_SETTINGS_MODULE = "core.settings_test"
 python_files = ["tests.py", "test_*.py"]
 
 [tool.ruff]
@@ -35,3 +38,8 @@ line-length = 88
 # Hier sagen wir uv/setuptools explizit, wo der Python-Code liegt
 [tool.setuptools.packages.find]
 include = ["core*", "portfolio*"]
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.1.0",
+]

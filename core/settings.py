@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "storages",
+    "rest_framework",
+    "djoser",
     "portfolio",
 ]
 
@@ -180,7 +182,7 @@ if USE_SUPABASE_S3:
 
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
-    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_FILE_OVERWRITE = True
 
     MEDIA_URL = os.getenv("SUPABASE_PUBLIC_MEDIA_URL", "/media/")
 else:
@@ -210,3 +212,31 @@ if not DEBUG:
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# -----------------------------------------------------------------------------
+# Django REST Framework + Djoser (JWT-Auth)
+# -----------------------------------------------------------------------------
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+    ),
+}
+
+from datetime import timedelta  # noqa: E402
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+DJOSER = {
+    "LOGIN_FIELD": "email",
+    "USER_CREATE_PASSWORD_RETYPE": True,
+    "SERIALIZERS": {},
+}

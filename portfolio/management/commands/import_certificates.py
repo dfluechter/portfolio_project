@@ -27,7 +27,7 @@ class Command(BaseCommand):
                 issuer_name = provider_dir.name
                 
                 for file_path in provider_dir.iterdir():
-                    if file_path.is_file() and file_path.suffix.lower() in ['.pdf', '.png']:
+                    if file_path.is_file() and file_path.suffix.lower() in ['.pdf', '.png', '.jpg']:
                         title = file_path.stem 
                         
                         # Prüfen, ob das Zertifikat schon existiert
@@ -39,7 +39,8 @@ class Command(BaseCommand):
                         try:
                             with open(file_path, 'rb') as f:
                                 file_content = ContentFile(f.read())
-                                file_content.content_type = 'application/pdf' # Wichtig für Supabase
+                                content_types = {'.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg'}
+                                file_content.content_type = content_types.get(file_path.suffix.lower(), 'application/octet-stream')
                                 cert = Certificate(
                                     title=title,
                                     issuer=issuer_name

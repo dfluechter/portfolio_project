@@ -6,3 +6,6 @@ pillow
 pytest-django
 dj-database-url
 whitenoise
+djoser>=2.3.3
+djangorestframework>=3.17.1
+djangorestframework-simplejwt>=5.5.1

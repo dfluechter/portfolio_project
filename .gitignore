@@ -16,3 +16,6 @@ staticfiles/
 .DS_Store
 
 *.egg-info/
+
+# Bob AI config (enthält lokale Secrets)
+.bob/
