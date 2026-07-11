@@ -4,3 +4,5 @@ psycopg2-binary
 python-dotenv
 pillow
 pytest-django
+dj-database-url
+whitenoise

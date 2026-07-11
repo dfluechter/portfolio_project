@@ -1,38 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "portfolio_project"
 version = "0.1.0"
 description = "Mein Portfolio Backend"
-requires-python = ">=3.13"
 dependencies = [
     "django>=5.2",
-    "gunicorn>=22.0",
-    "dj-database-url>=2.2",
-    "psycopg2-binary>=2.9",
-    "python-dotenv>=1.0",
-    "whitenoise[brotli]>=6.7",
-    "django-storages[boto3]>=1.14",
-    "pillow>=10.0",
+    "django-storages[boto3]",
+    "psycopg2-binary",
+    "python-dotenv",
+    "pillow",
+    "pytest-django",
+    "dj-database-url",
+    "whitenoise"
 ]
 
-[dependency-groups]
-dev = [
-    "pytest>=9.1.1,<10.0.0",
-    "pytest-django>=4.8",
-    "mypy>=1.10",
-    "ruff>=0.5",
-]
-
+# Konfiguration für Mypy (löst deine Fehler-Meldungen)
 [tool.mypy]
 python_version = "3.13"
 ignore_missing_imports = true
 check_untyped_defs = true
 
+# Konfiguration für Tools, die du eventuell noch nutzt
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
+python_files = ["tests.py", "test_*.py"]
 
 [tool.ruff]
+# Ruff ist ein extrem schneller Linter/Formatter, der Mypy/Pylance ergänzt
 line-length = 88
 
-[tool.ruff.lint]
-select = ["E", "F", "I"]
+# Hier sagen wir uv/setuptools explizit, wo der Python-Code liegt
+[tool.setuptools.packages.find]
+include = ["core*", "portfolio*"]

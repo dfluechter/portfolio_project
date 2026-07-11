@@ -1,14 +1,16 @@
 from pathlib import Path
+
 from django.core.management.base import BaseCommand
 
+
 class Command(BaseCommand):
-    help = 'Scannt das lokale OneDrive-Verzeichnis und listet alle Zertifikatsanbieter (Ordner) auf.'
+    help = 'Scannt das lokale OneDrive-Verzeichnis und listet alle Zertifikatsanbieter (Ordner) auf.'  # noqa: E501
 
     def handle(self, *args, **kwargs):
         base_path = Path(r"C:\Users\domin\OneDrive\Documents\Zertifikate (Beruf)")
         
         if not base_path.exists():
-            self.stderr.write(self.style.ERROR(f"FEHLER: Der Pfad {base_path} wurde nicht gefunden!"))
+            self.stderr.write(self.style.ERROR(f"FEHLER: Der Pfad {base_path} wurde nicht gefunden!"))  # noqa: E501
             return
             
         if not base_path.is_dir():
