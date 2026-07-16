@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="de" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">Portfolio – Login</title>
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bs-body-bg);
+      transition: background-color .25s;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 440px;
+      border-radius: 16px;
+      border: 1px solid var(--bs-border-color);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, .35);
+    }
+
+    [data-bs-theme="light"] .login-card {
+      box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+    }
+
+    .logo-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: #4f6ef7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .form-control:focus {
+      box-shadow: 0 0 0 3px rgba(79, 110, 247, .25);
+      border-color: #4f6ef7;
+    }
+
+    .btn-login {
+      background: #4f6ef7;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      transition: background .2s, transform .1s;
+    }
+    .btn-login:hover   { background: #3b5bdb; }
+    .btn-login:active  { transform: scale(.98); }
+    .btn-login:disabled { opacity: .65; }
+
+    .lang-btn.active {
+      background: rgba(79, 110, 247, .15);
+      border-color: #4f6ef7 !important;
+      color: #4f6ef7 !important;
+    }
+
+    .divider-text {
+      font-size: .78rem;
+      color: var(--bs-secondary-color);
+    }
+
+    .spinner-border-sm { width: 1rem; height: 1rem; }
+  </style>
+</head>
+
+<body>
+<div class="container px-3">
+  <div class="login-card card mx-auto p-4 p-sm-5">
+
+    <!-- Top bar: theme + language -->
+    <div class="d-flex justify-content-end gap-2 mb-4">
+      <button class="btn btn-sm btn-outline-secondary lang-btn active" id="lang-de" onclick="setLang('de')">DE</button>
+      <button class="btn btn-sm btn-outline-secondary lang-btn"        id="lang-en" onclick="setLang('en')">EN</button>
+      <button class="btn btn-sm btn-outline-secondary" id="theme-btn"  onclick="toggleTheme()" title="Theme wechseln">
+        <i class="fa-solid fa-sun" id="theme-icon"></i>
+      </button>
+    </div>
+
+    <!-- Logo + headline -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div class="logo-icon">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+      <div>
+        <h1 class="fs-5 fw-bold mb-0" id="t-headline">Portfolio</h1>
+        <p class="text-secondary mb-0 small" id="t-subline">Backend Dashboard</p>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div id="error-banner"   class="alert alert-danger   d-none py-2 small" role="alert"></div>
+    <div id="success-banner" class="alert alert-success  d-none py-2 small" role="alert"></div>
+
+    <!-- Form -->
+    <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+
+      <!-- Email -->
+      <div class="mb-3">
+        <label for="email" class="form-label small fw-semibold text-uppercase text-secondary ls-wide" id="t-email-label">E-Mail</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fa-regular fa-envelope"></i></span>
+          <input type="email" class="form-control" id="email" autocomplete="email" required />
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="mb-4">
+        <label for="password" class="form-label small fw-semibold text-uppercase text-secondary" id="t-pw-label">Passwort</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+          <input type="password" class="form-control" id="password" autocomplete="current-password" required />
+          <button type="button" class="btn btn-outline-secondary" onclick="togglePw()" tabindex="-1">
+            <i class="fa-regular fa-eye" id="pw-eye-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn btn-login btn-primary w-100 py-2" id="submit-btn">
+        <span class="spinner-border spinner-border-sm me-2 d-none" id="spinner" role="status"></span>
+        <i class="fa-solid fa-right-to-bracket me-1"></i>
+        <span id="t-submit">Anmelden</span>
+      </button>
+    </form>
+
+    <!-- Divider -->
+    <div class="d-flex align-items-center gap-2 my-4">
+      <hr class="flex-grow-1 m-0" />
+      <span class="divider-text" id="t-divider">oder</span>
+      <hr class="flex-grow-1 m-0" />
+    </div>
+
+    <!-- Admin link -->
+    <a href="/admin/" class="btn btn-outline-secondary w-100">
+      <i class="fa-solid fa-shield-halved me-1"></i>
+      <span id="t-admin-link">Django Admin</span>
+    </a>
+
+    <!-- Footer -->
+    <p class="text-center text-secondary mt-4 mb-0" style="font-size:.75rem;">
+      <i class="fa-regular fa-copyright me-1"></i>
+      <span id="t-footer">Dominik Fluechter · Portfolio Backend</span>
+    </p>
+
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  /* ── i18n ── */
+  const i18n = {
+    de: {
+      title:      "Portfolio – Login",
+      headline:   "Portfolio",
+      subline:    "Backend Dashboard",
+      emailLabel: "E-Mail",
+      pwLabel:    "Passwort",
+      submit:     "Anmelden",
+      divider:    "oder",
+      adminLink:  "Django Admin",
+      footer:     "Dominik Fluechter · Portfolio Backend",
+      errInvalid: "E-Mail oder Passwort ungültig.",
+      errNetwork: "Verbindungsfehler. Bitte erneut versuchen.",
+      success:    "Login erfolgreich! Weiterleitung …",
+    },
+    en: {
+      title:      "Portfolio – Login",
+      headline:   "Portfolio",
+      subline:    "Backend Dashboard",
+      emailLabel: "E-Mail",
+      pwLabel:    "Password",
+      submit:     "Sign in",
+      divider:    "or",
+      adminLink:  "Django Admin",
+      footer:     "Dominik Fluechter · Portfolio Backend",
+      errInvalid: "Invalid email or password.",
+      errNetwork: "Connection error. Please try again.",
+      success:    "Login successful! Redirecting …",
+    }
+  };
+
+  let lang  = localStorage.getItem("lang")  || "de";
+  let theme = localStorage.getItem("theme") || "dark";
+
+  function setLang(l) {
+    lang = l;
+    localStorage.setItem("lang", l);
+    const t = i18n[l];
+    document.documentElement.lang                          = l;
+    document.title                                         = t.title;
+    document.getElementById("t-headline").textContent      = t.headline;
+    document.getElementById("t-subline").textContent       = t.subline;
+    document.getElementById("t-email-label").textContent   = t.emailLabel;
+    document.getElementById("t-pw-label").textContent      = t.pwLabel;
+    document.getElementById("t-submit").textContent        = t.submit;
+    document.getElementById("t-divider").textContent       = t.divider;
+    document.getElementById("t-admin-link").textContent    = t.adminLink;
+    document.getElementById("t-footer").textContent        = t.footer;
+    document.getElementById("lang-de").classList.toggle("active", l === "de");
+    document.getElementById("lang-en").classList.toggle("active", l === "en");
+  }
+
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-bs-theme", t);
+    const icon = document.getElementById("theme-icon");
+    icon.className = t === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+  }
+
+  function toggleTheme() {
+    theme = theme === "dark" ? "light" : "dark";
+    localStorage.setItem("theme", theme);
+    applyTheme(theme);
+  }
+
+  function togglePw() {
+    const inp  = document.getElementById("password");
+    const icon = document.getElementById("pw-eye-icon");
+    if (inp.type === "password") {
+      inp.type = "text";
+      icon.className = "fa-regular fa-eye-slash";
+    } else {
+      inp.type = "password";
+      icon.className = "fa-regular fa-eye";
+    }
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const t       = i18n[lang];
+    const btn     = document.getElementById("submit-btn");
+    const spinner = document.getElementById("spinner");
+    const errEl   = document.getElementById("error-banner");
+    const okEl    = document.getElementById("success-banner");
+
+    errEl.classList.add("d-none");
+    okEl.classList.add("d-none");
+    btn.disabled = true;
+    spinner.classList.remove("d-none");
+
+    const email    = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const res = await fetch("/api/auth/jwt/create/", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ email, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("access_token",  data.access);
+        localStorage.setItem("refresh_token", data.refresh);
+        okEl.textContent = t.success;
+        okEl.classList.remove("d-none");
+        setTimeout(() => { window.location.href = "/admin/"; }, 1000);
+      } else {
+        errEl.textContent = t.errInvalid;
+        errEl.classList.remove("d-none");
+        btn.disabled = false;
+        spinner.classList.add("d-none");
+      }
+    } catch {
+      errEl.textContent = t.errNetwork;
+      errEl.classList.remove("d-none");
+      btn.disabled = false;
+      spinner.classList.add("d-none");
+    }
+  }
+
+  /* Init */
+  applyTheme(theme);
+  setLang(lang);
+</script>
+</body>
+</html>
