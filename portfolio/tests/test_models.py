@@ -1,6 +1,7 @@
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
-from portfolio.models import Certificate, certificate_upload_path
+
+from portfolio.models import Certificate, Project, Provider, certificate_upload_path
 
 # =====================================================================
 # 1. Tests für die dynamische Pfad-Generierung (Unit-Tests)
@@ -77,3 +78,30 @@ class TestCertificateModel:
         
         # Prüfen, ob die Datei im richtigen dynamischen Pfad abgelegt werden würde
         assert "certificates/udemy/test_file" in cert.pdf_file.name
+
+
+@pytest.mark.django_db
+class TestProviderModel:
+    def test_provider_creation_and_str(self):
+        """Testet das Erstellen eines Providers und die __str__ Methode."""
+        provider = Provider.objects.create(
+            provider="Microsoft",
+            aktiv=True,
+            url="https://microsoft.com"
+        )
+        assert Provider.objects.count() == 1
+        assert str(provider) == "Microsoft"
+
+
+@pytest.mark.django_db
+class TestProjectModel:
+    def test_project_creation_and_str(self):
+        """Testet das Erstellen eines Projekts und die __str__ Methode."""
+        project = Project.objects.create(
+            title="My Portfolio",
+            description="Django portfolio app",
+            github_url="https://github.com/user/repo",
+            live_url="https://live.com"
+        )
+        assert Project.objects.count() == 1
+        assert str(project) == "My Portfolio"

@@ -2,9 +2,14 @@
 
 This file provides guidance to agents when working with code in this repository.
 
-## Stack
+## Stack & Deployment
 
-Django 5.2 + Python 3.13, managed with **uv** (not pip/poetry). Static files via WhiteNoise, media via Supabase S3-compatible storage, DB is Neon PostgreSQL in production / SQLite locally. Deployed on Render. Auth via **Djoser + DRF + SimpleJWT** (JWT Bearer tokens).
+Django 5.2 + Python 3.13, managed with **uv** (never use `pip` or `poetry`).
+- **Database**: Neon PostgreSQL in production (via `DATABASE_URL`), local SQLite fallback. No explicit `ENVIRONMENT` flag exists.
+- **Media Storage**: Supabase S3-compatible storage (`USE_SUPABASE_S3=True`) / local `FileSystemStorage` (`MEDIA_ROOT=media/`).
+- **Static Files**: WhiteNoise (`CompressedManifestStaticFilesStorage`) in production.
+- **Deployment**: Deployed on Render. `build.sh` is the Render deployment hook (`buildCommand`), running `uv sync --frozen --no-dev`, `collectstatic`, and `migrate`. Environment variables are documented in `render.yaml`.
+- **Auth**: Djoser + DRF + SimpleJWT (`api/auth/`).
 
 ## Commands
 
@@ -18,56 +23,69 @@ uv run pytest
 # Single test
 uv run pytest portfolio/tests/test_models.py::TestCertificateUploadPath::test_standard_issuer_name
 
-# Lint/Format (Ruff, line-length=88)
+# Manual S3 connection check script (one-off script, not part of pytest suite)
+uv run python test_s3.py
+
+# Lint / Format (Ruff, line-length=88)
 uv run ruff check .
 uv run ruff format .
 
 # Type check
 uv run mypy .
 
-# Sync dependencies
+# Sync dependencies / add package
 uv sync
+uv add <package_name>
 
-# Production build (collectstatic + migrate)
+# Production build script (Render deployment hook, do not run locally for dev)
 bash build.sh
 ```
 
-## Critical: Two Settings Modules
+## Architecture & Configuration Rules
 
-- `core.settings` — production/dev settings, loaded from `.env`
-- `core.settings_test` — used by pytest (set in `pytest.ini`); forces `USE_SUPABASE_S3=False`, uses `test_media/` instead of `media/`, uses MD5 password hasher
+- **DB Routing**: `DATABASE_URL` env var presence determines the switch between Neon PostgreSQL (production) and SQLite (local).
+- **Storage Routing**: `USE_SUPABASE_S3=True` env var switches `STORAGES["default"]` to `S3Boto3Storage`; `MEDIA_URL` also changes to `SUPABASE_PUBLIC_MEDIA_URL`.
+- **S3 Configuration Quirks**: Supabase requires `AWS_S3_ADDRESSING_STYLE = "path"` and `AWS_S3_SIGNATURE_VERSION = "s3v4"`. `AWS_QUERYSTRING_AUTH = False` makes media URLs public; `AWS_S3_FILE_OVERWRITE = False` prevents silent file overwrites.
+- **Static Files**: WhiteNoise handles static file serving in production; no separate static CDN.
+- **Production Security**: Security settings (`SECURE_SSL_REDIRECT`, HSTS, secure cookies) activate only when `DEBUG=False`. HSTS preload is intentionally disabled.
+- **App Structure**: Single Django app (`portfolio`). The app is currently admin-only and auth-focused; `portfolio/views.py` is intentionally empty.
 
-**Never** set `DJANGO_SETTINGS_MODULE=core.settings` when running pytest; `pytest.ini` already handles this correctly via `core.settings_test`.
+## Settings & Testing Rules
 
-## Media Storage Toggle
+- **Two Settings Modules**:
+  - `core.settings` — production/dev settings, loaded from `.env`
+  - `core.settings_test` — used by pytest (set in `pytest.ini`). It imports `*` from `core.settings` and applies test overrides (`USE_SUPABASE_S3=False`, `MEDIA_ROOT=test_media/`, MD5 password hasher). Note: `core/settings_test.py` is a settings module, not a test file.
+- **Never** set `DJANGO_SETTINGS_MODULE=core.settings` when running pytest; `pytest.ini` handles this. Add test-only overrides in `core.settings_test`, not in test files or `conftest`.
+- **ORM & DB Tests**: `@pytest.mark.django_db` is required for any test touching the ORM. Pure logic tests (like `TestCertificateUploadPath`) use a plain `DummyInstance` without DB access.
+- **Test Media**: Media files generated in tests land in `test_media/` (clean up manually if needed).
 
-`USE_SUPABASE_S3=True` (env var) switches `STORAGES["default"]` to `S3Boto3Storage`. When `False`, local `FileSystemStorage` with `MEDIA_ROOT=media/` is used. Tests always force this off via `settings_test.py`.
+## Certificate Upload & Validation Rules
 
-## Certificate Upload Path
+- `certificate_upload_path()` in `portfolio/models.py` uses `slugify(instance.issuer)` for directory names and falls back to `"unsorted"` if slugify returns an empty string (e.g. `"??? ***"` → `"unsorted"`). The computed path is derived at save-time and stored in the DB.
+- File upload validators (`validate_file_extension`, `validate_file_size`: `.pdf`, `.png`, `.jpg` ≤ 5 MB) are applied at model field level, not form level. They fire on `full_clean()`, not on `save()`.
 
-`certificate_upload_path()` in `portfolio/models.py` uses `slugify(instance.issuer)` for the directory name and falls back to `"unsorted"` if slugify returns an empty string (e.g. `"??? ***"` → `"unsorted"`). Validators allow only `.pdf`, `.png`, `.jpg` ≤ 5 MB.
+## Management Commands (Local / Non-Portable)
 
-## Management Commands (one-time / local only)
-
-- `scan_certificates` — scans hardcoded local OneDrive path, creates `Provider` objects
-- `import_certificates` — imports files from same path with 1.5 s delay per file (Cloudflare rate-limit workaround); skips already-existing entries by `(title, issuer)` uniqueness check
-
-Both commands are tied to `C:\Users\domin\OneDrive\Documents\Zertifikate (Beruf)` — not portable, do not modify for general use.
+- `scan_certificates` — scans hardcoded local OneDrive path (`C:\Users\domin\OneDrive\Documents\Zertifikate (Beruf)`), creates `Provider` objects.
+- `import_certificates` — imports files from the same path with 1.5 s delay per file (Cloudflare rate-limit workaround); skips already-existing entries by `(title, issuer)` uniqueness check.
+- Both commands are tied to developer-local environment; do not modify or run for general use.
 
 ## Auth (Djoser + JWT)
 
-Endpoints unter `api/auth/` — Djoser stellt u.a. bereit:
-- `POST api/auth/jwt/create/` — Login → gibt `access` + `refresh` Token zurück
-- `POST api/auth/jwt/refresh/` — Access Token erneuern
-- `POST api/auth/users/` — Registrierung (mit Password-Wiederholung, da `USER_CREATE_PASSWORD_RETYPE=True`)
+Endpoints under `api/auth/` — Djoser endpoints include:
+- `POST api/auth/jwt/create/` — Login → returns `access` + `refresh` token
+- `POST api/auth/jwt/refresh/` — Refresh access token
+- `POST api/auth/users/` — Registration (`USER_CREATE_PASSWORD_RETYPE=True`)
 
-`LOGIN_FIELD = "email"` → Login läuft über E-Mail, nicht Username.
+`LOGIN_FIELD = "email"` → Login runs via E-Mail, not Username.
 Access Token: 60 min, Refresh Token: 7 Tage. Header: `Authorization: Bearer <token>`.
 
-## Code Style
+## Code Style & Conventions
 
-- Ruff, line-length 88 (Black-compatible)
-- Mypy with `ignore_missing_imports = true`, `check_untyped_defs = true`, Python 3.13
-- German `verbose_name` / `verbose_name_plural` on all model `Meta` classes
-- DB model field comments in German inline
-- Test classes use plain `class` (no `unittest.TestCase`); DB tests require `@pytest.mark.django_db`
+- Package manager: **uv** only (never `pip install` or `poetry`). Use `uv add <pkg>` / `uv sync`.
+- Ruff, line-length 88 (Black-compatible).
+- Mypy with `ignore_missing_imports = true`, `check_untyped_defs = true`, Python 3.13.
+- German `verbose_name` / `verbose_name_plural` on all model `Meta` classes.
+- Inline DB model field comments in German.
+- Test classes use plain `class` syntax (no `unittest.TestCase`).
+

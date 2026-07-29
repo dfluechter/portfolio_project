@@ -21,6 +21,7 @@ portfolio/migrations/0003_provider_alter_certificate_pdf_file.py
 portfolio/migrations/__init__.py
 portfolio/tests/__init__.py
 portfolio/tests/test_models.py
+portfolio/tests/test_views.py
 portfolio_project.egg-info/PKG-INFO
 portfolio_project.egg-info/SOURCES.txt
 portfolio_project.egg-info/dependency_links.txt

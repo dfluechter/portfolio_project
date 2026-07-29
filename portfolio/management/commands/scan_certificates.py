@@ -6,7 +6,7 @@ from portfolio.models import Provider
 
 
 class Command(BaseCommand):
-    help = "Scannt das lokale OneDrive-Verzeichnis und legt Zertifikatsanbieter in der Datenbank an."  # noqa: E501
+    help = "Scannt das lokale OneDrive-Verzeichnis und legt Zertifikatsanbieter in der Datenbank an."
 
     def handle(self, *args, **kwargs):
         base_path = Path(r"C:\Users\domin\OneDrive\Documents\Zertifikate (Beruf)")
@@ -14,7 +14,7 @@ class Command(BaseCommand):
         if not base_path.exists():
             self.stderr.write(
                 self.style.ERROR(f"FEHLER: Der Pfad {base_path} wurde nicht gefunden!")
-            )  # noqa: E501
+            )
             return
 
         if not base_path.is_dir():
@@ -40,7 +40,7 @@ class Command(BaseCommand):
                 provider_name = item.name
 
                 # Prüft, ob der Anbieter existiert, und legt ihn andernfalls neu an
-                provider_obj, created = Provider.objects.get_or_create(
+                _, created = Provider.objects.get_or_create(
                     provider=provider_name, defaults={"aktiv": True}
                 )
 

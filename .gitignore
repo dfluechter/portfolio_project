@@ -17,5 +17,5 @@ staticfiles/
 
 *.egg-info/
 
-# Bob AI config (enthält lokale Secrets)
-.bob/
+# MCP Server Credentials ignorieren
+.agents/mcp_config.json

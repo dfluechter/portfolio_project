@@ -11,9 +11,9 @@ class TestLoginView:
         response = self.client.get("/")
         assert response.status_code == 200
 
-    def test_post_returns_405(self):
-        response = self.client.post("/")
-        assert response.status_code == 405
+    def test_post_invalid_json_returns_400(self):
+        response = self.client.post("/", data="{}", content_type="application/json")
+        assert response.status_code == 400
 
     def test_put_returns_405(self):
         response = self.client.put("/")

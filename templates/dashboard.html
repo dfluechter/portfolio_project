@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="de" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Portfolio – Dashboard</title>
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --primary-color: #4f6ef7;
+      --primary-hover: #3b5bdb;
+      --transition-speed: 0.25s;
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--bs-body-bg);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Glassmorphism sidebar */
+    .sidebar {
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      z-index: 100;
+      background: rgba(20, 20, 25, 0.8);
+      backdrop-filter: blur(12px);
+      border-right: 1px solid var(--bs-border-color);
+      transition: transform var(--transition-speed);
+    }
+
+    [data-bs-theme="light"] .sidebar {
+      background: rgba(250, 250, 250, 0.8);
+    }
+
+    .main-content {
+      margin-left: 260px;
+      padding: 2rem;
+      min-height: 100vh;
+      transition: margin-left var(--transition-speed);
+    }
+
+    .nav-link-custom {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0.8rem 1.2rem;
+      color: var(--bs-secondary-color);
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all var(--transition-speed);
+      margin-bottom: 0.5rem;
+    }
+
+    .nav-link-custom:hover, .nav-link-custom.active {
+      color: #fff;
+      background-color: var(--primary-color);
+    }
+
+    [data-bs-theme="light"] .nav-link-custom:hover, 
+    [data-bs-theme="light"] .nav-link-custom.active {
+      color: #fff;
+    }
+
+    .logo-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.2rem;
+    }
+
+    .dashboard-card {
+      border-radius: 14px;
+      border: 1px solid var(--bs-border-color);
+      background: rgba(30, 30, 35, 0.4);
+      backdrop-filter: blur(6px);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    [data-bs-theme="light"] .dashboard-card {
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .dashboard-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+
+    .btn-custom-primary {
+      background-color: var(--primary-color);
+      border: none;
+      color: #fff;
+      font-weight: 600;
+      border-radius: 8px;
+      transition: background var(--transition-speed);
+    }
+    .btn-custom-primary:hover {
+      background-color: var(--primary-hover);
+      color: #fff;
+    }
+
+    .preview-img {
+      max-width: 60px;
+      max-height: 40px;
+      object-fit: contain;
+      border-radius: 6px;
+      border: 1px solid var(--bs-border-color);
+    }
+
+    /* Screen responsivity */
+    @media (max-width: 991.98px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      .sidebar.show {
+        transform: translateX(0);
+      }
+      .main-content {
+        margin-left: 0;
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar p-3 d-flex flex-column" id="sidebar">
+    <div class="d-flex align-items-center gap-3 mb-4 px-2">
+      <div class="logo-badge">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+      <div>
+        <h5 class="fw-bold mb-0">Portfolio</h5>
+        <span class="text-secondary small">Verwaltung</span>
+      </div>
+    </div>
+
+    <nav class="flex-grow-1">
+      <a href="#" class="nav-link-custom active" onclick="switchTab('overview', this)">
+        <i class="fa-solid fa-chart-pie"></i> Übersicht
+      </a>
+      <a href="#" class="nav-link-custom" onclick="switchTab('projects', this)">
+        <i class="fa-solid fa-laptop-code"></i> Projekte
+      </a>
+      <a href="#" class="nav-link-custom" onclick="switchTab('certificates', this)">
+        <i class="fa-solid fa-certificate"></i> Zertifikate
+      </a>
+      <a href="#" class="nav-link-custom" onclick="switchTab('providers', this)">
+        <i class="fa-solid fa-building-columns"></i> Anbieter
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer -->
+    <div class="border-top pt-3">
+      <div class="d-flex align-items-center gap-2 mb-3 px-2">
+        <i class="fa-regular fa-user text-secondary"></i>
+        <div class="overflow-hidden">
+          <p class="mb-0 text-truncate small fw-semibold">{{ user.email }}</p>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="toggleTheme()">
+        <i class="fa-solid fa-sun me-1" id="theme-icon"></i> Modus wechseln
+      </button>
+      <a href="/logout/" class="btn btn-sm btn-outline-danger w-100">
+        <i class="fa-solid fa-right-from-bracket me-1"></i> Abmelden
+      </a>
+    </div>
+  </aside>
+
+  <!-- Mobile Toggle Header -->
+  <header class="d-lg-none bg-dark border-bottom p-3 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-2">
+      <div class="logo-badge" style="width: 32px; height: 32px; font-size: 0.9rem;">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+      <h6 class="fw-bold mb-0">Portfolio</h6>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <div class="container-fluid p-0">
+
+      <!-- Dynamic Messages / Alerts -->
+      <div id="alert-container"></div>
+
+      <!-- TAB: Overview -->
+      <section id="tab-overview" class="tab-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h1 class="h3 fw-bold mb-1">Übersicht</h1>
+            <p class="text-secondary mb-0">Willkommen im Backend Ihrer Portfolio-Verwaltung.</p>
+          </div>
+        </div>
+
+        <!-- Stat Row -->
+        <div class="row g-4 mb-5">
+          <div class="col-md-4">
+            <div class="card dashboard-card p-4">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-secondary text-uppercase fw-semibold small">Projekte</h6>
+                  <h2 class="fw-bold mb-0" id="stat-projects-count">-</h2>
+                </div>
+                <div class="stat-icon bg-primary-subtle text-primary">
+                  <i class="fa-solid fa-laptop-code"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card dashboard-card p-4">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-secondary text-uppercase fw-semibold small">Zertifikate</h6>
+                  <h2 class="fw-bold mb-0" id="stat-certificates-count">-</h2>
+                </div>
+                <div class="stat-icon bg-success-subtle text-success">
+                  <i class="fa-solid fa-certificate"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card dashboard-card p-4">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-secondary text-uppercase fw-semibold small">Anbieter</h6>
+                  <h2 class="fw-bold mb-0" id="stat-providers-count">-</h2>
+                </div>
+                <div class="stat-icon bg-info-subtle text-info">
+                  <i class="fa-solid fa-building-columns"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: Projects -->
+      <section id="tab-projects" class="tab-content d-none">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h1 class="h3 fw-bold mb-1">Projekte</h1>
+            <p class="text-secondary mb-0">Verwalten Sie Ihre Portfolio-Projekte.</p>
+          </div>
+          <button class="btn btn-custom-primary px-3 py-2" onclick="openCreateModal('project')">
+            <i class="fa-solid fa-plus me-1"></i> Projekt erstellen
+          </button>
+        </div>
+
+        <div class="card dashboard-card p-3 table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Vorschaubild</th>
+                <th>Titel</th>
+                <th>GitHub URL</th>
+                <th>Live Demo</th>
+                <th class="text-end">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody id="projects-table-body">
+              <!-- Dynamically Loaded -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB: Certificates -->
+      <section id="tab-certificates" class="tab-content d-none">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h1 class="h3 fw-bold mb-1">Zertifikate</h1>
+            <p class="text-secondary mb-0">Verwalten Sie Ihre beruflichen Nachweise und Zertifikate.</p>
+          </div>
+          <button class="btn btn-custom-primary px-3 py-2" onclick="openCreateModal('certificate')">
+            <i class="fa-solid fa-plus me-1"></i> Zertifikat hochladen
+          </button>
+        </div>
+
+        <div class="card dashboard-card p-3 table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Titel</th>
+                <th>Aussteller</th>
+                <th>Dokument</th>
+                <th>Hochgeladen am</th>
+                <th class="text-end">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody id="certificates-table-body">
+              <!-- Dynamically Loaded -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB: Providers -->
+      <section id="tab-providers" class="tab-content d-none">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h1 class="h3 fw-bold mb-1">Zertifikatsanbieter</h1>
+            <p class="text-secondary mb-0">Verwalten Sie die Herausgeber Ihrer Zertifikate.</p>
+          </div>
+          <button class="btn btn-custom-primary px-3 py-2" onclick="openCreateModal('provider')">
+            <i class="fa-solid fa-plus me-1"></i> Anbieter erstellen
+          </button>
+        </div>
+
+        <div class="card dashboard-card p-3 table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Logo</th>
+                <th>Anbietername</th>
+                <th>Status</th>
+                <th>Webseite</th>
+                <th class="text-end">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody id="providers-table-body">
+              <!-- Dynamically Loaded -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ── MODALS ── -->
+
+  <!-- Modal: Project -->
+  <div class="modal fade" id="projectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="project-form" onsubmit="saveItem(event, 'project')">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="projectModalLabel">Projekt erstellen</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="project-id" />
+            <div class="mb-3">
+              <label for="project-title" class="form-label small fw-semibold">Projektname</label>
+              <input type="text" class="form-control" id="project-title" required />
+            </div>
+            <div class="mb-3">
+              <label for="project-description" class="form-label small fw-semibold">Beschreibung</label>
+              <textarea class="form-control" id="project-description" rows="3" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="project-image" class="form-label small fw-semibold">Projekt-Vorschaubild</label>
+              <input type="file" class="form-control" id="project-image" accept="image/*" />
+              <div id="project-image-preview-container" class="mt-2 d-none">
+                <img id="project-image-preview" src="" class="preview-img" style="max-width: 120px; max-height: 80px;" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="project-github" class="form-label small fw-semibold">GitHub Repository URL</label>
+              <input type="url" class="form-control" id="project-github" placeholder="https://github.com/..." />
+            </div>
+            <div class="mb-3">
+              <label for="project-live" class="form-label small fw-semibold">Live Demo URL</label>
+              <input type="url" class="form-control" id="project-live" placeholder="https://..." />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Provider -->
+  <div class="modal fade" id="providerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="provider-form" onsubmit="saveItem(event, 'provider')">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="providerModalLabel">Anbieter erstellen</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="provider-id" />
+            <div class="mb-3">
+              <label for="provider-name" class="form-label small fw-semibold">Anbietername</label>
+              <input type="text" class="form-control" id="provider-name" required />
+            </div>
+            <div class="mb-3">
+              <label for="provider-logo" class="form-label small fw-semibold">Logo</label>
+              <input type="file" class="form-control" id="provider-logo" accept="image/*" />
+              <div id="provider-logo-preview-container" class="mt-2 d-none">
+                <img id="provider-logo-preview" src="" class="preview-img" style="max-width: 100px; max-height: 60px;" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="provider-url" class="form-label small fw-semibold">URL</label>
+              <input type="url" class="form-control" id="provider-url" placeholder="https://..." />
+            </div>
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="provider-active" checked />
+              <label class="form-check-label small fw-semibold" for="provider-active">Aktiviert</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Certificate -->
+  <div class="modal fade" id="certificateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="certificate-form" onsubmit="saveItem(event, 'certificate')">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="certificateModalLabel">Zertifikat hochladen</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="certificate-id" />
+            <div class="mb-3">
+              <label for="certificate-title" class="form-label small fw-semibold">Titel des Zertifikats</label>
+              <input type="text" class="form-control" id="certificate-title" required />
+            </div>
+            <div class="mb-3">
+              <label for="certificate-issuer" class="form-label small fw-semibold">Aussteller / Organisation</label>
+              <input type="text" class="form-control" id="certificate-issuer" list="providers-datalist" placeholder="Aussteller wählen oder eintragen..." required />
+              <datalist id="providers-datalist">
+                <!-- Dynamically loaded -->
+              </datalist>
+            </div>
+            <div class="mb-3">
+              <label for="certificate-file" class="form-label small fw-semibold">Datei (PDF / PNG / JPG)</label>
+              <input type="file" class="form-control" id="certificate-file" accept=".pdf,image/png,image/jpeg" />
+              <div id="certificate-file-current" class="mt-2 text-info small d-none">
+                <i class="fa-regular fa-file-pdf me-1"></i> Aktuelle Datei: <span id="certificate-file-name"></span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // Switch Modals
+    const modals = {
+      project: new bootstrap.Modal(document.getElementById('projectModal')),
+      provider: new bootstrap.Modal(document.getElementById('providerModal')),
+      certificate: new bootstrap.Modal(document.getElementById('certificateModal'))
+    };
+
+    // Load initial counts and tables
+    document.addEventListener("DOMContentLoaded", () => {
+      loadOverviewStats();
+      loadData('projects');
+      loadData('certificates');
+      loadData('providers');
+      applyTheme(localStorage.getItem("theme") || "dark");
+    });
+
+    // Theme controls
+    function applyTheme(t) {
+      document.documentElement.setAttribute("data-bs-theme", t);
+      const icon = document.getElementById("theme-icon");
+      icon.className = t === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute("data-bs-theme");
+      const next = current === "dark" ? "light" : "dark";
+      localStorage.setItem("theme", next);
+      applyTheme(next);
+    }
+
+    function toggleSidebar() {
+      document.getElementById("sidebar").classList.toggle("show");
+    }
+
+    // Tab switcher
+    function switchTab(tab, element) {
+      document.querySelectorAll(".nav-link-custom").forEach(el => el.classList.remove("active"));
+      element.classList.add("active");
+
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.add("d-none"));
+      document.getElementById(`tab-${tab}`).classList.remove("d-none");
+      
+      // Close mobile sidebar if open
+      document.getElementById("sidebar").classList.remove("show");
+    }
+
+    // Global Alert function
+    function showAlert(message, type = "success") {
+      const container = document.getElementById("alert-container");
+      const alertDiv = document.createElement("div");
+      alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+      alertDiv.role = "alert";
+      alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      `;
+      container.appendChild(alertDiv);
+      setTimeout(() => { alertDiv.remove(); }, 5000);
+    }
+
+    // Fetch Overview statistics
+    async function loadOverviewStats() {
+      try {
+        const [projRes, certRes, provRes] = await Promise.all([
+          fetch("/api/projects/"),
+          fetch("/api/certificates/"),
+          fetch("/api/providers/")
+        ]);
+
+        if (projRes.ok && certRes.ok && provRes.ok) {
+          const proj = await projRes.json();
+          const cert = await certRes.json();
+          const prov = await provRes.json();
+
+          document.getElementById("stat-projects-count").textContent = proj.length;
+          document.getElementById("stat-certificates-count").textContent = cert.length;
+          document.getElementById("stat-providers-count").textContent = prov.length;
+
+          // Populate datalist for certificate issuer autocomplete
+          const datalist = document.getElementById("providers-datalist");
+          datalist.innerHTML = "";
+          prov.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p.provider;
+            datalist.appendChild(opt);
+          });
+        }
+      } catch (err) {
+        console.error("Fehler beim Laden der Statistik:", err);
+      }
+    }
+
+    // Load data lists
+    async function loadData(type) {
+      const tableBody = document.getElementById(`${type}-table-body`);
+      try {
+        const res = await fetch(`/api/${type}/`);
+        if (!res.ok) throw new Error("Fehler beim Laden");
+        const items = await res.json();
+        
+        tableBody.innerHTML = "";
+        
+        if (items.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-secondary py-4">Keine Einträge vorhanden.</td></tr>`;
+          return;
+        }
+
+        items.forEach(item => {
+          if (type === 'projects') {
+            tableBody.appendChild(createProjectRow(item));
+          } else if (type === 'certificates') {
+            tableBody.appendChild(createCertificateRow(item));
+          } else if (type === 'providers') {
+            tableBody.appendChild(createProviderRow(item));
+          }
+        });
+      } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Fehler beim Laden der Daten.</td></tr>`;
+      }
+    }
+
+    // Table rows creation helper
+    function createProjectRow(p) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><img src="${p.image || 'https://placehold.co/60x40/1a1a24/ffffff?text=Kein+Bild'}" class="preview-img" alt="${p.title}" /></td>
+        <td><strong>${p.title}</strong></td>
+        <td>${p.github_url ? `<a href="${p.github_url}" target="_blank" class="small"><i class="fa-brands fa-github"></i> Repository</a>` : '-'}</td>
+        <td>${p.live_url ? `<a href="${p.live_url}" target="_blank" class="small text-success"><i class="fa-solid fa-square-arrow-up-right"></i> Live Demo</a>` : '-'}</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-info me-1" onclick="openEditModal('project', ${p.id})"><i class="fa-solid fa-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('projects', ${p.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      `;
+      return tr;
+    }
+
+    function createCertificateRow(c) {
+      const tr = document.createElement("tr");
+      const date = new Date(c.uploaded_at).toLocaleDateString("de-DE", { day: '2-digit', month: '2-digit', year: 'numeric' });
+      tr.innerHTML = `
+        <td><strong>${c.title}</strong></td>
+        <td><span class="badge bg-secondary">${c.issuer}</span></td>
+        <td><a href="${c.pdf_file}" target="_blank" class="text-info"><i class="fa-solid fa-file-pdf me-1"></i> Dokument ansehen</a></td>
+        <td>${date}</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-info me-1" onclick="openEditModal('certificate', ${c.id})"><i class="fa-solid fa-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('certificates', ${c.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      `;
+      return tr;
+    }
+
+    function createProviderRow(p) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><img src="${p.logo || 'https://placehold.co/60x40/1a1a24/ffffff?text=Kein+Logo'}" class="preview-img" alt="${p.provider}" /></td>
+        <td><strong>${p.provider}</strong></td>
+        <td><span class="badge ${p.aktiv ? 'bg-success' : 'bg-danger'}">${p.aktiv ? 'Aktiv' : 'Inaktiv'}</span></td>
+        <td>${p.url ? `<a href="${p.url}" target="_blank" class="small"><i class="fa-solid fa-globe"></i> Homepage</a>` : '-'}</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-info me-1" onclick="openEditModal('provider', ${p.id})"><i class="fa-solid fa-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('providers', ${p.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      `;
+      return tr;
+    }
+
+    // Modal creation openings
+    function openCreateModal(type) {
+      document.getElementById(`${type}-form`).reset();
+      document.getElementById(`${type}-id`).value = "";
+      document.getElementById(`${type}ModalLabel`).textContent = type === 'project' ? "Projekt erstellen" : (type === 'provider' ? "Anbieter erstellen" : "Zertifikat hochladen");
+      
+      // Hide previews
+      if (type === 'project') document.getElementById('project-image-preview-container').classList.add('d-none');
+      if (type === 'provider') document.getElementById('provider-logo-preview-container').classList.add('d-none');
+      if (type === 'certificate') document.getElementById('certificate-file-current').classList.add('d-none');
+      
+      modals[type].show();
+    }
+
+    async function openEditModal(type, id) {
+      try {
+        const res = await fetch(`/api/${type}s/${id}/`);
+        if (!res.ok) throw new Error("Fehler beim Laden");
+        const item = await res.json();
+        
+        document.getElementById(`${type}-id`).value = item.id;
+        document.getElementById(`${type}ModalLabel`).textContent = type === 'project' ? "Projekt bearbeiten" : (type === 'provider' ? "Anbieter bearbeiten" : "Zertifikat bearbeiten");
+
+        if (type === 'project') {
+          document.getElementById('project-title').value = item.title;
+          document.getElementById('project-description').value = item.description;
+          document.getElementById('project-github').value = item.github_url || "";
+          document.getElementById('project-live').value = item.live_url || "";
+          
+          const previewContainer = document.getElementById('project-image-preview-container');
+          if (item.image) {
+            document.getElementById('project-image-preview').src = item.image;
+            previewContainer.classList.remove('d-none');
+          } else {
+            previewContainer.classList.add('d-none');
+          }
+        } else if (type === 'provider') {
+          document.getElementById('provider-name').value = item.provider;
+          document.getElementById('provider-url').value = item.url || "";
+          document.getElementById('provider-active').checked = item.aktiv;
+
+          const previewContainer = document.getElementById('provider-logo-preview-container');
+          if (item.logo) {
+            document.getElementById('provider-logo-preview').src = item.logo;
+            previewContainer.classList.remove('d-none');
+          } else {
+            previewContainer.classList.add('d-none');
+          }
+        } else if (type === 'certificate') {
+          document.getElementById('certificate-title').value = item.title;
+          document.getElementById('certificate-issuer').value = item.issuer;
+
+          const fileContainer = document.getElementById('certificate-file-current');
+          if (item.pdf_file) {
+            const filename = item.pdf_file.split('/').pop();
+            document.getElementById('certificate-file-name').textContent = filename;
+            fileContainer.classList.remove('d-none');
+          } else {
+            fileContainer.classList.add('d-none');
+          }
+        }
+
+        modals[type].show();
+      } catch (err) {
+        showAlert("Fehler beim Laden des Datensatzes: " + err.message, "danger");
+      }
+    }
+
+    // Save logic (Insert/Update)
+    async function saveItem(e, type) {
+      e.preventDefault();
+      const id = document.getElementById(`${type}-id`).value;
+      const url = id ? `/api/${type}s/${id}/` : `/api/${type}s/`;
+      const method = id ? "PATCH" : "POST";
+
+      const formData = new FormData();
+
+      if (type === 'project') {
+        formData.append("title", document.getElementById('project-title').value);
+        formData.append("description", document.getElementById('project-description').value);
+        formData.append("github_url", document.getElementById('project-github').value);
+        formData.append("live_url", document.getElementById('project-live').value);
+        
+        const fileInput = document.getElementById('project-image');
+        if (fileInput.files.length > 0) {
+          formData.append("image", fileInput.files[0]);
+        }
+      } else if (type === 'provider') {
+        formData.append("provider", document.getElementById('provider-name').value);
+        formData.append("url", document.getElementById('provider-url').value);
+        formData.append("aktiv", document.getElementById('provider-active').checked);
+
+        const fileInput = document.getElementById('provider-logo');
+        if (fileInput.files.length > 0) {
+          formData.append("logo", fileInput.files[0]);
+        }
+      } else if (type === 'certificate') {
+        formData.append("title", document.getElementById('certificate-title').value);
+        formData.append("issuer", document.getElementById('certificate-issuer').value);
+
+        const fileInput = document.getElementById('certificate-file');
+        if (fileInput.files.length > 0) {
+          formData.append("pdf_file", fileInput.files[0]);
+        } else if (!id) {
+          showAlert("Bitte wählen Sie eine Zertifikatsdatei aus.", "danger");
+          return;
+        }
+      }
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: {
+            "X-CSRFToken": csrfToken
+          },
+          body: formData
+        });
+
+        if (res.ok) {
+          showAlert(id ? "Eintrag erfolgreich aktualisiert." : "Eintrag erfolgreich erstellt.", "success");
+          modals[type].hide();
+          loadData(`${type}s`);
+          loadOverviewStats();
+        } else {
+          const errData = await res.json();
+          let errText = "Fehler beim Speichern.";
+          if (typeof errData === 'object') {
+            errText = Object.entries(errData)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(" | ");
+          }
+          showAlert(errText, "danger");
+        }
+      } catch (err) {
+        showAlert("Netzwerkfehler beim Speichern.", "danger");
+      }
+    }
+
+    // Delete item logic
+    async function deleteItem(endpoint, id) {
+      if (!confirm("Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?")) return;
+
+      try {
+        const res = await fetch(`/api/${endpoint}/${id}/`, {
+          method: "DELETE",
+          headers: {
+            "X-CSRFToken": csrfToken
+          }
+        });
+
+        if (res.ok) {
+          showAlert("Eintrag erfolgreich gelöscht.", "success");
+          loadData(endpoint);
+          loadOverviewStats();
+        } else {
+          showAlert("Fehler beim Löschen des Eintrags.", "danger");
+        }
+      } catch (err) {
+        showAlert("Netzwerkfehler beim Löschen des Eintrags.", "danger");
+      }
+    }
+  </script>
+</body>
+</html>

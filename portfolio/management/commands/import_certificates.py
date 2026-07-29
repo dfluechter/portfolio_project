@@ -1,10 +1,12 @@
-from pathlib import Path
 import time
-from django.core.management.base import BaseCommand
-from django.core.files import File
-from portfolio.models import Certificate
-from django.utils.text import slugify
+from pathlib import Path
+
 from django.core.files.base import ContentFile
+from django.core.management.base import BaseCommand
+from django.utils.text import slugify
+
+from portfolio.models import Certificate
+
 
 class Command(BaseCommand):
     help = 'Importiert Zertifikate aus lokalen Ordnern und lädt sie zu Supabase hoch.'
@@ -53,12 +55,12 @@ class Command(BaseCommand):
                             # DIE MAGISCHE PAUSE: Cloudflare beruhigen
                             time.sleep(1.5)
                             
-                        except Exception as e:
-                            self.stderr.write(self.style.ERROR(f"Fehler bei {file_path.name}: {str(e)}"))
+                        except Exception as e:  # noqa: BLE001
+                            self.stderr.write(self.style.ERROR(f"Fehler bei {file_path.name}: {e!s}"))
                             # Bei einem Fehler kurz durchatmen (5 Sekunden), bevor es weitergeht
                             time.sleep(5)
 
         self.stdout.write("-" * 50)
-        self.stdout.write(self.style.SUCCESS(f"IMPORT ABGESCHLOSSEN!"))
+        self.stdout.write(self.style.SUCCESS("IMPORT ABGESCHLOSSEN!"))
         self.stdout.write(self.style.SUCCESS(f"{imported_count} Zertifikate hochgeladen."))
         self.stdout.write(self.style.SUCCESS(f"{skipped_count} Zertifikate übersprungen."))

@@ -111,7 +111,7 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": str(BASE_DIR / "db.sqlite3"),
         }
     }
 
@@ -211,6 +211,8 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = False
 
 
+AUTH_USER_MODEL = "portfolio.User"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
@@ -220,6 +222,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.SessionAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
@@ -227,7 +230,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-from datetime import timedelta  # noqa: E402
+from datetime import timedelta
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
@@ -239,4 +242,12 @@ DJOSER = {
     "LOGIN_FIELD": "email",
     "USER_CREATE_PASSWORD_RETYPE": True,
     "SERIALIZERS": {},
+    "PERMISSIONS": {
+        # Sperrt die öffentliche Registrierung neuer Konten über die API vollständig
+        "user_create": ["rest_framework.permissions.DenyAny"],
+        # Verhindert das Ändern der E-Mail-Adresse/des Usernames über die API
+        "username_update": ["rest_framework.permissions.DenyAny"],
+        # Verhindert das Löschen des Kontos über die API
+        "user_delete": ["rest_framework.permissions.DenyAny"],
+    },
 }

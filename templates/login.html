@@ -117,9 +117,12 @@
         </div>
       </div>
 
-      <!-- Password -->
-      <div class="mb-4">
-        <label for="password" class="form-label small fw-semibold text-uppercase text-secondary" id="t-pw-label">Passwort</label>
+      <!-- Password Group -->
+      <div class="mb-4" id="pw-group">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label for="password" class="form-label mb-0 small fw-semibold text-uppercase text-secondary" id="t-pw-label">Passwort</label>
+          <a href="#" onclick="toggleMode('reset', event)" class="small text-decoration-none" id="t-forgot-pw">Passwort vergessen?</a>
+        </div>
         <div class="input-group">
           <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
           <input type="password" class="form-control" id="password" autocomplete="current-password" required />
@@ -137,18 +140,26 @@
       </button>
     </form>
 
-    <!-- Divider -->
-    <div class="d-flex align-items-center gap-2 my-4">
-      <hr class="flex-grow-1 m-0" />
-      <span class="divider-text" id="t-divider">oder</span>
-      <hr class="flex-grow-1 m-0" />
+    <!-- Additional Options Group -->
+    <div id="admin-group">
+      <!-- Divider -->
+      <div class="d-flex align-items-center gap-2 my-4">
+        <hr class="flex-grow-1 m-0" />
+        <span class="divider-text" id="t-divider">oder</span>
+        <hr class="flex-grow-1 m-0" />
+      </div>
+
+      <!-- Admin link -->
+      <a href="/dashboard/" class="btn btn-outline-secondary w-100">
+        <i class="fa-solid fa-shield-halved me-1"></i>
+        <span id="t-admin-link">Dashboard</span>
+      </a>
     </div>
 
-    <!-- Admin link -->
-    <a href="/admin/" class="btn btn-outline-secondary w-100">
-      <i class="fa-solid fa-shield-halved me-1"></i>
-      <span id="t-admin-link">Django Admin</span>
-    </a>
+    <!-- Back to Login option (hidden by default) -->
+    <div id="back-to-login-container" class="text-center d-none mt-3">
+      <a href="#" onclick="toggleMode('login', event)" class="small text-decoration-none" id="t-back-to-login">Zurück zum Login</a>
+    </div>
 
     <!-- Footer -->
     <p class="text-center text-secondary mt-4 mb-0" style="font-size:.75rem;">
@@ -166,54 +177,61 @@
   /* ── i18n ── */
   const i18n = {
     de: {
-      title:      "Portfolio – Login",
-      headline:   "Portfolio",
-      subline:    "Backend Dashboard",
-      emailLabel: "E-Mail",
-      pwLabel:    "Passwort",
-      submit:     "Anmelden",
-      divider:    "oder",
-      adminLink:  "Django Admin",
-      footer:     "Dominik Fluechter · Portfolio Backend",
-      errInvalid: "E-Mail oder Passwort ungültig.",
-      errNetwork: "Verbindungsfehler. Bitte erneut versuchen.",
-      success:    "Login erfolgreich! Weiterleitung …",
+      title:          "Portfolio – Login",
+      headline:       "Portfolio",
+      subline:        "Backend Dashboard",
+      emailLabel:     "E-Mail",
+      pwLabel:        "Passwort",
+      forgotPw:       "Passwort vergessen?",
+      backToLogin:    "Zurück zum Login",
+      resetHeadline:  "Passwort zurücksetzen",
+      resetSubline:   "Geben Sie Ihre E-Mail-Adresse ein.",
+      resetSubmit:    "Reset-Link senden",
+      resetSuccess:   "Ein Link zum Zurücksetzen des Passworts wurde gesendet!",
+      submit:         "Anmelden",
+      divider:        "oder",
+      adminLink:      "Dashboard",
+      footer:         "Dominik Fluechter · Portfolio Backend",
+      errInvalid:     "E-Mail oder Passwort ungültig.",
+      errNetwork:     "Verbindungsfehler. Bitte erneut versuchen.",
+      success:        "Login erfolgreich! Weiterleitung …",
     },
     en: {
-      title:      "Portfolio – Login",
-      headline:   "Portfolio",
-      subline:    "Backend Dashboard",
-      emailLabel: "E-Mail",
-      pwLabel:    "Password",
-      submit:     "Sign in",
-      divider:    "or",
-      adminLink:  "Django Admin",
-      footer:     "Dominik Fluechter · Portfolio Backend",
-      errInvalid: "Invalid email or password.",
-      errNetwork: "Connection error. Please try again.",
-      success:    "Login successful! Redirecting …",
+      title:          "Portfolio – Login",
+      headline:       "Portfolio",
+      subline:        "Backend Dashboard",
+      emailLabel:     "E-Mail",
+      pwLabel:        "Password",
+      forgotPw:       "Forgot password?",
+      backToLogin:    "Back to login",
+      resetHeadline:  "Reset Password",
+      resetSubline:   "Enter your email address.",
+      resetSubmit:    "Send reset link",
+      resetSuccess:   "A password reset link has been sent!",
+      submit:         "Sign in",
+      divider:        "or",
+      adminLink:      "Dashboard",
+      footer:         "Dominik Fluechter · Portfolio Backend",
+      errInvalid:     "Invalid email or password.",
+      errNetwork:     "Connection error. Please try again.",
+      success:        "Login successful! Redirecting …",
     }
   };
 
   let lang  = localStorage.getItem("lang")  || "de";
   let theme = localStorage.getItem("theme") || "dark";
+  let mode  = "login";
 
   function setLang(l) {
     lang = l;
     localStorage.setItem("lang", l);
-    const t = i18n[l];
-    document.documentElement.lang                          = l;
-    document.title                                         = t.title;
-    document.getElementById("t-headline").textContent      = t.headline;
-    document.getElementById("t-subline").textContent       = t.subline;
-    document.getElementById("t-email-label").textContent   = t.emailLabel;
-    document.getElementById("t-pw-label").textContent      = t.pwLabel;
-    document.getElementById("t-submit").textContent        = t.submit;
-    document.getElementById("t-divider").textContent       = t.divider;
-    document.getElementById("t-admin-link").textContent    = t.adminLink;
-    document.getElementById("t-footer").textContent        = t.footer;
+    
+    // Set static UI indicators
     document.getElementById("lang-de").classList.toggle("active", l === "de");
     document.getElementById("lang-en").classList.toggle("active", l === "en");
+    
+    // Update translations according to active mode
+    toggleMode(mode);
   }
 
   function applyTheme(t) {
@@ -240,6 +258,54 @@
     }
   }
 
+  function toggleMode(m, e) {
+    if (e) e.preventDefault();
+    mode = m;
+    const t = i18n[lang];
+    
+    const pwGroup = document.getElementById("pw-group");
+    const adminGroup = document.getElementById("admin-group");
+    const backToLoginContainer = document.getElementById("back-to-login-container");
+    const submitBtnSpan = document.getElementById("t-submit");
+    const submitBtnIcon = document.querySelector("#submit-btn i");
+    const headline = document.getElementById("t-headline");
+    const subline = document.getElementById("t-subline");
+    
+    // Clean alert visibility
+    document.getElementById("error-banner").classList.add("d-none");
+    document.getElementById("success-banner").classList.add("d-none");
+
+    if (m === "reset") {
+      pwGroup.classList.add("d-none");
+      adminGroup.classList.add("d-none");
+      backToLoginContainer.classList.remove("d-none");
+      
+      headline.textContent = t.resetHeadline;
+      subline.textContent = t.resetSubline;
+      submitBtnSpan.textContent = t.resetSubmit;
+      submitBtnIcon.className = "fa-solid fa-paper-plane me-1";
+    } else {
+      pwGroup.classList.remove("d-none");
+      adminGroup.classList.remove("d-none");
+      backToLoginContainer.classList.add("d-none");
+      
+      headline.textContent = t.headline;
+      subline.textContent = t.subline;
+      submitBtnSpan.textContent = t.submit;
+      submitBtnIcon.className = "fa-solid fa-right-to-bracket me-1";
+    }
+    
+    // Always translate labels
+    document.title = t.title;
+    document.getElementById("t-email-label").textContent = t.emailLabel;
+    document.getElementById("t-pw-label").textContent = t.pwLabel;
+    document.getElementById("t-forgot-pw").textContent = t.forgotPw;
+    document.getElementById("t-back-to-login").textContent = t.backToLogin;
+    document.getElementById("t-divider").textContent = t.divider;
+    document.getElementById("t-admin-link").textContent = t.adminLink;
+    document.getElementById("t-footer").textContent = t.footer;
+  }
+
   async function handleLogin(e) {
     e.preventDefault();
     const t       = i18n[lang];
@@ -253,34 +319,86 @@
     btn.disabled = true;
     spinner.classList.remove("d-none");
 
-    const email    = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    const email = document.getElementById("email").value;
 
-    try {
-      const res = await fetch("/api/auth/jwt/create/", {
+    if (mode === "login") {
+      const password = document.getElementById("password").value;
+      try {
+        const res = await fetch("/", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ email, password }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem("access_token",  data.access);
-        localStorage.setItem("refresh_token", data.refresh);
-        okEl.textContent = t.success;
-        okEl.classList.remove("d-none");
-        setTimeout(() => { window.location.href = "/admin/"; }, 1000);
-      } else {
-        errEl.textContent = t.errInvalid;
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem("access_token",  data.access);
+          localStorage.setItem("refresh_token", data.refresh);
+          okEl.textContent = t.success;
+          okEl.classList.remove("d-none");
+          setTimeout(() => { window.location.href = "/dashboard/"; }, 1000);
+        } else {
+          let errMsg = t.errInvalid;
+          try {
+            const errData = await res.json();
+            if (errData.detail) {
+              errMsg = errData.detail;
+            } else if (typeof errData === 'object') {
+              errMsg = Object.entries(errData)
+                .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(" ") : val}`)
+                .join(" | ");
+            }
+          } catch (_) {}
+          errEl.textContent = errMsg;
+          errEl.classList.remove("d-none");
+          btn.disabled = false;
+          spinner.classList.add("d-none");
+        }
+      } catch {
+        errEl.textContent = t.errNetwork;
         errEl.classList.remove("d-none");
         btn.disabled = false;
         spinner.classList.add("d-none");
       }
-    } catch {
-      errEl.textContent = t.errNetwork;
-      errEl.classList.remove("d-none");
-      btn.disabled = false;
-      spinner.classList.add("d-none");
+    } else {
+      // mode === "reset"
+      try {
+        const res = await fetch("/api/auth/users/reset_password/", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ email }),
+        });
+
+        if (res.ok) {
+          okEl.textContent = t.resetSuccess;
+          okEl.classList.remove("d-none");
+          document.getElementById("email").value = "";
+          btn.disabled = false;
+          spinner.classList.add("d-none");
+          setTimeout(() => { toggleMode("login"); }, 4000);
+        } else {
+          let errMsg = t.errNetwork;
+          try {
+            const errData = await res.json();
+            if (errData.detail) {
+              errMsg = errData.detail;
+            } else if (typeof errData === 'object') {
+              errMsg = Object.entries(errData)
+                .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(" ") : val}`)
+                .join(" | ");
+            }
+          } catch (_) {}
+          errEl.textContent = errMsg;
+          errEl.classList.remove("d-none");
+          btn.disabled = false;
+          spinner.classList.add("d-none");
+        }
+      } catch {
+        errEl.textContent = t.errNetwork;
+        errEl.classList.remove("d-none");
+        btn.disabled = false;
+        spinner.classList.add("d-none");
+      }
     }
   }
 
