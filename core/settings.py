@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "corsheaders",  # CORS support
     "storages",
     "rest_framework",
     "djoser",
@@ -62,7 +61,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  # CORS middleware OBEN
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -253,44 +251,3 @@ DJOSER = {
         "user_delete": ["rest_framework.permissions.DenyAny"],
     },
 }
-
-
-# -----------------------------------------------------------------------------
-# CORS Configuration
-# -----------------------------------------------------------------------------
-
-# Entwicklungsumgebung: erlaube localhost
-# Produktion: wird aus Umgebungsvariable geladen
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://localhost:5173",  # React Dev Server + Vite
-    ).split(",")
-    if origin.strip()
-]
-
-# Cookies und Credentials erlauben (wichtig für JWT!)
-CORS_ALLOW_CREDENTIALS = True
-
-# Optional: Detaillierte CORS-Konfiguration
-CORS_ALLOW_METHODS = [
-    "DELETE",
-    "GET",
-    "OPTIONS",
-    "PATCH",
-    "POST",
-    "PUT",
-]
-
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-]
