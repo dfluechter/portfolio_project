@@ -47,9 +47,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
     "storages",
     "rest_framework",
     "djoser",
+    "drf_spectacular",
     "portfolio",
 ]
 
@@ -61,6 +63,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -228,6 +231,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 from datetime import timedelta
@@ -249,5 +253,78 @@ DJOSER = {
         "username_update": ["rest_framework.permissions.DenyAny"],
         # Verhindert das Löschen des Kontos über die API
         "user_delete": ["rest_framework.permissions.DenyAny"],
+    },
+}
+
+
+# -----------------------------------------------------------------------------
+# CORS Configuration
+# -----------------------------------------------------------------------------
+
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:3000,http://localhost:5173",
+    ).split(",")
+    if origin.strip()
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+
+# -----------------------------------------------------------------------------
+# DRF Spectacular - OpenAPI/Swagger Documentation
+# -----------------------------------------------------------------------------
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Portfolio Backend API",
+    "DESCRIPTION": "Django REST API für Portfolio-Management mit JWT Authentication",
+    "VERSION": "1.0.0",
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+    "SERVERS": [
+        {"url": "http://localhost:8000", "description": "Development"},
+        {"url": "https://portfolio-backend.onrender.com", "description": "Production"},
+    ],
+    "CONTACT": {
+        "name": "Dominik Flüchter",
+        "url": "https://github.com/dfluechter",
+        "email": "dominik.fluechter@googlemail.com",
+    },
+    "LICENSE": {
+        "name": "MIT",
+    },
+    "SECURITY": [
+        {
+            "Bearer": []
+        }
+    ],
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
     },
 }
