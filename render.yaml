@@ -4,7 +4,10 @@ services:
     runtime: python
     plan: free
     buildCommand: "bash build.sh"
-    startCommand: "uv run gunicorn core.wsgi:application"
+    startCommand: "uv run gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --worker-class sync --timeout 60 --access-logfile -"
+    healthCheckPath: "/api/auth/users/me/"
+    healthCheckInterval: 300
+    preDeployCommand: "uv run python manage.py migrate --noinput"
     envVars:
       - key: PYTHON_VERSION
         value: "3.13.0"
@@ -44,3 +47,12 @@ services:
 
       - key: SUPABASE_PUBLIC_MEDIA_URL
         sync: false
+
+      - key: GUNICORN_WORKERS
+        value: "3"
+
+      - key: GUNICORN_TIMEOUT
+        value: "60"
+
+      - key: LOG_LEVEL
+        value: "info"
