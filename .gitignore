@@ -16,6 +16,3 @@ staticfiles/
 .DS_Store
 
 *.egg-info/
-
-# MCP Server Credentials ignorieren
-.agents/mcp_config.json

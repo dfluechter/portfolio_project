@@ -5,406 +5,738 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title id="page-title">Portfolio – Login</title>
 
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <!-- Bootstrap 5 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
   <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
   <style>
+    :root {
+      --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+      --primary-hover: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #c026d3 100%);
+      --glow-color: rgba(99, 102, 241, 0.35);
+    }
+
+    [data-bs-theme="dark"] {
+      --bg-gradient: #0b0f19;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 40px rgba(99, 102, 241, 0.15);
+      --input-bg: rgba(31, 41, 55, 0.6);
+      --input-border: rgba(255, 255, 255, 0.12);
+      --input-text: #f9fafb;
+      --text-muted: #9ca3af;
+      --orb-1: rgba(99, 102, 241, 0.25);
+      --orb-2: rgba(217, 70, 239, 0.2);
+    }
+
+    [data-bs-theme="light"] {
+      --bg-gradient: #f3f4f6;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(255, 255, 255, 0.8);
+      --card-shadow: 0 20px 50px rgba(99, 102, 241, 0.12), 0 4px 16px rgba(0, 0, 0, 0.05);
+      --input-bg: rgba(255, 255, 255, 0.9);
+      --input-border: #e5e7eb;
+      --input-text: #111827;
+      --text-muted: #6b7280;
+      --orb-1: rgba(99, 102, 241, 0.18);
+      --orb-2: rgba(168, 85, 247, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
+      font-family: var(--font-main);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: var(--bs-body-bg);
-      transition: background-color .25s;
+      background: linear-gradient(rgba(11, 15, 25, 0.78), rgba(11, 15, 25, 0.88)), url('/static/banner.png') no-repeat center center fixed;
+      background-size: cover;
+      position: relative;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 1.5rem 1rem;
+      transition: background 0.4s ease;
+    }
+
+    [data-bs-theme="light"] body {
+      background: linear-gradient(rgba(243, 244, 246, 0.85), rgba(243, 244, 246, 0.92)), url('/static/banner.png') no-repeat center center fixed;
+      background-size: cover;
+    }
+
+    /* Ambient Background Orbs */
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      z-index: 0;
+      pointer-events: none;
+      transition: background 0.4s ease;
+    }
+    .bg-orb-1 {
+      width: 380px;
+      height: 380px;
+      top: -80px;
+      left: -80px;
+      background: var(--orb-1);
+    }
+    .bg-orb-2 {
+      width: 420px;
+      height: 420px;
+      bottom: -100px;
+      right: -100px;
+      background: var(--orb-2);
+    }
+
+    /* Glassmorphic Container */
+    .login-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 450px;
     }
 
     .login-card {
       width: 100%;
-      max-width: 440px;
-      border-radius: 16px;
-      border: 1px solid var(--bs-border-color);
-      box-shadow: 0 12px 48px rgba(0, 0, 0, .35);
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      box-shadow: var(--card-shadow);
+      padding: 2.5rem 2rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.4s ease, border-color 0.4s ease;
     }
 
-    [data-bs-theme="light"] .login-card {
-      box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+    @media (min-width: 576px) {
+      .login-card {
+        padding: 3rem 2.5rem;
+      }
     }
 
-    .logo-icon {
-      width: 52px;
-      height: 52px;
+    /* Hero Header & Transparent Banner */
+    .hero-header {
+      position: relative;
+      width: calc(100% + 4rem);
+      margin-left: -2rem;
+      margin-top: -2.5rem;
+      margin-bottom: 2rem;
+      padding: 1.75rem 2rem 1.5rem 2rem;
+      border-top-left-radius: 23px;
+      border-top-right-radius: 23px;
+      overflow: hidden;
+      border-bottom: 1px solid var(--card-border);
+    }
+    @media (min-width: 576px) {
+      .hero-header {
+        width: calc(100% + 5rem);
+        margin-left: -2.5rem;
+        margin-top: -3rem;
+        padding: 2.25rem 2.5rem 1.75rem 2.5rem;
+      }
+    }
+
+    .hero-bg-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      opacity: 0.42;
+      z-index: 0;
+      transition: opacity 0.3s ease;
+    }
+    [data-bs-theme="light"] .hero-bg-img {
+      opacity: 0.30;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(11, 15, 25, 0.45) 0%, rgba(11, 15, 25, 0.85) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+    [data-bs-theme="light"] .hero-overlay {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.92) 100%);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Header & Top Bar */
+    .top-controls {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .control-pill {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--card-border);
+      color: var(--input-text);
+      font-size: 0.825rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
       border-radius: 12px;
-      background: #4f6ef7;
+      transition: all 0.2s ease;
+    }
+    .control-pill:hover {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: rgba(99, 102, 241, 0.5);
+      color: #6366f1;
+    }
+    .control-pill.active {
+      background: var(--primary-gradient);
+      border-color: transparent;
+      color: #ffffff !important;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Logo & Branding */
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0;
+    }
+
+    .logo-badge {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      background: var(--primary-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.4rem;
-      color: #fff;
+      font-size: 1.5rem;
+      color: #ffffff;
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
       flex-shrink: 0;
+      transition: transform 0.3s ease;
+    }
+    .login-card:hover .logo-badge {
+      transform: scale(1.05) rotate(-3deg);
     }
 
-    .form-control:focus {
-      box-shadow: 0 0 0 3px rgba(79, 110, 247, .25);
-      border-color: #4f6ef7;
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+      color: var(--input-text);
+    }
+    .brand-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin: 0;
+      font-weight: 500;
     }
 
-    .btn-login {
-      background: #4f6ef7;
+    /* Form Elements */
+    .form-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .input-group {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--input-border);
+      transition: all 0.25s ease;
+      background: var(--input-bg);
+    }
+
+    .input-group:focus-within {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 4px var(--glow-color);
+    }
+
+    .input-group-text {
+      background: transparent;
       border: none;
-      border-radius: 8px;
+      color: var(--text-muted);
+      padding-left: 1rem;
+      padding-right: 0.6rem;
+    }
+
+    .form-control {
+      background: transparent;
+      border: none;
+      color: var(--input-text);
+      font-weight: 500;
+      font-size: 0.95rem;
+      padding: 0.75rem 1rem 0.75rem 0.4rem;
+    }
+    .form-control:focus {
+      background: transparent;
+      color: var(--input-text);
+      box-shadow: none;
+    }
+
+    .pw-toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0 1rem;
+      transition: color 0.2s ease;
+    }
+    .pw-toggle-btn:hover {
+      color: #6366f1;
+    }
+
+    /* Action Buttons */
+    .btn-submit {
+      background: var(--primary-gradient);
+      border: none;
+      color: #ffffff;
       font-weight: 600;
-      letter-spacing: .02em;
-      transition: background .2s, transform .1s;
+      font-size: 1rem;
+      padding: 0.85rem 1.5rem;
+      border-radius: 14px;
+      letter-spacing: 0.01em;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+      transition: all 0.25s ease;
     }
-    .btn-login:hover   { background: #3b5bdb; }
-    .btn-login:active  { transform: scale(.98); }
-    .btn-login:disabled { opacity: .65; }
-
-    .lang-btn.active {
-      background: rgba(79, 110, 247, .15);
-      border-color: #4f6ef7 !important;
-      color: #4f6ef7 !important;
+    .btn-submit:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(99, 102, 241, 0.45);
+      color: #ffffff;
+    }
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+    .btn-submit:disabled {
+      opacity: 0.7;
+      transform: none;
     }
 
+    .btn-secondary-link {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--input-text);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+      border-radius: 14px;
+      transition: all 0.25s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-secondary-link:hover {
+      background: rgba(99, 102, 241, 0.12);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: #6366f1;
+      transform: translateY(-1px);
+    }
+
+    /* Divider & Links */
+    .divider-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.75rem 0;
+    }
+    .divider-line {
+      flex-grow: 1;
+      height: 1px;
+      background: var(--card-border);
+      border: none;
+      margin: 0;
+    }
     .divider-text {
-      font-size: .78rem;
-      color: var(--bs-secondary-color);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: lowercase;
     }
 
-    .spinner-border-sm { width: 1rem; height: 1rem; }
+    .forgot-link {
+      color: #6366f1;
+      font-weight: 600;
+      font-size: 0.825rem;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .forgot-link:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+
+    /* Alerts */
+    .alert-custom {
+      border-radius: 12px;
+      border: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .footer-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2rem;
+      margin-bottom: 0;
+      font-weight: 500;
+    }
+
+    .spinner-border-sm {
+      width: 1.1rem;
+      height: 1.1rem;
+    }
   </style>
 </head>
 
 <body>
-<div class="container px-3">
-  <div class="login-card card mx-auto p-4 p-sm-5">
 
-    <!-- Top bar: theme + language -->
-    <div class="d-flex justify-content-end gap-2 mb-4">
-      <button class="btn btn-sm btn-outline-secondary lang-btn active" id="lang-de" onclick="setLang('de')">DE</button>
-      <button class="btn btn-sm btn-outline-secondary lang-btn"        id="lang-en" onclick="setLang('en')">EN</button>
-      <button class="btn btn-sm btn-outline-secondary" id="theme-btn"  onclick="toggleTheme()" title="Theme wechseln">
-        <i class="fa-solid fa-sun" id="theme-icon"></i>
-      </button>
-    </div>
+  <!-- Ambient Light Orbs -->
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
 
-    <!-- Logo + headline -->
-    <div class="d-flex align-items-center gap-3 mb-4">
-      <div class="logo-icon">
-        <i class="fa-solid fa-layer-group"></i>
-      </div>
-      <div>
-        <h1 class="fs-5 fw-bold mb-0" id="t-headline">Portfolio</h1>
-        <p class="text-secondary mb-0 small" id="t-subline">Backend Dashboard</p>
-      </div>
-    </div>
+  <div class="login-container">
+    <div class="login-card">
 
-    <!-- Alerts -->
-    <div id="error-banner"   class="alert alert-danger   d-none py-2 small" role="alert"></div>
-    <div id="success-banner" class="alert alert-success  d-none py-2 small" role="alert"></div>
+      <!-- Hero Header (Banner im Hintergrund, Controls & Title darüber) -->
+      <div class="hero-header">
+        <img src="/static/banner.png" alt="Portfolio Banner" class="hero-bg-img" />
+        <div class="hero-overlay"></div>
 
-    <!-- Form -->
-    <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+        <div class="hero-content">
+          <!-- Top Bar: Theme & Language Controls -->
+          <div class="top-controls">
+            <button class="btn control-pill lang-btn active" id="lang-de" onclick="setLang('de')">DE</button>
+            <button class="btn control-pill lang-btn"        id="lang-en" onclick="setLang('en')">EN</button>
+            <button class="btn control-pill"                 id="theme-btn" onclick="toggleTheme()" title="Theme wechseln">
+              <i class="fa-solid fa-sun" id="theme-icon"></i>
+            </button>
+          </div>
 
-      <!-- Email -->
-      <div class="mb-3">
-        <label for="email" class="form-label small fw-semibold text-uppercase text-secondary ls-wide" id="t-email-label">E-Mail</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="fa-regular fa-envelope"></i></span>
-          <input type="email" class="form-control" id="email" autocomplete="email" required />
+          <!-- Brand Header -->
+          <div class="brand-header">
+            <div class="logo-badge">
+              <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div>
+              <h1 class="brand-title" id="t-headline">Portfolio</h1>
+              <p class="brand-subtitle" id="t-subline">Backend Dashboard</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Password Group -->
-      <div class="mb-4" id="pw-group">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <label for="password" class="form-label mb-0 small fw-semibold text-uppercase text-secondary" id="t-pw-label">Passwort</label>
-          <a href="#" onclick="toggleMode('reset', event)" class="small text-decoration-none" id="t-forgot-pw">Passwort vergessen?</a>
+      <!-- Dynamic Alerts -->
+      <div id="error-banner"   class="alert alert-danger alert-custom d-none" role="alert"></div>
+      <div id="success-banner" class="alert alert-success alert-custom d-none" role="alert"></div>
+
+      <!-- Main Login / Reset Form -->
+      <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+
+        <!-- Email Field -->
+        <div class="mb-3">
+          <label for="email" class="form-label" id="t-email-label">E-Mail</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-regular fa-envelope"></i></span>
+            <input type="email" class="form-control" id="email" autocomplete="email" required placeholder="name@example.com" />
+          </div>
         </div>
-        <div class="input-group">
-          <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
-          <input type="password" class="form-control" id="password" autocomplete="current-password" required />
-          <button type="button" class="btn btn-outline-secondary" onclick="togglePw()" tabindex="-1">
-            <i class="fa-regular fa-eye" id="pw-eye-icon"></i>
-          </button>
+
+        <!-- Password Field Group -->
+        <div class="mb-4" id="pw-group">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label for="password" class="form-label mb-0" id="t-pw-label">Passwort</label>
+            <a href="#" onclick="toggleMode('reset', event)" class="forgot-link" id="t-forgot-pw">Passwort vergessen?</a>
+          </div>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+            <input type="password" class="form-control" id="password" autocomplete="current-password" required placeholder="••••••••" />
+            <button type="button" class="pw-toggle-btn" onclick="togglePw()" tabindex="-1" aria-label="Passwort anzeigen">
+              <i class="fa-regular fa-eye" id="pw-eye-icon"></i>
+            </button>
+          </div>
         </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-submit w-100 py-3 mt-2" id="submit-btn">
+          <span class="spinner-border spinner-border-sm me-2 d-none" id="spinner" role="status"></span>
+          <i class="fa-solid fa-right-to-bracket me-2"></i>
+          <span id="t-submit">Anmelden</span>
+        </button>
+      </form>
+
+      <!-- Additional Options Group (Hidden for JS compatibility) -->
+      <div id="admin-group" class="d-none">
+        <span id="t-divider" class="d-none"></span>
+        <span id="t-admin-link" class="d-none"></span>
       </div>
 
-      <!-- Submit -->
-      <button type="submit" class="btn btn-login btn-primary w-100 py-2" id="submit-btn">
-        <span class="spinner-border spinner-border-sm me-2 d-none" id="spinner" role="status"></span>
-        <i class="fa-solid fa-right-to-bracket me-1"></i>
-        <span id="t-submit">Anmelden</span>
-      </button>
-    </form>
-
-    <!-- Additional Options Group -->
-    <div id="admin-group">
-      <!-- Divider -->
-      <div class="d-flex align-items-center gap-2 my-4">
-        <hr class="flex-grow-1 m-0" />
-        <span class="divider-text" id="t-divider">oder</span>
-        <hr class="flex-grow-1 m-0" />
+      <!-- Back to Login option (hidden by default in reset mode) -->
+      <div id="back-to-login-container" class="text-center d-none mt-4">
+        <a href="#" onclick="toggleMode('login', event)" class="forgot-link" id="t-back-to-login">Zurück zum Login</a>
       </div>
 
-      <!-- Admin link -->
-      <a href="/dashboard/" class="btn btn-outline-secondary w-100">
-        <i class="fa-solid fa-shield-halved me-1"></i>
-        <span id="t-admin-link">Dashboard</span>
-      </a>
+      <!-- Footer -->
+      <p class="text-center footer-text">
+        <i class="fa-regular fa-copyright me-1"></i>
+        <span id="t-footer">Dominik Fluechter · Portfolio Backend</span>
+      </p>
+
     </div>
-
-    <!-- Back to Login option (hidden by default) -->
-    <div id="back-to-login-container" class="text-center d-none mt-3">
-      <a href="#" onclick="toggleMode('login', event)" class="small text-decoration-none" id="t-back-to-login">Zurück zum Login</a>
-    </div>
-
-    <!-- Footer -->
-    <p class="text-center text-secondary mt-4 mb-0" style="font-size:.75rem;">
-      <i class="fa-regular fa-copyright me-1"></i>
-      <span id="t-footer">Dominik Fluechter · Portfolio Backend</span>
-    </p>
-
   </div>
-</div>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<script>
-  /* ── i18n ── */
-  const i18n = {
-    de: {
-      title:          "Portfolio – Login",
-      headline:       "Portfolio",
-      subline:        "Backend Dashboard",
-      emailLabel:     "E-Mail",
-      pwLabel:        "Passwort",
-      forgotPw:       "Passwort vergessen?",
-      backToLogin:    "Zurück zum Login",
-      resetHeadline:  "Passwort zurücksetzen",
-      resetSubline:   "Geben Sie Ihre E-Mail-Adresse ein.",
-      resetSubmit:    "Reset-Link senden",
-      resetSuccess:   "Ein Link zum Zurücksetzen des Passworts wurde gesendet!",
-      submit:         "Anmelden",
-      divider:        "oder",
-      adminLink:      "Dashboard",
-      footer:         "Dominik Fluechter · Portfolio Backend",
-      errInvalid:     "E-Mail oder Passwort ungültig.",
-      errNetwork:     "Verbindungsfehler. Bitte erneut versuchen.",
-      success:        "Login erfolgreich! Weiterleitung …",
-    },
-    en: {
-      title:          "Portfolio – Login",
-      headline:       "Portfolio",
-      subline:        "Backend Dashboard",
-      emailLabel:     "E-Mail",
-      pwLabel:        "Password",
-      forgotPw:       "Forgot password?",
-      backToLogin:    "Back to login",
-      resetHeadline:  "Reset Password",
-      resetSubline:   "Enter your email address.",
-      resetSubmit:    "Send reset link",
-      resetSuccess:   "A password reset link has been sent!",
-      submit:         "Sign in",
-      divider:        "or",
-      adminLink:      "Dashboard",
-      footer:         "Dominik Fluechter · Portfolio Backend",
-      errInvalid:     "Invalid email or password.",
-      errNetwork:     "Connection error. Please try again.",
-      success:        "Login successful! Redirecting …",
+  <script>
+    /* ── i18n Translations ── */
+    const i18n = {
+      de: {
+        title:          "Portfolio – Login",
+        headline:       "Portfolio",
+        subline:        "Backend Dashboard",
+        emailLabel:     "E-Mail",
+        pwLabel:        "Passwort",
+        forgotPw:       "Passwort vergessen?",
+        backToLogin:    "Zurück zum Login",
+        resetHeadline:  "Passwort zurücksetzen",
+        resetSubline:   "Geben Sie Ihre E-Mail-Adresse ein.",
+        resetSubmit:    "Reset-Link senden",
+        resetSuccess:   "Ein Link zum Zurücksetzen des Passworts wurde gesendet!",
+        submit:         "Anmelden",
+        divider:        "oder",
+        adminLink:      "Dashboard",
+        footer:         "Dominik Fluechter · Portfolio Backend",
+        errInvalid:     "E-Mail oder Passwort ungültig.",
+        errNetwork:     "Verbindungsfehler. Bitte erneut versuchen.",
+        success:        "Login erfolgreich! Weiterleitung …",
+      },
+      en: {
+        title:          "Portfolio – Login",
+        headline:       "Portfolio",
+        subline:        "Backend Dashboard",
+        emailLabel:     "E-Mail",
+        pwLabel:        "Password",
+        forgotPw:       "Forgot password?",
+        backToLogin:    "Back to login",
+        resetHeadline:  "Reset Password",
+        resetSubline:   "Enter your email address.",
+        resetSubmit:    "Send reset link",
+        resetSuccess:   "A password reset link has been sent!",
+        submit:         "Sign in",
+        divider:        "or",
+        adminLink:      "Dashboard",
+        footer:         "Dominik Fluechter · Portfolio Backend",
+        errInvalid:     "Invalid email or password.",
+        errNetwork:     "Connection error. Please try again.",
+        success:        "Login successful! Redirecting …",
+      }
+    };
+
+    let lang  = localStorage.getItem("lang")  || "de";
+    let theme = localStorage.getItem("theme") || "dark";
+    let mode  = "login";
+
+    function setLang(l) {
+      lang = l;
+      localStorage.setItem("lang", l);
+      
+      document.getElementById("lang-de").classList.toggle("active", l === "de");
+      document.getElementById("lang-en").classList.toggle("active", l === "en");
+      
+      toggleMode(mode);
     }
-  };
 
-  let lang  = localStorage.getItem("lang")  || "de";
-  let theme = localStorage.getItem("theme") || "dark";
-  let mode  = "login";
+    function applyTheme(t) {
+      document.documentElement.setAttribute("data-bs-theme", t);
+      const icon = document.getElementById("theme-icon");
+      icon.className = t === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+    }
 
-  function setLang(l) {
-    lang = l;
-    localStorage.setItem("lang", l);
-    
-    // Set static UI indicators
-    document.getElementById("lang-de").classList.toggle("active", l === "de");
-    document.getElementById("lang-en").classList.toggle("active", l === "en");
-    
-    // Update translations according to active mode
-    toggleMode(mode);
-  }
+    function toggleTheme() {
+      theme = theme === "dark" ? "light" : "dark";
+      localStorage.setItem("theme", theme);
+      applyTheme(theme);
+    }
 
-  function applyTheme(t) {
-    document.documentElement.setAttribute("data-bs-theme", t);
-    const icon = document.getElementById("theme-icon");
-    icon.className = t === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
-  }
+    function togglePw() {
+      const inp  = document.getElementById("password");
+      const icon = document.getElementById("pw-eye-icon");
+      if (inp.type === "password") {
+        inp.type = "text";
+        icon.className = "fa-regular fa-eye-slash";
+      } else {
+        inp.type = "password";
+        icon.className = "fa-regular fa-eye";
+      }
+    }
 
-  function toggleTheme() {
-    theme = theme === "dark" ? "light" : "dark";
-    localStorage.setItem("theme", theme);
+    function toggleMode(m, e) {
+      if (e) e.preventDefault();
+      mode = m;
+      const t = i18n[lang];
+      
+      const pwGroup = document.getElementById("pw-group");
+      const adminGroup = document.getElementById("admin-group");
+      const backToLoginContainer = document.getElementById("back-to-login-container");
+      const submitBtnSpan = document.getElementById("t-submit");
+      const submitBtnIcon = document.querySelector("#submit-btn i");
+      const headline = document.getElementById("t-headline");
+      const subline = document.getElementById("t-subline");
+      
+      document.getElementById("error-banner").classList.add("d-none");
+      document.getElementById("success-banner").classList.add("d-none");
+
+      if (m === "reset") {
+        pwGroup.classList.add("d-none");
+        adminGroup.classList.add("d-none");
+        backToLoginContainer.classList.remove("d-none");
+        
+        headline.textContent = t.resetHeadline;
+        subline.textContent = t.resetSubline;
+        submitBtnSpan.textContent = t.resetSubmit;
+        submitBtnIcon.className = "fa-solid fa-paper-plane me-2";
+      } else {
+        pwGroup.classList.remove("d-none");
+        adminGroup.classList.remove("d-none");
+        backToLoginContainer.classList.add("d-none");
+        
+        headline.textContent = t.headline;
+        subline.textContent = t.subline;
+        submitBtnSpan.textContent = t.submit;
+        submitBtnIcon.className = "fa-solid fa-right-to-bracket me-2";
+      }
+      
+      document.title = t.title;
+      document.getElementById("t-email-label").textContent = t.emailLabel;
+      document.getElementById("t-pw-label").textContent = t.pwLabel;
+      document.getElementById("t-forgot-pw").textContent = t.forgotPw;
+      document.getElementById("t-back-to-login").textContent = t.backToLogin;
+      document.getElementById("t-divider").textContent = t.divider;
+      document.getElementById("t-admin-link").textContent = t.adminLink;
+      document.getElementById("t-footer").textContent = t.footer;
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const t       = i18n[lang];
+      const btn     = document.getElementById("submit-btn");
+      const spinner = document.getElementById("spinner");
+      const errEl   = document.getElementById("error-banner");
+      const okEl    = document.getElementById("success-banner");
+
+      errEl.classList.add("d-none");
+      okEl.classList.add("d-none");
+      btn.disabled = true;
+      spinner.classList.remove("d-none");
+
+      const email = document.getElementById("email").value;
+
+      if (mode === "login") {
+        const password = document.getElementById("password").value;
+        try {
+          const res = await fetch("/", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ email, password }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem("access_token",  data.access);
+            localStorage.setItem("refresh_token", data.refresh);
+            okEl.textContent = t.success;
+            okEl.classList.remove("d-none");
+            setTimeout(() => { window.location.href = "/dashboard/"; }, 1000);
+          } else {
+            let errMsg = t.errInvalid;
+            try {
+              const errData = await res.json();
+              if (errData.detail) {
+                errMsg = errData.detail;
+              } else if (typeof errData === 'object') {
+                errMsg = Object.entries(errData)
+                  .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(" ") : val}`)
+                  .join(" | ");
+              }
+            } catch (_) {}
+            errEl.textContent = errMsg;
+            errEl.classList.remove("d-none");
+            btn.disabled = false;
+            spinner.classList.add("d-none");
+          }
+        } catch {
+          errEl.textContent = t.errNetwork;
+          errEl.classList.remove("d-none");
+          btn.disabled = false;
+          spinner.classList.add("d-none");
+        }
+      } else {
+        // mode === "reset"
+        try {
+          const res = await fetch("/api/auth/users/reset_password/", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ email }),
+          });
+
+          if (res.ok) {
+            okEl.textContent = t.resetSuccess;
+            okEl.classList.remove("d-none");
+            document.getElementById("email").value = "";
+            btn.disabled = false;
+            spinner.classList.add("d-none");
+            setTimeout(() => { toggleMode("login"); }, 4000);
+          } else {
+            let errMsg = t.errNetwork;
+            try {
+              const errData = await res.json();
+              if (errData.detail) {
+                errMsg = errData.detail;
+              } else if (typeof errData === 'object') {
+                errMsg = Object.entries(errData)
+                  .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(" ") : val}`)
+                  .join(" | ");
+              }
+            } catch (_) {}
+            errEl.textContent = errMsg;
+            errEl.classList.remove("d-none");
+            btn.disabled = false;
+            spinner.classList.add("d-none");
+          }
+        } catch {
+          errEl.textContent = t.errNetwork;
+          errEl.classList.remove("d-none");
+          btn.disabled = false;
+          spinner.classList.add("d-none");
+        }
+      }
+    }
+
+    /* Init */
     applyTheme(theme);
-  }
-
-  function togglePw() {
-    const inp  = document.getElementById("password");
-    const icon = document.getElementById("pw-eye-icon");
-    if (inp.type === "password") {
-      inp.type = "text";
-      icon.className = "fa-regular fa-eye-slash";
-    } else {
-      inp.type = "password";
-      icon.className = "fa-regular fa-eye";
-    }
-  }
-
-  function toggleMode(m, e) {
-    if (e) e.preventDefault();
-    mode = m;
-    const t = i18n[lang];
-    
-    const pwGroup = document.getElementById("pw-group");
-    const adminGroup = document.getElementById("admin-group");
-    const backToLoginContainer = document.getElementById("back-to-login-container");
-    const submitBtnSpan = document.getElementById("t-submit");
-    const submitBtnIcon = document.querySelector("#submit-btn i");
-    const headline = document.getElementById("t-headline");
-    const subline = document.getElementById("t-subline");
-    
-    // Clean alert visibility
-    document.getElementById("error-banner").classList.add("d-none");
-    document.getElementById("success-banner").classList.add("d-none");
-
-    if (m === "reset") {
-      pwGroup.classList.add("d-none");
-      adminGroup.classList.add("d-none");
-      backToLoginContainer.classList.remove("d-none");
-      
-      headline.textContent = t.resetHeadline;
-      subline.textContent = t.resetSubline;
-      submitBtnSpan.textContent = t.resetSubmit;
-      submitBtnIcon.className = "fa-solid fa-paper-plane me-1";
-    } else {
-      pwGroup.classList.remove("d-none");
-      adminGroup.classList.remove("d-none");
-      backToLoginContainer.classList.add("d-none");
-      
-      headline.textContent = t.headline;
-      subline.textContent = t.subline;
-      submitBtnSpan.textContent = t.submit;
-      submitBtnIcon.className = "fa-solid fa-right-to-bracket me-1";
-    }
-    
-    // Always translate labels
-    document.title = t.title;
-    document.getElementById("t-email-label").textContent = t.emailLabel;
-    document.getElementById("t-pw-label").textContent = t.pwLabel;
-    document.getElementById("t-forgot-pw").textContent = t.forgotPw;
-    document.getElementById("t-back-to-login").textContent = t.backToLogin;
-    document.getElementById("t-divider").textContent = t.divider;
-    document.getElementById("t-admin-link").textContent = t.adminLink;
-    document.getElementById("t-footer").textContent = t.footer;
-  }
-
-  async function handleLogin(e) {
-    e.preventDefault();
-    const t       = i18n[lang];
-    const btn     = document.getElementById("submit-btn");
-    const spinner = document.getElementById("spinner");
-    const errEl   = document.getElementById("error-banner");
-    const okEl    = document.getElementById("success-banner");
-
-    errEl.classList.add("d-none");
-    okEl.classList.add("d-none");
-    btn.disabled = true;
-    spinner.classList.remove("d-none");
-
-    const email = document.getElementById("email").value;
-
-    if (mode === "login") {
-      const password = document.getElementById("password").value;
-      try {
-        const res = await fetch("/", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ email, password }),
-      });
-
-        if (res.ok) {
-          const data = await res.json();
-          localStorage.setItem("access_token",  data.access);
-          localStorage.setItem("refresh_token", data.refresh);
-          okEl.textContent = t.success;
-          okEl.classList.remove("d-none");
-          setTimeout(() => { window.location.href = "/dashboard/"; }, 1000);
-        } else {
-          let errMsg = t.errInvalid;
-          try {
-            const errData = await res.json();
-            if (errData.detail) {
-              errMsg = errData.detail;
-            } else if (typeof errData === 'object') {
-              errMsg = Object.entries(errData)
-                .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(" ") : val}`)
-                .join(" | ");
-            }
-          } catch (_) {}
-          errEl.textContent = errMsg;
-          errEl.classList.remove("d-none");
-          btn.disabled = false;
-          spinner.classList.add("d-none");
-        }
-      } catch {
-        errEl.textContent = t.errNetwork;
-        errEl.classList.remove("d-none");
-        btn.disabled = false;
-        spinner.classList.add("d-none");
-      }
-    } else {
-      // mode === "reset"
-      try {
-        const res = await fetch("/api/auth/users/reset_password/", {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ email }),
-        });
-
-        if (res.ok) {
-          okEl.textContent = t.resetSuccess;
-          okEl.classList.remove("d-none");
-          document.getElementById("email").value = "";
-          btn.disabled = false;
-          spinner.classList.add("d-none");
-          setTimeout(() => { toggleMode("login"); }, 4000);
-        } else {
-          let errMsg = t.errNetwork;
-          try {
-            const errData = await res.json();
-            if (errData.detail) {
-              errMsg = errData.detail;
-            } else if (typeof errData === 'object') {
-              errMsg = Object.entries(errData)
-                .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(" ") : val}`)
-                .join(" | ");
-            }
-          } catch (_) {}
-          errEl.textContent = errMsg;
-          errEl.classList.remove("d-none");
-          btn.disabled = false;
-          spinner.classList.add("d-none");
-        }
-      } catch {
-        errEl.textContent = t.errNetwork;
-        errEl.classList.remove("d-none");
-        btn.disabled = false;
-        spinner.classList.add("d-none");
-      }
-    }
-  }
-
-  /* Init */
-  applyTheme(theme);
-  setLang(lang);
-</script>
+    setLang(lang);
+  </script>
 </body>
 </html>

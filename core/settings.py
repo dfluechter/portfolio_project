@@ -155,46 +155,42 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 
 # -----------------------------------------------------------------------------
 # Media files: Supabase Storage via S3
 # -----------------------------------------------------------------------------
 
-USE_SUPABASE_S3 = os.getenv("USE_SUPABASE_S3", "False").lower() == "true"
+import os
+
+# --- Supabase S3 / django-storages Konfiguration ---
+
+# Steuert, ob der Supabase Bucket öffentlich oder privat ist
+AWS_S3_PUBLIC_BUCKET = os.getenv("AWS_S3_PUBLIC_BUCKET", "True").lower() == "true"
 
 STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "access_key": os.getenv("AWS_ACCESS_KEY_ID"),
+            "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
+            "bucket_name": os.getenv("AWS_STORAGE_BUCKET_NAME", "portfolio-media"),
+            "endpoint_url": os.getenv("AWS_S3_ENDPOINT_URL"),
+            "region_name": os.getenv("AWS_S3_REGION_NAME", "eu-central-1"),
+            "signature_version": "s3v4",
+            "addressing_style": "path",  # Erforderlich für Supabase S3 Pfad-Struktur
+            "querystring_auth": not AWS_S3_PUBLIC_BUCKET,  # True = Signierte URLs, False = Direkt-URLs
+            "file_overwrite": False,  # Verhindert ungewolltes Überschreiben von Dateien
+        },
+    },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
-if USE_SUPABASE_S3:
-    STORAGES["default"] = {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-    }
-
-    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
-    AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL")
-    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "eu-central-1")
-
-    AWS_S3_SIGNATURE_VERSION = "s3v4"
-    AWS_S3_ADDRESSING_STYLE = "path"
-
-    AWS_DEFAULT_ACL = None
-    AWS_QUERYSTRING_AUTH = False
-    AWS_S3_FILE_OVERWRITE = True
-
-    MEDIA_URL = os.getenv("SUPABASE_PUBLIC_MEDIA_URL", "/media/")
-else:
-    STORAGES["default"] = {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    }
-
-    MEDIA_URL = "/media/"
-    MEDIA_ROOT = BASE_DIR / "media"
+# Basis-URL für Medien-Dateien
+MEDIA_URL = f"{os.getenv('AWS_S3_ENDPOINT_URL')}/{os.getenv('AWS_STORAGE_BUCKET_NAME', 'portfolio-media')}/"
 
 
 # -----------------------------------------------------------------------------

@@ -1,7 +1,11 @@
 import os
-from typing import Any
+from typing import Any, ClassVar
 
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
+)
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -17,7 +21,7 @@ def validate_file_extension(value: Any) -> None:
     valid_extensions = [".pdf", ".png", ".jpg"]
     if ext not in valid_extensions:
         raise ValidationError(
-            f'Ungültiges Format! Erlaubt sind nur: {", ".join(valid_extensions)}'
+            f"Ungültiges Format! Erlaubt sind nur: {', '.join(valid_extensions)}"
         )
 
 
@@ -103,7 +107,10 @@ class UserManager(BaseUserManager):
     """
     Custom User Manager für die E-Mail-basierte Authentifizierung.
     """
-    def create_user(self, email: str, password: str | None = None, **extra_fields: Any) -> "User":
+
+    def create_user(
+        self, email: str, password: str | None = None, **extra_fields: Any
+    ) -> "User":
         if not email:
             raise ValueError("Die E-Mail-Adresse muss angegeben werden.")
         email = self.normalize_email(email)
@@ -112,7 +119,9 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email: str, password: str | None = None, **extra_fields: Any) -> "User":
+    def create_superuser(
+        self, email: str, password: str | None = None, **extra_fields: Any
+    ) -> "User":
         # Standardwerte für Superuser setzen
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -129,20 +138,23 @@ class User(AbstractBaseUser, PermissionsMixin):
     """
     Custom User-Modell, das E-Mail als primären Identifikator nutzt.
     """
+
     # E-Mail-Adresse als eindeutiger Login-Identifier
     email = models.EmailField(unique=True, db_index=True, verbose_name="E-Mail-Adresse")
-    
+
     # Status-Flags
     is_active = models.BooleanField(default=True, verbose_name="Aktiv")
     is_staff = models.BooleanField(default=False, verbose_name="Staff-Status")
-    
+
     # Registrierungsdatum
-    date_joined = models.DateTimeField(default=timezone.now, verbose_name="Registriert am")
+    date_joined = models.DateTimeField(
+        default=timezone.now, verbose_name="Registriert am"
+    )
 
     objects = UserManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS: ClassVar[list[str]] = []
 
     class Meta:
         verbose_name = "Benutzer"

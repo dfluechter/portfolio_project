@@ -42,13 +42,20 @@ extend-select = ["I", "BLE", "RUF"]
 [tool.ruff.lint.per-file-ignores]
 "**/migrations/*" = ["RUF012"]
 
+[tool.djlint]
+profile = "django"
+ignore = "H014"
+
 # Hier sagen wir uv/setuptools explizit, wo der Python-Code liegt
 [tool.setuptools.packages.find]
 include = ["core*", "portfolio*"]
 
 [dependency-groups]
 dev = [
+    "djlint>=1.44.2",
     "mypy>=2.3.0",
+    "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+    "pytest-django>=4.12.0",
     "ruff>=0.16.0",
 ]

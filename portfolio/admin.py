@@ -13,13 +13,27 @@ class UserAdmin(BaseUserAdmin):
     filter_horizontal = ()
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Berechtigungen", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        (
+            "Berechtigungen",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
     )
     add_fieldsets = (
-        (None, {
-            "classes": ("wide",),
-            "fields": ("email", "password"),
-        }),
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("email", "password"),
+            },
+        ),
     )
 
 

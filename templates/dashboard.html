@@ -20,9 +20,15 @@
 
     body {
       min-height: 100vh;
-      background-color: var(--bs-body-bg);
+      background: linear-gradient(rgba(11, 15, 25, 0.88), rgba(11, 15, 25, 0.94)), url('/static/banner.png') no-repeat center center fixed;
+      background-size: cover;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       overflow-x: hidden;
+    }
+
+    [data-bs-theme="light"] body {
+      background: linear-gradient(rgba(243, 244, 246, 0.90), rgba(243, 244, 246, 0.95)), url('/static/banner.png') no-repeat center center fixed;
+      background-size: cover;
     }
 
     /* Glassmorphism sidebar */
@@ -309,6 +315,18 @@
           </button>
         </div>
 
+        <!-- Filter Row -->
+        <div class="row g-3 mb-3 align-items-center">
+          <div class="col-md-4">
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-filter"></i> Aussteller:</span>
+              <select class="form-select" id="certificate-issuer-filter" onchange="filterCertificates()">
+                <option value="">Alle Aussteller (Kein Filter)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <div class="card dashboard-card p-3 table-responsive">
           <table class="table table-hover align-middle">
             <thead>
@@ -324,6 +342,12 @@
               <!-- Dynamically Loaded -->
             </tbody>
           </table>
+          <!-- Pagination -->
+          <nav aria-label="Zertifikate Navigation" class="mt-3">
+            <ul class="pagination justify-content-center mb-0" id="certificates-pagination">
+              <!-- Dynamically Loaded -->
+            </ul>
+          </nav>
         </div>
       </section>
 
@@ -490,6 +514,10 @@
 
   <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    let cachedCertificates = [];
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let filteredCertificates = [];
     
     // Switch Modals
     const modals = {
@@ -591,6 +619,15 @@
         if (!res.ok) throw new Error("Fehler beim Laden");
         const items = await res.json();
         
+        if (type === 'certificates') {
+          cachedCertificates = items;
+          filteredCertificates = items;
+          currentPage = 1;
+          populateIssuerFilter(items);
+          renderCertificates(filteredCertificates);
+          return;
+        }
+
         tableBody.innerHTML = "";
         
         if (items.length === 0) {
@@ -601,8 +638,6 @@
         items.forEach(item => {
           if (type === 'projects') {
             tableBody.appendChild(createProjectRow(item));
-          } else if (type === 'certificates') {
-            tableBody.appendChild(createCertificateRow(item));
           } else if (type === 'providers') {
             tableBody.appendChild(createProviderRow(item));
           }
@@ -610,6 +645,97 @@
       } catch (err) {
         tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Fehler beim Laden der Daten.</td></tr>`;
       }
+    }
+
+    // Populate the select-option issuer filter dropdown
+    function populateIssuerFilter(certs) {
+      const filterSelect = document.getElementById("certificate-issuer-filter");
+      const currentSelected = filterSelect.value;
+
+      // Extract unique issuers and sort them alphabetically
+      const issuers = [...new Set(certs.map(c => c.issuer))].sort();
+      
+      filterSelect.innerHTML = `<option value="">Alle Aussteller (Kein Filter)</option>`;
+      issuers.forEach(issuer => {
+        const opt = document.createElement("option");
+        opt.value = issuer;
+        opt.textContent = issuer;
+        if (issuer === currentSelected) {
+          opt.selected = true;
+        }
+        filterSelect.appendChild(opt);
+      });
+    }
+
+    // Render certificates into the table with pagination
+    function renderCertificates(certs) {
+      const tableBody = document.getElementById("certificates-table-body");
+      tableBody.innerHTML = "";
+      
+      if (certs.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-secondary py-4">Keine Einträge vorhanden.</td></tr>`;
+        renderPaginationControls(0);
+        return;
+      }
+
+      // Slice items for pagination
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const paginatedItems = certs.slice(start, end);
+
+      paginatedItems.forEach(item => {
+        tableBody.appendChild(createCertificateRow(item));
+      });
+
+      renderPaginationControls(certs.length);
+    }
+
+    // Render pagination controls (Page numbers, prev, next)
+    function renderPaginationControls(totalItems) {
+      const paginationUl = document.getElementById("certificates-pagination");
+      paginationUl.innerHTML = "";
+      
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      if (totalPages <= 1) return;
+
+      // Previous button
+      const prevLi = document.createElement("li");
+      prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+      prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1}, event)"><i class="fa-solid fa-angle-left"></i></a>`;
+      paginationUl.appendChild(prevLi);
+
+      // Page numbers
+      for (let i = 1; i <= totalPages; i++) {
+        const pageLi = document.createElement("li");
+        pageLi.className = `page-item ${currentPage === i ? 'active' : ''}`;
+        pageLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i}, event)">${i}</a>`;
+        paginationUl.appendChild(pageLi);
+      }
+
+      // Next button
+      const nextLi = document.createElement("li");
+      nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+      nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1}, event)"><i class="fa-solid fa-angle-right"></i></a>`;
+      paginationUl.appendChild(nextLi);
+    }
+
+    // Change page
+    function changePage(page, e) {
+      if (e) e.preventDefault();
+      currentPage = page;
+      renderCertificates(filteredCertificates);
+    }
+
+    // Filter displayed certificates by issuer selection and reset to page 1
+    function filterCertificates() {
+      const filterValue = document.getElementById("certificate-issuer-filter").value;
+      currentPage = 1;
+      if (!filterValue) {
+        filteredCertificates = cachedCertificates;
+      } else {
+        filteredCertificates = cachedCertificates.filter(c => c.issuer === filterValue);
+      }
+      renderCertificates(filteredCertificates);
     }
 
     // Table rows creation helper
