@@ -1,42 +1,101 @@
-name: Django CI/CD
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
 
 jobs:
-  build:
+  # ── 1. QUALITY & LINTING ──
+  lint:
+    name: 🔍 Lint & Type Check
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        version: "latest"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: "latest"
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.13"
+      - name: Set up Python 3.13
+        run: uv python install 3.13
 
-    - name: Install dependencies
-      run: |
-        # Nutzt uv für eine extrem schnelle Installation aus der pyproject.toml
-        uv pip install --system -e .
+      - name: Install dependencies
+        run: uv sync --all-groups
 
-    - name: System Checks & Tests
-      env:
-        # Dummy-Variablen für den CI-Lauf, falls Django diese beim Start benötigt
-        SECRET_KEY: "django-insecure-ci-dummy-key"
-        DEBUG: "True"
-      run: |
-        # Prüft, ob Syntax oder Models fehlerhaft sind
-        python manage.py check
-        
-        # Falls du Pytest nutzt, wird es hier ausgeführt
-        uv run pytest
+      - name: Ruff Linter
+        run: uv run ruff check .
+
+      - name: Ruff Formatter Check
+        run: uv run ruff format --check .
+
+      - name: Mypy Type Check
+        run: uv run mypy .
+
+  # ── 2. TESTS & COVERAGE ──
+  test:
+    name: 🧪 Run Pytest Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: "latest"
+
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Run Tests with Coverage
+        run: uv run pytest --cov=core --cov=portfolio --cov-report=term-missing
+
+  # ── 3. BUILD VERIFICATION ──
+  build:
+    name: 📦 Verify Build
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: "latest"
+
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+
+      - name: Install production dependencies
+        run: uv sync --frozen --no-dev
+
+      - name: Test Collectstatic
+        env:
+          SECRET_KEY: "ci-build-test-secret-key"
+          DEBUG: "False"
+        run: uv run python manage.py collectstatic --noinput
+
+  # ── 4. DEPLOY TO RENDER ──
+  deploy:
+    name: 🚀 Deploy to Render
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy Hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Error: RENDER_DEPLOY_HOOK_URL secret is not set!"
+            exit 1
+          fi
+          curl -f -X POST "$RENDER_DEPLOY_HOOK_URL"

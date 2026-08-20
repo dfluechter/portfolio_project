@@ -5,9 +5,10 @@ services:
     plan: free
     buildCommand: "bash build.sh"
     startCommand: "uv run gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --worker-class sync --timeout 60 --access-logfile -"
-    healthCheckPath: "/api/auth/users/me/"
+    healthCheckPath: "/"
     healthCheckInterval: 300
     preDeployCommand: "uv run python manage.py migrate --noinput"
+
     envVars:
       - key: PYTHON_VERSION
         value: "3.13.0"

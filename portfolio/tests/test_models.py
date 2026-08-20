@@ -102,3 +102,82 @@ class TestProjectModel:
         )
         assert Project.objects.count() == 1
         assert str(project) == "My Portfolio"
+
+
+# =====================================================================
+# 3. Tests für das Custom User Model & UserManager
+# =====================================================================
+
+
+@pytest.mark.django_db
+class TestUserModel:
+    def test_create_user_success(self):
+        """Testet die Erstellung eines normalen Benutzers mit E-Mail."""
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        user = User.objects.create_user(
+            email="developer@example.com", password="SecurePassword123!"
+        )
+
+        assert user.email == "developer@example.com"
+        assert user.check_password("SecurePassword123!")
+        assert user.is_active is True
+        assert user.is_staff is False
+        assert user.is_superuser is False
+        assert str(user) == "developer@example.com"
+
+    def test_create_user_without_email_raises_value_error(self):
+        """Testet, dass create_user ohne E-Mail einen ValueError wirft."""
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        with pytest.raises(
+            ValueError, match=r"Die E-Mail-Adresse muss angegeben werden\."
+        ):
+            User.objects.create_user(email="", password="password123")
+
+    def test_create_superuser_success(self):
+        """Testet die Erstellung eines Superusers."""
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        admin = User.objects.create_superuser(
+            email="admin@example.com", password="SuperSecretAdminPass123!"
+        )
+
+        assert admin.email == "admin@example.com"
+        assert admin.check_password("SuperSecretAdminPass123!")
+        assert admin.is_active is True
+        assert admin.is_staff is True
+        assert admin.is_superuser is True
+
+    def test_create_superuser_invalid_staff_flag_raises_error(self):
+        """Testet, dass create_superuser mit is_staff=False fehlschlägt."""
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        with pytest.raises(
+            ValueError, match=r"Superuser muss is_staff=True haben\."
+        ):
+            User.objects.create_superuser(
+                email="admin@example.com",
+                password="password123",
+                is_staff=False,
+            )
+
+    def test_create_superuser_invalid_superuser_flag_raises_error(self):
+        """Testet, dass create_superuser mit is_superuser=False fehlschlägt."""
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        with pytest.raises(
+            ValueError, match=r"Superuser muss is_superuser=True haben\."
+        ):
+            User.objects.create_superuser(
+                email="admin@example.com",
+                password="password123",
+                is_superuser=False,
+            )
+
+

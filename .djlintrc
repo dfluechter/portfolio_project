@@ -1,0 +1,5 @@
+{
+  "ignore": "H014",
+  "profile": "django",
+  "exclude": ".*\\.py"
+}

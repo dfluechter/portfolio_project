@@ -243,14 +243,15 @@ DJOSER = {
     "USER_CREATE_PASSWORD_RETYPE": True,
     "SERIALIZERS": {},
     "PERMISSIONS": {
-        # Sperrt die öffentliche Registrierung neuer Konten über die API vollständig
-        "user_create": ["rest_framework.permissions.DenyAny"],
+        # Sperrt die öffentliche Registrierung neuer Konten über die API
+        "user_create": ["rest_framework.permissions.IsAdminUser"],
         # Verhindert das Ändern der E-Mail-Adresse/des Usernames über die API
-        "username_update": ["rest_framework.permissions.DenyAny"],
+        "username_update": ["rest_framework.permissions.IsAdminUser"],
         # Verhindert das Löschen des Kontos über die API
-        "user_delete": ["rest_framework.permissions.DenyAny"],
+        "user_delete": ["rest_framework.permissions.IsAdminUser"],
     },
 }
+
 
 
 # -----------------------------------------------------------------------------
