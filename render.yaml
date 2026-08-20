@@ -1,59 +1,37 @@
-services:
-  - type: web
-    name: portfolio-backend
-    runtime: python
-    plan: free
-    buildCommand: "bash build.sh"
-    startCommand: "uv run gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --worker-class sync --timeout 60 --access-logfile -"
-    healthCheckPath: "/"
-    healthCheckInterval: 300
-    preDeployCommand: "uv run python manage.py migrate --noinput"
-
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.13.0"
-
-      - key: DEBUG
-        value: "False"
-
-      - key: SECRET_KEY
-        generateValue: true
-
+# Exported from Render on 2026-08-20T18:10:08Z
+version: "1"
+projects:
+- name: MyPortfolio
+  environments:
+  - name: prod
+    services:
+    - type: web
+      name: portfolio-project
+      runtime: python
+      repo: https://github.com/dfluechter/portfolio_project
+      plan: free
+      envVars:
       - key: DATABASE_URL
         sync: false
-
-      - key: DJANGO_ALLOWED_HOSTS
-        sync: false
-
-      - key: CSRF_TRUSTED_ORIGINS
-        sync: false
-
-      - key: USE_SUPABASE_S3
-        value: "True"
-
       - key: AWS_ACCESS_KEY_ID
         sync: false
-
+      - key: AWS_S3_ENDPOINT_URL
+        sync: false
+      - key: AWS_STORAGE_BUCKET_NAME
+        sync: false
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
-
-      - key: AWS_STORAGE_BUCKET_NAME
-        value: "portfolio-media"
-
-      - key: AWS_S3_ENDPOINT_URL
-        value: "https://pqtzscmkaxjhhfssppdf.supabase.co/storage/v1/s3"
-
-      - key: AWS_S3_REGION_NAME
-        value: "eu-central-1"
-
-      - key: SUPABASE_PUBLIC_MEDIA_URL
+      - key: SECRET_KEY
         sync: false
-
-      - key: GUNICORN_WORKERS
-        value: "3"
-
-      - key: GUNICORN_TIMEOUT
-        value: "60"
-
-      - key: LOG_LEVEL
-        value: "info"
+      - key: DEBUG
+        sync: false
+      - key: PYTHON_VERSION
+        sync: false
+      region: frankfurt
+      buildCommand: bash build.sh
+      startCommand: gunicorn core.wsgi:application
+      healthCheckPath: /health_check
+      domains:
+      - dfluechter.ipv64.de
+      autoDeployTrigger: commit
+      renderSubdomainPolicy: disabled
