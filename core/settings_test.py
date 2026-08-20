@@ -1,6 +1,16 @@
 from .settings import *
 
+SECRET_KEY = "django-insecure-test-secret-key-at-least-32-chars-long-for-jwt"
+
 DEBUG = False
+
+# Security Overrides für Tests (verhindert 301 HTTPS-Redirects im Testclient)
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
 
 USE_SUPABASE_S3 = False
 
