@@ -224,9 +224,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
@@ -251,7 +249,6 @@ DJOSER = {
         "user_delete": ["rest_framework.permissions.IsAdminUser"],
     },
 }
-
 
 
 # -----------------------------------------------------------------------------
@@ -312,11 +309,7 @@ SPECTACULAR_SETTINGS = {
     "LICENSE": {
         "name": "MIT",
     },
-    "SECURITY": [
-        {
-            "Bearer": []
-        }
-    ],
+    "SECURITY": [{"Bearer": []}],
     "SECURITY_DEFINITIONS": {
         "Bearer": {
             "type": "http",

@@ -157,9 +157,7 @@ class TestUserModel:
         from django.contrib.auth import get_user_model
 
         User = get_user_model()
-        with pytest.raises(
-            ValueError, match=r"Superuser muss is_staff=True haben\."
-        ):
+        with pytest.raises(ValueError, match=r"Superuser muss is_staff=True haben\."):
             User.objects.create_superuser(
                 email="admin@example.com",
                 password="password123",
@@ -179,5 +177,3 @@ class TestUserModel:
                 password="password123",
                 is_superuser=False,
             )
-
-
