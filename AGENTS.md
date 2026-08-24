@@ -66,7 +66,7 @@ bash build.sh
 
 ## Management Commands (Local / Non-Portable)
 
-- `scan_certificates` — scans hardcoded local OneDrive path (`C:\Users\domin\OneDrive\Documents\Zertifikate (Beruf)`), creates `Provider` objects.
+- `scan_certificates` — scans local certificates path (configured via `CERTIFICATES_PATH` in `.env`), creates `Provider` objects.
 - `import_certificates` — imports files from the same path with 1.5 s delay per file (Cloudflare rate-limit workaround); skips already-existing entries by `(title, issuer)` uniqueness check.
 - Both commands are tied to developer-local environment; do not modify or run for general use.
 

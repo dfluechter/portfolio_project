@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from django.core.management.base import BaseCommand
@@ -9,7 +10,17 @@ class Command(BaseCommand):
     help = "Scannt das lokale OneDrive-Verzeichnis und legt Zertifikatsanbieter in der Datenbank an."
 
     def handle(self, *args, **kwargs):
-        base_path = Path(r"C:\Users\domin\OneDrive\Documents\Zertifikate (Beruf)")
+        cert_path_env = os.getenv("CERTIFICATES_PATH")
+
+        if not cert_path_env:
+            self.stderr.write(
+                self.style.ERROR(
+                    "FEHLER: 'CERTIFICATES_PATH' ist nicht in der .env-Datei oder den Umgebungsvariablen gesetzt!"
+                )
+            )
+            return
+
+        base_path = Path(cert_path_env)
 
         if not base_path.exists():
             self.stderr.write(

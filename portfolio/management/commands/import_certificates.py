@@ -1,3 +1,4 @@
+import os
 import time
 from pathlib import Path
 
@@ -12,7 +13,17 @@ class Command(BaseCommand):
     help = "Importiert Zertifikate aus lokalen Ordnern und lädt sie zu Supabase hoch."
 
     def handle(self, *args, **kwargs):
-        base_path = Path(r"C:\Users\domin\OneDrive\Documents\Zertifikate (Beruf)")
+        cert_path_env = os.getenv("CERTIFICATES_PATH")
+
+        if not cert_path_env:
+            self.stderr.write(
+                self.style.ERROR(
+                    "FEHLER: 'CERTIFICATES_PATH' ist nicht in der .env-Datei oder den Umgebungsvariablen gesetzt!"
+                )
+            )
+            return
+
+        base_path = Path(cert_path_env)
 
         if not base_path.exists() or not base_path.is_dir():
             self.stderr.write(self.style.ERROR(f"FEHLER: Pfad ungültig - {base_path}"))
