@@ -65,6 +65,7 @@ uv run python manage.py runserver
 | `/` | GET / POST | Login-Seite (Session-basiertes Login) |
 | `/dashboard/` | GET | Geschütztes Portfolio-Verwaltungsdashboard |
 | `/logout/` | GET | Abmelden aus der Session |
+| `/health_check` | GET | Health-Check-Endpunkt (Monitoring & Render) |
 
 ### REST-API (`/api/`)
 
@@ -131,14 +132,14 @@ uv run python manage.py collectstatic --noinput
 
 ## 🧪 Test Coverage & Qualitätssicherung
 
-[![Tests](https://img.shields.io/badge/Tests-31%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](file:///D:/dev/portfolio_project/portfolio/tests)
-[![Coverage](https://img.shields.io/badge/Coverage-81%25-green?style=for-the-badge&logo=codecov&logoColor=white)](file:///D:/dev/portfolio_project/README.md)
+[![Tests](https://img.shields.io/badge/Tests-32%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](file:///D:/dev/portfolio_project/portfolio/tests)
+[![Coverage](https://img.shields.io/badge/Coverage-95%25-brightgreen?style=for-the-badge&logo=codecov&logoColor=white)](file:///D:/dev/portfolio_project/README.md)
 [![Python](https://img.shields.io/badge/Python-3.13-blue?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Django](https://img.shields.io/badge/Django-5.2-092E20?style=for-the-badge&logo=django&logoColor=white)](https://djangoproject.com)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Ruff-black?style=for-the-badge&logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![Type Check](https://img.shields.io/badge/Type%20Check-Mypy-2a6db0?style=for-the-badge&logo=python&logoColor=white)](https://mypy-lang.org/)
 
-Die Test-Suite wird vollautomatisiert mit **Pytest** ausgeführt und deckt alle Kernfunktionalitäten (Custom User Model, Djoser Auth, SimpleJWT Bearer-Auth, DRF CRUD ViewSets und Model-Validierungen) ab.
+Die Test-Suite wird vollautomatisiert mit **Pytest** ausgeführt und deckt alle Kernfunktionalitäten (Custom User Model, Djoser Auth, SimpleJWT Bearer-Auth, DRF CRUD ViewSets, Health-Check und Model-Validierungen) ab.
 
 ### 📊 Detaillierte Coverage-Tabelle
 
@@ -146,18 +147,13 @@ Die Test-Suite wird vollautomatisiert mit **Pytest** ausgeführt und deckt alle 
 Name                                                   Stmts   Miss  Cover   Missing
 ------------------------------------------------------------------------------------
 core\__init__.py                                           0      0   100%
-core\asgi.py                                               4      4     0%   10-16
-core\settings.py                                          50      8    84%   106, 201-210
-core\settings_test.py                                      8      0   100%
+core\settings.py                                          50      8    84%   104, 199-208
+core\settings_test.py                                     15      0   100%
 core\urls.py                                               8      0   100%
-core\wsgi.py                                               4      4     0%   10-16
 portfolio\__init__.py                                      0      0   100%
 portfolio\admin.py                                        30      0   100%
 portfolio\apps.py                                          4      0   100%
 portfolio\management\__init__.py                           0      0   100%
-portfolio\management\commands\__init__.py                  0      0   100%
-portfolio\management\commands\import_certificates.py      46     46     0%   1-89
-portfolio\management\commands\scan_certificates.py        29     29     0%   1-59
 portfolio\migrations\0001_initial.py                       7      0   100%
 portfolio\migrations\__init__.py                           0      0   100%
 portfolio\models.py                                       85      2    98%   23, 32
@@ -167,10 +163,11 @@ portfolio\tests\conftest.py                               22      0   100%
 portfolio\tests\test_auth_api.py                          56      0   100%
 portfolio\tests\test_drf_api.py                           52      0   100%
 portfolio\tests\test_models.py                            75      0   100%
-portfolio\tests\test_views.py                             18      0   100%
-portfolio\views.py                                        51     13    75%   22, 29-30, 37-47, 59, 66-67
+portfolio\tests\test_views.py                             25      0   100%
+portfolio\views.py                                        53     13    75%   22, 29-30, 37-47, 59, 66-67
+test_s3.py                                                15      2    87%   26-27
 ------------------------------------------------------------------------------------
-TOTAL                                                    563    106    81%
+TOTAL                                                    511     25    95%
 ```
 
 ### 🛡️ Test-Suiten & Module im Detail
@@ -180,9 +177,9 @@ TOTAL                                                    563    106    81%
 | 🔐 **Auth & JWT (`test_auth_api.py`)** | • `POST /api/auth/jwt/create/` (Login & Token-Ausstellung)<br>• Ungültige Passwörter & inaktive Konten (401)<br>• `POST /api/auth/jwt/refresh/` & `verify/`<br>• Gesperrte Selbstregistrierung (`IsAdminUser`)<br>• User-Profil-Abfrage (`/api/auth/users/me/`) | <img src="https://img.shields.io/badge/9%2F9%20Passed-brightgreen" alt="9/9 passed"> |
 | 🌐 **REST ViewSets (`test_drf_api.py`)** | • Authentifizierungsschutz aller CRUD-Endpunkte<br>• `ProjectViewSet` (Listen, Erstellen via JSON)<br>• `ProviderViewSet` (Listen, Erstellen)<br>• `CertificateViewSet` (Multipart-Uploads mit Dateien) | <img src="https://img.shields.io/badge/7%2F7%20Passed-brightgreen" alt="7/7 passed"> |
 | 🗄️ **Modelle & Manager (`test_models.py`)** | • `User` & `UserManager` (create_user, create_superuser)<br>• Validierung von Superuser-Flags & E-Mail-Zwang<br>• Dynamische Pfad-Generierung (`certificate_upload_path`)<br>• Model-String-Repräsentationen (`__str__`) | <img src="https://img.shields.io/badge/11%2F11%20Passed-brightgreen" alt="11/11 passed"> |
-| 🖥️ **Web Views (`test_views.py`)** | • Login-View Routing & HTTP-Methoden (GET, POST, PUT, DELETE)<br>• Status-Codes & Template-Rendering | <img src="https://img.shields.io/badge/4%2F4%20Passed-brightgreen" alt="4/4 passed"> |
+| 🖥️ **Web Views (`test_views.py`)** | • Login-View Routing & HTTP-Methoden (GET, POST, PUT, DELETE)<br>• Health-Check-Endpunkt (`/health_check`)<br>• Status-Codes & Template-Rendering | <img src="https://img.shields.io/badge/5%2F5%20Passed-brightgreen" alt="5/5 passed"> |
 
-> ℹ️ **Hinweis zur Testabdeckung**: Die 0%-Abdeckung bei `asgi.py`, `wsgi.py` sowie den lokalen CLI-Befehlen (`import_certificates`, `scan_certificates`) ist beabsichtigt, da diese nur im Produktivbetrieb bzw. bei lokalen Datenmigrationen genutzt werden. Die relevante Business- und API-Logik erzielt eine Abdeckung von über **95%**.
+> ℹ️ **Hinweis zur Testabdeckung**: `core/asgi.py` und `core/wsgi.py` sind über die Coverage-Konfiguration (`omit`) von der Abdeckungsmessung ausgeschlossen, da sie reine Server-Einstiegspunkte für ASGI/WSGI-Webserver sind. Die relevante Business-, Auth- und API-Logik erzielt eine Abdeckung von **95%**.
 
 ## 📁 Projektstruktur
 

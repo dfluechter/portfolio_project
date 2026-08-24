@@ -36,6 +36,12 @@ exclude = ["^build/", "migrations/"]
 DJANGO_SETTINGS_MODULE = "core.settings_test"
 python_files = ["tests.py", "test_*.py"]
 
+[tool.coverage.run]
+omit = [
+    "core/asgi.py",
+    "core/wsgi.py",
+]
+
 [tool.ruff]
 line-length = 88
 
