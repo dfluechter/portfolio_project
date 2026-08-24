@@ -22,3 +22,13 @@ class TestLoginView:
     def test_delete_returns_405(self):
         response = self.client.delete("/")
         assert response.status_code == 405
+
+
+class TestHealthCheckView:
+    def setup_method(self):
+        self.client = Client()
+
+    def test_health_check_returns_200(self):
+        response = self.client.get("/health_check")
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok"}

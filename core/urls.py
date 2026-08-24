@@ -6,6 +6,7 @@ from portfolio.views import (
     ProjectViewSet,
     ProviderViewSet,
     dashboard_view,
+    health_check_view,
     login_view,
     logout_view,
 )
@@ -18,6 +19,8 @@ router.register(r"certificates", CertificateViewSet, basename="certificate")
 
 urlpatterns = [
     path("", login_view, name="login"),
+    path("health_check", health_check_view, name="health_check"),
+    path("health_check/", health_check_view),
     path("dashboard/", dashboard_view, name="dashboard"),
     path("logout/", logout_view, name="logout"),
     # REST-API Endpunkte

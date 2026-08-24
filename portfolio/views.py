@@ -67,6 +67,13 @@ def logout_view(request):
     return redirect("/")
 
 
+def health_check_view(request):
+    """
+    Einfacher Health-Check-Endpunkt für Render und Monitoring.
+    """
+    return JsonResponse({"status": "ok"})
+
+
 # ── API ViewSets für CRUD-Operationen ──
 
 
