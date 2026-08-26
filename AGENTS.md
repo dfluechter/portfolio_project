@@ -48,7 +48,7 @@ bash build.sh
 - **S3 Configuration Quirks**: Supabase requires `AWS_S3_ADDRESSING_STYLE = "path"` and `AWS_S3_SIGNATURE_VERSION = "s3v4"`. `AWS_QUERYSTRING_AUTH = False` makes media URLs public; `AWS_S3_FILE_OVERWRITE = False` prevents silent file overwrites.
 - **Static Files**: WhiteNoise handles static file serving in production; no separate static CDN.
 - **Production Security**: Security settings (`SECURE_SSL_REDIRECT`, HSTS, secure cookies) activate only when `DEBUG=False`. HSTS preload is intentionally disabled.
-- **App Structure**: Single Django app (`portfolio`). The app is currently admin-only and auth-focused; `portfolio/views.py` is intentionally empty.
+- **App Structure**: Single Django app (`portfolio`). Provides REST API ViewSets (`Project`, `Provider`, `Certificate`, `Skill`, `TimelineEntry`) with `IsAuthenticatedOrReadOnly` permissions, plus Session-based Dashboard views (`login_view`, `dashboard_view`).
 
 ## Settings & Testing Rules
 
@@ -61,13 +61,20 @@ bash build.sh
 
 ## Certificate Upload & Validation Rules
 
-- `certificate_upload_path()` in `portfolio/models.py` uses `slugify(instance.issuer)` for directory names and falls back to `"unsorted"` if slugify returns an empty string (e.g. `"??? ***"` → `"unsorted"`). The computed path is derived at save-time and stored in the DB.
+- `certificate_upload_path()` in `portfolio/models.py` uses `slugify(instance.provider.provider)` for directory names and falls back to `"unsorted"` if slugify returns an empty string (e.g. `"??? ***"` → `"unsorted"`).
+- `Certificate.provider` is a `ForeignKey(Provider, on_delete=models.PROTECT, related_name="certificates")`.
 - File upload validators (`validate_file_extension`, `validate_file_size`: `.pdf`, `.png`, `.jpg` ≤ 5 MB) are applied at model field level, not form level. They fire on `full_clean()`, not on `save()`.
+
+## REST API & Serializers
+
+- ViewSets use `permission_classes = (IsAuthenticatedOrReadOnly,)` so public visitors can view portfolio data (GET) without logging in, while write operations (POST, PUT, PATCH, DELETE) require authentication.
+- Serializers follow the **Hybrid-Pattern**: Read requests output nested detail objects (`skill_details`, `provider_details`), while write operations accept PrimaryKey IDs (`skills`, `provider`).
+- Serializer `Meta.fields` must always be declared as a **tuple** (e.g. `fields = ("id", "title")`), not a mutable list, to comply with Ruff rule `RUF012`.
 
 ## Management Commands (Local / Non-Portable)
 
 - `scan_certificates` — scans local certificates path (configured via `CERTIFICATES_PATH` in `.env`), creates `Provider` objects.
-- `import_certificates` — imports files from the same path with 1.5 s delay per file (Cloudflare rate-limit workaround); skips already-existing entries by `(title, issuer)` uniqueness check.
+- `import_certificates` — imports files from the same path with 1.5 s delay per file (Cloudflare rate-limit workaround); skips already-existing entries by `(title, provider)` uniqueness check.
 - Both commands are tied to developer-local environment; do not modify or run for general use.
 
 ## Auth (Djoser + JWT)
