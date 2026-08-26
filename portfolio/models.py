@@ -7,6 +7,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
@@ -36,10 +37,124 @@ def validate_file_size(value: Any) -> None:
 # MODELLE
 # ==============================================================================
 def certificate_upload_path(instance: Any, filename: str) -> str:
-    clean_issuer = slugify(instance.issuer)
+    issuer_name = ""
+    if hasattr(instance, "provider") and instance.provider:
+        if isinstance(instance.provider, str):
+            issuer_name = instance.provider
+        elif hasattr(instance.provider, "provider"):
+            issuer_name = instance.provider.provider
+        else:
+            issuer_name = str(instance.provider)
+    elif hasattr(instance, "issuer") and instance.issuer:
+        issuer_name = instance.issuer
+
+    clean_issuer = slugify(issuer_name)
     if not clean_issuer:
         clean_issuer = "unsorted"
     return f"certificates/{clean_issuer}/{filename}"
+
+
+class SkillCategory(models.TextChoices):
+    BACKEND = "backend", "Backend"
+    FRONTEND = "frontend", "Frontend"
+    DEVOPS = "devops", "Cloud & DevOps"
+    DATABASE = "database", "Datenbanken"
+    TOOLS = "tools", "Tools & Methodik"
+    OTHER = "other", "Sonstiges"
+
+
+class Skill(models.Model):
+    name = models.CharField(max_length=100, unique=True, verbose_name="Skill-Name")
+    category = models.CharField(
+        max_length=20,
+        choices=SkillCategory.choices,
+        default=SkillCategory.BACKEND,
+        verbose_name="Kategorie",
+    )
+    proficiency = models.PositiveSmallIntegerField(
+        default=80,
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        verbose_name="Kenntnisstand (%)",
+        help_text="Wert zwischen 1 und 100",
+    )
+    icon = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Icon (z.B. fa-brands fa-python)",
+        help_text="FontAwesome Icon-Klasse oder URL",
+    )
+    is_featured = models.BooleanField(
+        default=False, verbose_name="Hervorgehoben / Top-Skill"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Erstellt am")
+
+    class Meta:
+        verbose_name = "Skill"
+        verbose_name_plural = "Skills"
+        ordering = ("category", "-proficiency", "name")
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.get_category_display()}, {self.proficiency}%)"
+
+
+class TimelineType(models.TextChoices):
+    EXPERIENCE = "experience", "Berufserfahrung"
+    EDUCATION = "education", "Ausbildung & Studium"
+    OTHER = "other", "Sonstiges"
+
+
+class TimelineEntry(models.Model):
+    entry_type = models.CharField(
+        max_length=20,
+        choices=TimelineType.choices,
+        default=TimelineType.EXPERIENCE,
+        verbose_name="Typ",
+    )
+    title = models.CharField(
+        max_length=255,
+        verbose_name="Titel / Rolle / Abschluss",
+        help_text="z. B. Senior Python Developer oder B.Sc. Informatik",
+    )
+    organization = models.CharField(
+        max_length=255,
+        verbose_name="Organisation / Unternehmen / Institution",
+    )
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Standort",
+        help_text="z. B. Berlin, Deutschland oder Remote",
+    )
+    start_date = models.DateField(verbose_name="Startdatum")
+    end_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Enddatum",
+        help_text="Leer lassen, falls aktuell",
+    )
+    is_current = models.BooleanField(
+        default=False,
+        verbose_name="Aktuelle Position / laufend",
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name="Beschreibung / Tätigkeiten",
+    )
+    skills = models.ManyToManyField(
+        Skill,
+        blank=True,
+        related_name="timeline_entries",
+        verbose_name="Eingesetzte Skills",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Erstellt am")
+
+    class Meta:
+        verbose_name = "Werdegangs-Eintrag"
+        verbose_name_plural = "Werdegang (Timeline)"
+        ordering = ("-start_date",)
+
+    def __str__(self) -> str:
+        return f"{self.title} @ {self.organization}"
 
 
 class Provider(models.Model):
@@ -60,9 +175,12 @@ class Provider(models.Model):
 
 class Certificate(models.Model):
     title = models.CharField(max_length=255, verbose_name="Titel des Zertifikats")
-    issuer = models.CharField(max_length=255, verbose_name="Aussteller / Organisation")
-
-    # NEU: Die Validatoren wurden hier hinzugefügt!
+    provider = models.ForeignKey(
+        Provider,
+        on_delete=models.PROTECT,
+        related_name="certificates",
+        verbose_name="Zertifikatsanbieter",
+    )
     pdf_file = models.FileField(
         upload_to=certificate_upload_path,
         verbose_name="PDF / PNG / JPG Datei",
@@ -76,7 +194,7 @@ class Certificate(models.Model):
         ordering = ("-uploaded_at",)
 
     def __str__(self):
-        return f"{self.title} ({self.issuer})"
+        return f"{self.title} ({self.provider.provider})"
 
 
 class Project(models.Model):
@@ -87,6 +205,12 @@ class Project(models.Model):
         blank=True,
         null=True,
         verbose_name="Projekt-Vorschaubild",
+    )
+    skills = models.ManyToManyField(
+        Skill,
+        blank=True,
+        related_name="projects",
+        verbose_name="Eingesetzte Technologien",
     )
     github_url = models.URLField(
         blank=True, null=True, verbose_name="GitHub Repository URL"

@@ -6,7 +6,7 @@ from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
-from portfolio.models import Certificate
+from portfolio.models import Certificate, Provider
 
 
 class Command(BaseCommand):
@@ -42,6 +42,9 @@ class Command(BaseCommand):
         for provider_dir in base_path.iterdir():
             if provider_dir.is_dir():
                 issuer_name = provider_dir.name
+                provider_obj, _ = Provider.objects.get_or_create(
+                    provider=issuer_name, defaults={"aktiv": True}
+                )
 
                 for file_path in provider_dir.iterdir():
                     if file_path.is_file() and file_path.suffix.lower() in [
@@ -53,7 +56,7 @@ class Command(BaseCommand):
 
                         # Prüfen, ob das Zertifikat schon existiert
                         if Certificate.objects.filter(
-                            title=title, issuer=issuer_name
+                            title=title, provider=provider_obj
                         ).exists():
                             self.stdout.write(
                                 f"Übersprungen (existiert bereits): {title}"
@@ -72,7 +75,7 @@ class Command(BaseCommand):
                                 file_content.content_type = content_types.get(
                                     file_path.suffix.lower(), "application/octet-stream"
                                 )
-                                cert = Certificate(title=title, issuer=issuer_name)
+                                cert = Certificate(title=title, provider=provider_obj)
                                 safe_name = f"{slugify(file_path.stem)}{file_path.suffix.lower()}"
                                 cert.pdf_file.save(safe_name, file_content, save=True)
                             self.stdout.write(

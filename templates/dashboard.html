@@ -175,6 +175,12 @@
       <a href="#" class="nav-link-custom" onclick="switchTab('projects', this)">
         <i class="fa-solid fa-laptop-code"></i> Projekte
       </a>
+      <a href="#" class="nav-link-custom" onclick="switchTab('skills', this)">
+        <i class="fa-solid fa-code"></i> Skills & Tech
+      </a>
+      <a href="#" class="nav-link-custom" onclick="switchTab('timeline', this)">
+        <i class="fa-solid fa-timeline"></i> Werdegang
+      </a>
       <a href="#" class="nav-link-custom" onclick="switchTab('certificates', this)">
         <i class="fa-solid fa-certificate"></i> Zertifikate
       </a>
@@ -231,11 +237,11 @@
 
         <!-- Stat Row -->
         <div class="row g-4 mb-5">
-          <div class="col-md-4">
-            <div class="card dashboard-card p-4">
+          <div class="col-md-4 col-xl-2">
+            <div class="card dashboard-card p-3">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
-                  <h6 class="text-secondary text-uppercase fw-semibold small">Projekte</h6>
+                  <h6 class="text-secondary text-uppercase fw-semibold small mb-1">Projekte</h6>
                   <h2 class="fw-bold mb-0" id="stat-projects-count">-</h2>
                 </div>
                 <div class="stat-icon bg-primary-subtle text-primary">
@@ -244,11 +250,37 @@
               </div>
             </div>
           </div>
-          <div class="col-md-4">
-            <div class="card dashboard-card p-4">
+          <div class="col-md-4 col-xl-2">
+            <div class="card dashboard-card p-3">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
-                  <h6 class="text-secondary text-uppercase fw-semibold small">Zertifikate</h6>
+                  <h6 class="text-secondary text-uppercase fw-semibold small mb-1">Skills</h6>
+                  <h2 class="fw-bold mb-0" id="stat-skills-count">-</h2>
+                </div>
+                <div class="stat-icon bg-warning-subtle text-warning">
+                  <i class="fa-solid fa-code"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 col-xl-3">
+            <div class="card dashboard-card p-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-secondary text-uppercase fw-semibold small mb-1">Werdegang</h6>
+                  <h2 class="fw-bold mb-0" id="stat-timeline-count">-</h2>
+                </div>
+                <div class="stat-icon bg-secondary-subtle text-light">
+                  <i class="fa-solid fa-timeline"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 col-xl-2">
+            <div class="card dashboard-card p-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-secondary text-uppercase fw-semibold small mb-1">Zertifikate</h6>
                   <h2 class="fw-bold mb-0" id="stat-certificates-count">-</h2>
                 </div>
                 <div class="stat-icon bg-success-subtle text-success">
@@ -257,11 +289,11 @@
               </div>
             </div>
           </div>
-          <div class="col-md-4">
-            <div class="card dashboard-card p-4">
+          <div class="col-md-6 col-xl-3">
+            <div class="card dashboard-card p-3">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
-                  <h6 class="text-secondary text-uppercase fw-semibold small">Anbieter</h6>
+                  <h6 class="text-secondary text-uppercase fw-semibold small mb-1">Anbieter</h6>
                   <h2 class="fw-bold mb-0" id="stat-providers-count">-</h2>
                 </div>
                 <div class="stat-icon bg-info-subtle text-info">
@@ -291,12 +323,75 @@
               <tr>
                 <th>Vorschaubild</th>
                 <th>Titel</th>
+                <th>Eingesetzte Skills</th>
                 <th>GitHub URL</th>
                 <th>Live Demo</th>
                 <th class="text-end">Aktionen</th>
               </tr>
             </thead>
             <tbody id="projects-table-body">
+              <!-- Dynamically Loaded -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB: Skills -->
+      <section id="tab-skills" class="tab-content d-none">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h1 class="h3 fw-bold mb-1">Skills & Technologien</h1>
+            <p class="text-secondary mb-0">Verwalten Sie Ihre Kernkompetenzen, Frameworks und Tools.</p>
+          </div>
+          <button class="btn btn-custom-primary px-3 py-2" onclick="openCreateModal('skill')">
+            <i class="fa-solid fa-plus me-1"></i> Skill hinzufügen
+          </button>
+        </div>
+
+        <div class="card dashboard-card p-3 table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Icon</th>
+                <th>Skill-Name</th>
+                <th>Kategorie</th>
+                <th>Kenntnisstand</th>
+                <th>Top-Skill</th>
+                <th class="text-end">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody id="skills-table-body">
+              <!-- Dynamically Loaded -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB: Timeline / Werdegang -->
+      <section id="tab-timeline" class="tab-content d-none">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h1 class="h3 fw-bold mb-1">Werdegang & Timeline</h1>
+            <p class="text-secondary mb-0">Verwalten Sie Ihre Berufserfahrung, Ausbildung und Meilensteine.</p>
+          </div>
+          <button class="btn btn-custom-primary px-3 py-2" onclick="openCreateModal('timeline')">
+            <i class="fa-solid fa-plus me-1"></i> Eintrag hinzufügen
+          </button>
+        </div>
+
+        <div class="card dashboard-card p-3 table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Typ</th>
+                <th>Titel / Position</th>
+                <th>Organisation / Ort</th>
+                <th>Zeitraum</th>
+                <th>Skills</th>
+                <th class="text-end">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody id="timeline-table-body">
               <!-- Dynamically Loaded -->
             </tbody>
           </table>
@@ -319,9 +414,9 @@
         <div class="row g-3 mb-3 align-items-center">
           <div class="col-md-4">
             <div class="input-group">
-              <span class="input-group-text"><i class="fa-solid fa-filter"></i> Aussteller:</span>
+              <span class="input-group-text"><i class="fa-solid fa-filter"></i> Anbieter:</span>
               <select class="form-select" id="certificate-issuer-filter" onchange="filterCertificates()">
-                <option value="">Alle Aussteller (Kein Filter)</option>
+                <option value="">Alle Anbieter (Kein Filter)</option>
               </select>
             </div>
           </div>
@@ -332,7 +427,7 @@
             <thead>
               <tr>
                 <th>Titel</th>
-                <th>Aussteller</th>
+                <th>Anbieter</th>
                 <th>Dokument</th>
                 <th>Hochgeladen am</th>
                 <th class="text-end">Aktionen</th>
@@ -406,6 +501,12 @@
               <textarea class="form-control" id="project-description" rows="3" required></textarea>
             </div>
             <div class="mb-3">
+              <label for="project-skills" class="form-label small fw-semibold">Eingesetzte Skills (Mehrfachauswahl mit Strg/Cmd)</label>
+              <select class="form-select" id="project-skills" multiple size="4">
+                <!-- Dynamically loaded -->
+              </select>
+            </div>
+            <div class="mb-3">
               <label for="project-image" class="form-label small fw-semibold">Projekt-Vorschaubild</label>
               <input type="file" class="form-control" id="project-image" accept="image/*" />
               <div id="project-image-preview-container" class="mt-2 d-none">
@@ -419,6 +520,119 @@
             <div class="mb-3">
               <label for="project-live" class="form-label small fw-semibold">Live Demo URL</label>
               <input type="url" class="form-control" id="project-live" placeholder="https://..." />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Skill -->
+  <div class="modal fade" id="skillModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="skill-form" onsubmit="saveItem(event, 'skill')">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="skillModalLabel">Skill erstellen</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="skill-id" />
+            <div class="mb-3">
+              <label for="skill-name" class="form-label small fw-semibold">Skill-Name</label>
+              <input type="text" class="form-control" id="skill-name" placeholder="z. B. Python, React, PostgreSQL" required />
+            </div>
+            <div class="mb-3">
+              <label for="skill-category" class="form-label small fw-semibold">Kategorie</label>
+              <select class="form-select" id="skill-category" required>
+                <option value="backend">Backend</option>
+                <option value="frontend">Frontend</option>
+                <option value="devops">Cloud & DevOps</option>
+                <option value="database">Datenbanken</option>
+                <option value="tools">Tools & Methodik</option>
+                <option value="other">Sonstiges</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="skill-proficiency" class="form-label small fw-semibold">Kenntnisstand (%): <span id="skill-proficiency-val">80</span>%</label>
+              <input type="range" class="form-range" id="skill-proficiency" min="1" max="100" value="80" oninput="document.getElementById('skill-proficiency-val').textContent = this.value" />
+            </div>
+            <div class="mb-3">
+              <label for="skill-icon" class="form-label small fw-semibold">FontAwesome Icon-Klasse (optional)</label>
+              <input type="text" class="form-control" id="skill-icon" placeholder="z. B. fa-brands fa-python oder fa-solid fa-database" />
+            </div>
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="skill-featured" />
+              <label class="form-check-label small fw-semibold" for="skill-featured">Top-Skill / Im Profil hervorheben</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: TimelineEntry -->
+  <div class="modal fade" id="timelineModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="timeline-form" onsubmit="saveItem(event, 'timeline')">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="timelineModalLabel">Werdegangs-Eintrag erstellen</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="timeline-id" />
+            <div class="mb-3">
+              <label for="timeline-entry-type" class="form-label small fw-semibold">Art des Eintrags</label>
+              <select class="form-select" id="timeline-entry-type" required>
+                <option value="experience">Berufserfahrung / Position</option>
+                <option value="education">Ausbildung / Studium / Kurs</option>
+                <option value="other">Sonstiges</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="timeline-title" class="form-label small fw-semibold">Titel / Rolle / Abschluss</label>
+              <input type="text" class="form-control" id="timeline-title" placeholder="z. B. Senior Python Developer" required />
+            </div>
+            <div class="mb-3">
+              <label for="timeline-organization" class="form-label small fw-semibold">Organisation / Unternehmen</label>
+              <input type="text" class="form-control" id="timeline-organization" placeholder="z. B. Musterfirma GmbH" required />
+            </div>
+            <div class="mb-3">
+              <label for="timeline-location" class="form-label small fw-semibold">Standort</label>
+              <input type="text" class="form-control" id="timeline-location" placeholder="z. B. Berlin, Deutschland / Remote" />
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label for="timeline-start-date" class="form-label small fw-semibold">Startdatum</label>
+                <input type="date" class="form-control" id="timeline-start-date" required />
+              </div>
+              <div class="col-6">
+                <label for="timeline-end-date" class="form-label small fw-semibold">Enddatum</label>
+                <input type="date" class="form-control" id="timeline-end-date" />
+              </div>
+            </div>
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="timeline-is-current" onchange="document.getElementById('timeline-end-date').disabled = this.checked" />
+              <label class="form-check-label small fw-semibold" for="timeline-is-current">Aktuelle Position / laufend</label>
+            </div>
+            <div class="mb-3">
+              <label for="timeline-description" class="form-label small fw-semibold">Beschreibung & Tätigkeiten</label>
+              <textarea class="form-control" id="timeline-description" rows="3" placeholder="Zusammenfassung der Verantwortlichkeiten..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="timeline-skills" class="form-label small fw-semibold">Eingesetzte Skills</label>
+              <select class="form-select" id="timeline-skills" multiple size="4">
+                <!-- Dynamically loaded -->
+              </select>
             </div>
           </div>
           <div class="modal-footer">
@@ -486,11 +700,10 @@
               <input type="text" class="form-control" id="certificate-title" required />
             </div>
             <div class="mb-3">
-              <label for="certificate-issuer" class="form-label small fw-semibold">Aussteller / Organisation</label>
-              <input type="text" class="form-control" id="certificate-issuer" list="providers-datalist" placeholder="Aussteller wählen oder eintragen..." required />
-              <datalist id="providers-datalist">
-                <!-- Dynamically loaded -->
-              </datalist>
+              <label for="certificate-provider" class="form-label small fw-semibold">Zertifikatsanbieter</label>
+              <select class="form-select" id="certificate-provider" required>
+                <option value="">Anbieter auswählen...</option>
+              </select>
             </div>
             <div class="mb-3">
               <label for="certificate-file" class="form-label small fw-semibold">Datei (PDF / PNG / JPG)</label>
@@ -515,6 +728,8 @@
   <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     let cachedCertificates = [];
+    let cachedProviders = [];
+    let cachedSkills = [];
     let currentPage = 1;
     const itemsPerPage = 10;
     let filteredCertificates = [];
@@ -523,13 +738,17 @@
     const modals = {
       project: new bootstrap.Modal(document.getElementById('projectModal')),
       provider: new bootstrap.Modal(document.getElementById('providerModal')),
-      certificate: new bootstrap.Modal(document.getElementById('certificateModal'))
+      certificate: new bootstrap.Modal(document.getElementById('certificateModal')),
+      skill: new bootstrap.Modal(document.getElementById('skillModal')),
+      timeline: new bootstrap.Modal(document.getElementById('timelineModal'))
     };
 
     // Load initial counts and tables
     document.addEventListener("DOMContentLoaded", () => {
       loadOverviewStats();
       loadData('projects');
+      loadData('skills');
+      loadData('timeline');
       loadData('certificates');
       loadData('providers');
       applyTheme(localStorage.getItem("theme") || "dark");
@@ -579,31 +798,59 @@
       setTimeout(() => { alertDiv.remove(); }, 5000);
     }
 
-    // Fetch Overview statistics
+    // Fetch Overview statistics & options
     async function loadOverviewStats() {
       try {
-        const [projRes, certRes, provRes] = await Promise.all([
+        const [projRes, certRes, provRes, skillRes, timeRes] = await Promise.all([
           fetch("/api/projects/"),
           fetch("/api/certificates/"),
-          fetch("/api/providers/")
+          fetch("/api/providers/"),
+          fetch("/api/skills/"),
+          fetch("/api/timeline/")
         ]);
 
-        if (projRes.ok && certRes.ok && provRes.ok) {
+        if (projRes.ok && certRes.ok && provRes.ok && skillRes.ok && timeRes.ok) {
           const proj = await projRes.json();
           const cert = await certRes.json();
           const prov = await provRes.json();
+          const skills = await skillRes.json();
+          const timeline = await timeRes.json();
+
+          cachedProviders = prov;
+          cachedSkills = skills;
 
           document.getElementById("stat-projects-count").textContent = proj.length;
+          document.getElementById("stat-skills-count").textContent = skills.length;
+          document.getElementById("stat-timeline-count").textContent = timeline.length;
           document.getElementById("stat-certificates-count").textContent = cert.length;
           document.getElementById("stat-providers-count").textContent = prov.length;
 
-          // Populate datalist for certificate issuer autocomplete
-          const datalist = document.getElementById("providers-datalist");
-          datalist.innerHTML = "";
+          // Populate provider selects
+          const certProvSelect = document.getElementById("certificate-provider");
+          certProvSelect.innerHTML = '<option value="">Anbieter auswählen...</option>';
           prov.forEach(p => {
             const opt = document.createElement("option");
-            opt.value = p.provider;
-            datalist.appendChild(opt);
+            opt.value = p.id;
+            opt.textContent = p.provider;
+            certProvSelect.appendChild(opt);
+          });
+
+          // Populate skill multi-selects for Project & Timeline
+          const projSkillsSelect = document.getElementById("project-skills");
+          const timeSkillsSelect = document.getElementById("timeline-skills");
+          projSkillsSelect.innerHTML = "";
+          timeSkillsSelect.innerHTML = "";
+
+          skills.forEach(s => {
+            const opt1 = document.createElement("option");
+            opt1.value = s.id;
+            opt1.textContent = `${s.name} (${s.category_display || s.category})`;
+            projSkillsSelect.appendChild(opt1);
+
+            const opt2 = document.createElement("option");
+            opt2.value = s.id;
+            opt2.textContent = `${s.name} (${s.category_display || s.category})`;
+            timeSkillsSelect.appendChild(opt2);
           });
         }
       } catch (err) {
@@ -613,9 +860,12 @@
 
     // Load data lists
     async function loadData(type) {
+      const endpoint = type === 'timeline' ? 'timeline' : (type === 'projects' ? 'projects' : (type === 'skills' ? 'skills' : (type === 'certificates' ? 'certificates' : 'providers')));
       const tableBody = document.getElementById(`${type}-table-body`);
+      if (!tableBody) return;
+
       try {
-        const res = await fetch(`/api/${type}/`);
+        const res = await fetch(`/api/${endpoint}/`);
         if (!res.ok) throw new Error("Fehler beim Laden");
         const items = await res.json();
         
@@ -631,7 +881,7 @@
         tableBody.innerHTML = "";
         
         if (items.length === 0) {
-          tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-secondary py-4">Keine Einträge vorhanden.</td></tr>`;
+          tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-secondary py-4">Keine Einträge vorhanden.</td></tr>`;
           return;
         }
 
@@ -640,27 +890,30 @@
             tableBody.appendChild(createProjectRow(item));
           } else if (type === 'providers') {
             tableBody.appendChild(createProviderRow(item));
+          } else if (type === 'skills') {
+            tableBody.appendChild(createSkillRow(item));
+          } else if (type === 'timeline') {
+            tableBody.appendChild(createTimelineRow(item));
           }
         });
       } catch (err) {
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Fehler beim Laden der Daten.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Fehler beim Laden der Daten.</td></tr>`;
       }
     }
 
-    // Populate the select-option issuer filter dropdown
+    // Populate provider filter in certificates tab
     function populateIssuerFilter(certs) {
       const filterSelect = document.getElementById("certificate-issuer-filter");
       const currentSelected = filterSelect.value;
 
-      // Extract unique issuers and sort them alphabetically
-      const issuers = [...new Set(certs.map(c => c.issuer))].sort();
+      const providerNames = [...new Set(certs.map(c => c.provider_details ? c.provider_details.provider : 'Unbekannt'))].sort();
       
-      filterSelect.innerHTML = `<option value="">Alle Aussteller (Kein Filter)</option>`;
-      issuers.forEach(issuer => {
+      filterSelect.innerHTML = `<option value="">Alle Anbieter (Kein Filter)</option>`;
+      providerNames.forEach(pName => {
         const opt = document.createElement("option");
-        opt.value = issuer;
-        opt.textContent = issuer;
-        if (issuer === currentSelected) {
+        opt.value = pName;
+        opt.textContent = pName;
+        if (pName === currentSelected) {
           opt.selected = true;
         }
         filterSelect.appendChild(opt);
@@ -678,7 +931,6 @@
         return;
       }
 
-      // Slice items for pagination
       const start = (currentPage - 1) * itemsPerPage;
       const end = start + itemsPerPage;
       const paginatedItems = certs.slice(start, end);
@@ -690,7 +942,7 @@
       renderPaginationControls(certs.length);
     }
 
-    // Render pagination controls (Page numbers, prev, next)
+    // Render pagination controls
     function renderPaginationControls(totalItems) {
       const paginationUl = document.getElementById("certificates-pagination");
       paginationUl.innerHTML = "";
@@ -698,13 +950,11 @@
       const totalPages = Math.ceil(totalItems / itemsPerPage);
       if (totalPages <= 1) return;
 
-      // Previous button
       const prevLi = document.createElement("li");
       prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
       prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1}, event)"><i class="fa-solid fa-angle-left"></i></a>`;
       paginationUl.appendChild(prevLi);
 
-      // Page numbers
       for (let i = 1; i <= totalPages; i++) {
         const pageLi = document.createElement("li");
         pageLi.className = `page-item ${currentPage === i ? 'active' : ''}`;
@@ -712,28 +962,25 @@
         paginationUl.appendChild(pageLi);
       }
 
-      // Next button
       const nextLi = document.createElement("li");
       nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
       nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1}, event)"><i class="fa-solid fa-angle-right"></i></a>`;
       paginationUl.appendChild(nextLi);
     }
 
-    // Change page
     function changePage(page, e) {
       if (e) e.preventDefault();
       currentPage = page;
       renderCertificates(filteredCertificates);
     }
 
-    // Filter displayed certificates by issuer selection and reset to page 1
     function filterCertificates() {
       const filterValue = document.getElementById("certificate-issuer-filter").value;
       currentPage = 1;
       if (!filterValue) {
         filteredCertificates = cachedCertificates;
       } else {
-        filteredCertificates = cachedCertificates.filter(c => c.issuer === filterValue);
+        filteredCertificates = cachedCertificates.filter(c => (c.provider_details?.provider || '') === filterValue);
       }
       renderCertificates(filteredCertificates);
     }
@@ -741,9 +988,11 @@
     // Table rows creation helper
     function createProjectRow(p) {
       const tr = document.createElement("tr");
+      const skillBadges = (p.skill_details || []).map(s => `<span class="badge bg-secondary me-1 mb-1">${s.name}</span>`).join('') || '<span class="text-secondary small">Keine</span>';
       tr.innerHTML = `
         <td><img src="${p.image || 'https://placehold.co/60x40/1a1a24/ffffff?text=Kein+Bild'}" class="preview-img" alt="${p.title}" /></td>
         <td><strong>${p.title}</strong></td>
+        <td>${skillBadges}</td>
         <td>${p.github_url ? `<a href="${p.github_url}" target="_blank" class="small"><i class="fa-brands fa-github"></i> Repository</a>` : '-'}</td>
         <td>${p.live_url ? `<a href="${p.live_url}" target="_blank" class="small text-success"><i class="fa-solid fa-square-arrow-up-right"></i> Live Demo</a>` : '-'}</td>
         <td class="text-end">
@@ -754,12 +1003,61 @@
       return tr;
     }
 
+    function createSkillRow(s) {
+      const tr = document.createElement("tr");
+      const iconHtml = s.icon ? `<i class="${s.icon} fa-lg me-2 text-primary"></i>` : '<i class="fa-solid fa-code text-secondary me-2"></i>';
+      tr.innerHTML = `
+        <td>${iconHtml}</td>
+        <td><strong>${s.name}</strong></td>
+        <td><span class="badge bg-primary-subtle text-primary">${s.category_display || s.category}</span></td>
+        <td style="width: 25%;">
+          <div class="d-flex align-items-center gap-2">
+            <div class="progress flex-grow-1" style="height: 6px;">
+              <div class="progress-bar bg-info" role="progressbar" style="width: ${s.proficiency}%;"></div>
+            </div>
+            <span class="small fw-semibold">${s.proficiency}%</span>
+          </div>
+        </td>
+        <td>${s.is_featured ? '<span class="badge bg-warning text-dark"><i class="fa-solid fa-star me-1"></i> Top</span>' : '<span class="text-secondary small">-</span>'}</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-info me-1" onclick="openEditModal('skill', ${s.id})"><i class="fa-solid fa-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('skills', ${s.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      `;
+      return tr;
+    }
+
+    function createTimelineRow(t) {
+      const tr = document.createElement("tr");
+      const typeBadge = t.entry_type === 'experience'
+        ? '<span class="badge bg-primary">Beruf</span>'
+        : (t.entry_type === 'education' ? '<span class="badge bg-success">Ausbildung</span>' : '<span class="badge bg-secondary">Sonstiges</span>');
+      
+      const start = new Date(t.start_date).toLocaleDateString("de-DE", { month: '2-digit', year: 'numeric' });
+      const end = t.is_current ? '<span class="text-success fw-semibold">Heute</span>' : (t.end_date ? new Date(t.end_date).toLocaleDateString("de-DE", { month: '2-digit', year: 'numeric' }) : '-');
+      const skillBadges = (t.skill_details || []).map(s => `<span class="badge bg-secondary me-1 mb-1">${s.name}</span>`).join('') || '-';
+
+      tr.innerHTML = `
+        <td>${typeBadge}</td>
+        <td><strong>${t.title}</strong></td>
+        <td>${t.organization}${t.location ? ` <span class="text-secondary small">(${t.location})</span>` : ''}</td>
+        <td><small>${start} – ${end}</small></td>
+        <td>${skillBadges}</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-info me-1" onclick="openEditModal('timeline', ${t.id})"><i class="fa-solid fa-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('timeline', ${t.id})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      `;
+      return tr;
+    }
+
     function createCertificateRow(c) {
       const tr = document.createElement("tr");
       const date = new Date(c.uploaded_at).toLocaleDateString("de-DE", { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const providerName = c.provider_details ? c.provider_details.provider : `Anbieter #${c.provider}`;
       tr.innerHTML = `
         <td><strong>${c.title}</strong></td>
-        <td><span class="badge bg-secondary">${c.issuer}</span></td>
+        <td><span class="badge bg-secondary">${providerName}</span></td>
         <td><a href="${c.pdf_file}" target="_blank" class="text-info"><i class="fa-solid fa-file-pdf me-1"></i> Dokument ansehen</a></td>
         <td>${date}</td>
         <td class="text-end">
@@ -789,24 +1087,51 @@
     function openCreateModal(type) {
       document.getElementById(`${type}-form`).reset();
       document.getElementById(`${type}-id`).value = "";
-      document.getElementById(`${type}ModalLabel`).textContent = type === 'project' ? "Projekt erstellen" : (type === 'provider' ? "Anbieter erstellen" : "Zertifikat hochladen");
       
-      // Hide previews
-      if (type === 'project') document.getElementById('project-image-preview-container').classList.add('d-none');
+      const labels = {
+        project: "Projekt erstellen",
+        provider: "Anbieter erstellen",
+        certificate: "Zertifikat hochladen",
+        skill: "Skill hinzufügen",
+        timeline: "Werdegangs-Eintrag hinzufügen"
+      };
+      document.getElementById(`${type}ModalLabel`).textContent = labels[type] || "Eintrag erstellen";
+      
+      // Reset previews / fields
+      if (type === 'project') {
+        document.getElementById('project-image-preview-container').classList.add('d-none');
+        Array.from(document.getElementById('project-skills').options).forEach(o => o.selected = false);
+      }
       if (type === 'provider') document.getElementById('provider-logo-preview-container').classList.add('d-none');
       if (type === 'certificate') document.getElementById('certificate-file-current').classList.add('d-none');
+      if (type === 'skill') {
+        document.getElementById('skill-proficiency').value = 80;
+        document.getElementById('skill-proficiency-val').textContent = "80";
+      }
+      if (type === 'timeline') {
+        document.getElementById('timeline-end-date').disabled = false;
+        Array.from(document.getElementById('timeline-skills').options).forEach(o => o.selected = false);
+      }
       
       modals[type].show();
     }
 
     async function openEditModal(type, id) {
+      const endpoint = type === 'timeline' ? 'timeline' : `${type}s`;
       try {
-        const res = await fetch(`/api/${type}s/${id}/`);
+        const res = await fetch(`/api/${endpoint}/${id}/`);
         if (!res.ok) throw new Error("Fehler beim Laden");
         const item = await res.json();
         
         document.getElementById(`${type}-id`).value = item.id;
-        document.getElementById(`${type}ModalLabel`).textContent = type === 'project' ? "Projekt bearbeiten" : (type === 'provider' ? "Anbieter bearbeiten" : "Zertifikat bearbeiten");
+        const labels = {
+          project: "Projekt bearbeiten",
+          provider: "Anbieter bearbeiten",
+          certificate: "Zertifikat bearbeiten",
+          skill: "Skill bearbeiten",
+          timeline: "Werdegangs-Eintrag bearbeiten"
+        };
+        document.getElementById(`${type}ModalLabel`).textContent = labels[type] || "Eintrag bearbeiten";
 
         if (type === 'project') {
           document.getElementById('project-title').value = item.title;
@@ -814,6 +1139,11 @@
           document.getElementById('project-github').value = item.github_url || "";
           document.getElementById('project-live').value = item.live_url || "";
           
+          const selectedSkills = item.skills || [];
+          Array.from(document.getElementById('project-skills').options).forEach(o => {
+            o.selected = selectedSkills.includes(parseInt(o.value, 10));
+          });
+
           const previewContainer = document.getElementById('project-image-preview-container');
           if (item.image) {
             document.getElementById('project-image-preview').src = item.image;
@@ -821,6 +1151,28 @@
           } else {
             previewContainer.classList.add('d-none');
           }
+        } else if (type === 'skill') {
+          document.getElementById('skill-name').value = item.name;
+          document.getElementById('skill-category').value = item.category;
+          document.getElementById('skill-proficiency').value = item.proficiency;
+          document.getElementById('skill-proficiency-val').textContent = item.proficiency;
+          document.getElementById('skill-icon').value = item.icon || "";
+          document.getElementById('skill-featured').checked = item.is_featured;
+        } else if (type === 'timeline') {
+          document.getElementById('timeline-entry-type').value = item.entry_type;
+          document.getElementById('timeline-title').value = item.title;
+          document.getElementById('timeline-organization').value = item.organization;
+          document.getElementById('timeline-location').value = item.location || "";
+          document.getElementById('timeline-start-date').value = item.start_date;
+          document.getElementById('timeline-end-date').value = item.end_date || "";
+          document.getElementById('timeline-is-current').checked = item.is_current;
+          document.getElementById('timeline-end-date').disabled = item.is_current;
+          document.getElementById('timeline-description').value = item.description || "";
+
+          const selectedSkills = item.skills || [];
+          Array.from(document.getElementById('timeline-skills').options).forEach(o => {
+            o.selected = selectedSkills.includes(parseInt(o.value, 10));
+          });
         } else if (type === 'provider') {
           document.getElementById('provider-name').value = item.provider;
           document.getElementById('provider-url').value = item.url || "";
@@ -835,7 +1187,7 @@
           }
         } else if (type === 'certificate') {
           document.getElementById('certificate-title').value = item.title;
-          document.getElementById('certificate-issuer').value = item.issuer;
+          document.getElementById('certificate-provider').value = item.provider;
 
           const fileContainer = document.getElementById('certificate-file-current');
           if (item.pdf_file) {
@@ -857,63 +1209,97 @@
     async function saveItem(e, type) {
       e.preventDefault();
       const id = document.getElementById(`${type}-id`).value;
-      const url = id ? `/api/${type}s/${id}/` : `/api/${type}s/`;
+      const endpoint = type === 'timeline' ? 'timeline' : `${type}s`;
+      const url = id ? `/api/${endpoint}/${id}/` : `/api/${endpoint}/`;
       const method = id ? "PATCH" : "POST";
 
-      const formData = new FormData();
+      let requestData;
+      let headers = {
+        "X-CSRFToken": csrfToken
+      };
 
-      if (type === 'project') {
-        formData.append("title", document.getElementById('project-title').value);
-        formData.append("description", document.getElementById('project-description').value);
-        formData.append("github_url", document.getElementById('project-github').value);
-        formData.append("live_url", document.getElementById('project-live').value);
-        
-        const fileInput = document.getElementById('project-image');
-        if (fileInput.files.length > 0) {
-          formData.append("image", fileInput.files[0]);
-        }
-      } else if (type === 'provider') {
-        formData.append("provider", document.getElementById('provider-name').value);
-        formData.append("url", document.getElementById('provider-url').value);
-        formData.append("aktiv", document.getElementById('provider-active').checked);
+      if (type === 'skill') {
+        headers["Content-Type"] = "application/json";
+        requestData = JSON.stringify({
+          name: document.getElementById('skill-name').value,
+          category: document.getElementById('skill-category').value,
+          proficiency: parseInt(document.getElementById('skill-proficiency').value, 10),
+          icon: document.getElementById('skill-icon').value,
+          is_featured: document.getElementById('skill-featured').checked
+        });
+      } else if (type === 'timeline') {
+        headers["Content-Type"] = "application/json";
+        const selectedSkills = Array.from(document.getElementById('timeline-skills').selectedOptions).map(o => parseInt(o.value, 10));
+        requestData = JSON.stringify({
+          entry_type: document.getElementById('timeline-entry-type').value,
+          title: document.getElementById('timeline-title').value,
+          organization: document.getElementById('timeline-organization').value,
+          location: document.getElementById('timeline-location').value,
+          start_date: document.getElementById('timeline-start-date').value,
+          end_date: document.getElementById('timeline-is-current').checked ? null : (document.getElementById('timeline-end-date').value || null),
+          is_current: document.getElementById('timeline-is-current').checked,
+          description: document.getElementById('timeline-description').value,
+          skills: selectedSkills
+        });
+      } else {
+        const formData = new FormData();
+        if (type === 'project') {
+          formData.append("title", document.getElementById('project-title').value);
+          formData.append("description", document.getElementById('project-description').value);
+          formData.append("github_url", document.getElementById('project-github').value);
+          formData.append("live_url", document.getElementById('project-live').value);
+          
+          const selectedSkills = Array.from(document.getElementById('project-skills').selectedOptions);
+          selectedSkills.forEach(opt => {
+            formData.append("skills", opt.value);
+          });
+          
+          const fileInput = document.getElementById('project-image');
+          if (fileInput.files.length > 0) {
+            formData.append("image", fileInput.files[0]);
+          }
+        } else if (type === 'provider') {
+          formData.append("provider", document.getElementById('provider-name').value);
+          formData.append("url", document.getElementById('provider-url').value);
+          formData.append("aktiv", document.getElementById('provider-active').checked);
 
-        const fileInput = document.getElementById('provider-logo');
-        if (fileInput.files.length > 0) {
-          formData.append("logo", fileInput.files[0]);
-        }
-      } else if (type === 'certificate') {
-        formData.append("title", document.getElementById('certificate-title').value);
-        formData.append("issuer", document.getElementById('certificate-issuer').value);
+          const fileInput = document.getElementById('provider-logo');
+          if (fileInput.files.length > 0) {
+            formData.append("logo", fileInput.files[0]);
+          }
+        } else if (type === 'certificate') {
+          formData.append("title", document.getElementById('certificate-title').value);
+          formData.append("provider", document.getElementById('certificate-provider').value);
 
-        const fileInput = document.getElementById('certificate-file');
-        if (fileInput.files.length > 0) {
-          formData.append("pdf_file", fileInput.files[0]);
-        } else if (!id) {
-          showAlert("Bitte wählen Sie eine Zertifikatsdatei aus.", "danger");
-          return;
+          const fileInput = document.getElementById('certificate-file');
+          if (fileInput.files.length > 0) {
+            formData.append("pdf_file", fileInput.files[0]);
+          } else if (!id) {
+            showAlert("Bitte wählen Sie eine Zertifikatsdatei aus.", "danger");
+            return;
+          }
         }
+        requestData = formData;
       }
 
       try {
         const res = await fetch(url, {
           method: method,
-          headers: {
-            "X-CSRFToken": csrfToken
-          },
-          body: formData
+          headers: headers,
+          body: requestData
         });
 
         if (res.ok) {
           showAlert(id ? "Eintrag erfolgreich aktualisiert." : "Eintrag erfolgreich erstellt.", "success");
           modals[type].hide();
-          loadData(`${type}s`);
+          loadData(type === 'timeline' ? 'timeline' : `${type}s`);
           loadOverviewStats();
         } else {
           const errData = await res.json();
           let errText = "Fehler beim Speichern.";
           if (typeof errData === 'object') {
             errText = Object.entries(errData)
-              .map(([k, v]) => `${k}: ${v}`)
+              .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
               .join(" | ");
           }
           showAlert(errText, "danger");
@@ -937,7 +1323,7 @@
 
         if (res.ok) {
           showAlert("Eintrag erfolgreich gelöscht.", "success");
-          loadData(endpoint);
+          loadData(endpoint === 'timeline' ? 'timeline' : endpoint);
           loadOverviewStats();
         } else {
           showAlert("Fehler beim Löschen des Eintrags.", "danger");

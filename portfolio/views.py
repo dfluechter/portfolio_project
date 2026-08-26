@@ -6,10 +6,16 @@ from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
-from .models import Certificate, Project, Provider
-from .serializers import CertificateSerializer, ProjectSerializer, ProviderSerializer
+from .models import Certificate, Project, Provider, Skill, TimelineEntry
+from .serializers import (
+    CertificateSerializer,
+    ProjectSerializer,
+    ProviderSerializer,
+    SkillSerializer,
+    TimelineEntrySerializer,
+)
 
 
 @csrf_exempt
@@ -78,18 +84,30 @@ def health_check_view(request):
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.all()
+    queryset = Project.objects.all().prefetch_related("skills")
     serializer_class = ProjectSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
 
 class ProviderViewSet(viewsets.ModelViewSet):
     queryset = Provider.objects.all()
     serializer_class = ProviderSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
 
 class CertificateViewSet(viewsets.ModelViewSet):
-    queryset = Certificate.objects.all()
+    queryset = Certificate.objects.all().select_related("provider")
     serializer_class = CertificateSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+
+class SkillViewSet(viewsets.ModelViewSet):
+    queryset = Skill.objects.all()
+    serializer_class = SkillSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+
+class TimelineEntryViewSet(viewsets.ModelViewSet):
+    queryset = TimelineEntry.objects.all().prefetch_related("skills")
+    serializer_class = TimelineEntrySerializer
+    permission_classes = (IsAuthenticatedOrReadOnly,)

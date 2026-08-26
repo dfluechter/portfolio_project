@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import Certificate, Project, Provider, User
+from .models import Certificate, Project, Provider, Skill, TimelineEntry, User
 
 
 @admin.register(User)
@@ -37,6 +37,30 @@ class UserAdmin(BaseUserAdmin):
     )
 
 
+@admin.register(Skill)
+class SkillAdmin(admin.ModelAdmin):
+    list_display = ("name", "category", "proficiency", "is_featured", "created_at")
+    list_filter = ("category", "is_featured")
+    search_fields = ("name",)
+    ordering = ("category", "-proficiency", "name")
+
+
+@admin.register(TimelineEntry)
+class TimelineEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        "title",
+        "organization",
+        "entry_type",
+        "start_date",
+        "end_date",
+        "is_current",
+    )
+    list_filter = ("entry_type", "is_current")
+    search_fields = ("title", "organization", "description")
+    filter_horizontal = ("skills",)
+    ordering = ("-start_date",)
+
+
 @admin.register(Provider)
 class ProviderAdmin(admin.ModelAdmin):
     # Zeigt diese Spalten in der Listenansicht an
@@ -58,13 +82,13 @@ class ProviderAdmin(admin.ModelAdmin):
 @admin.register(Certificate)
 class CertificateAdmin(admin.ModelAdmin):
     # Welche Spalten in der Übersichtstabelle angezeigt werden sollen
-    list_display = ("title", "issuer", "uploaded_at")
+    list_display = ("title", "provider", "uploaded_at")
 
     # Fügt eine Suchleiste hinzu, die in diesen Feldern sucht
-    search_fields = ("title", "issuer")
+    search_fields = ("title", "provider__provider")
 
     # Fügt auf der rechten Seite einen Filter hinzu
-    list_filter = ("issuer", "uploaded_at")
+    list_filter = ("provider", "uploaded_at")
 
     # Verhindert, dass das Upload-Datum manuell geändert wird
     readonly_fields = ("uploaded_at",)
@@ -76,3 +100,4 @@ class ProjectAdmin(admin.ModelAdmin):
     search_fields = ("title", "description")
     list_filter = ("created_at",)
     readonly_fields = ("created_at",)
+    filter_horizontal = ("skills",)

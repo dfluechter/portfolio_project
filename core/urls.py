@@ -5,6 +5,8 @@ from portfolio.views import (
     CertificateViewSet,
     ProjectViewSet,
     ProviderViewSet,
+    SkillViewSet,
+    TimelineEntryViewSet,
     dashboard_view,
     health_check_view,
     login_view,
@@ -16,6 +18,8 @@ router = DefaultRouter()
 router.register(r"projects", ProjectViewSet, basename="project")
 router.register(r"providers", ProviderViewSet, basename="provider")
 router.register(r"certificates", CertificateViewSet, basename="certificate")
+router.register(r"skills", SkillViewSet, basename="skill")
+router.register(r"timeline", TimelineEntryViewSet, basename="timeline")
 
 urlpatterns = [
     path("", login_view, name="login"),

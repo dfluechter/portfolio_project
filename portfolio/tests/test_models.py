@@ -1,7 +1,19 @@
+import datetime
+
 import pytest
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from portfolio.models import Certificate, Project, Provider, certificate_upload_path
+from portfolio.models import (
+    Certificate,
+    Project,
+    Provider,
+    Skill,
+    SkillCategory,
+    TimelineEntry,
+    TimelineType,
+    certificate_upload_path,
+)
 
 # =====================================================================
 # 1. Tests für die dynamische Pfad-Generierung (Unit-Tests)
@@ -14,32 +26,42 @@ class TestCertificateUploadPath:
     Dafür brauchen wir keine Datenbank, nur ein Dummy-Objekt.
     """
 
-    class DummyInstance:
-        def __init__(self, issuer):
-            self.issuer = issuer
+    class DummyProvider:
+        def __init__(self, provider):
+            self.provider = provider
 
-    def test_standard_issuer_name(self):
+    class DummyInstance:
+        def __init__(self, provider):
+            self.provider = provider
+
+    def test_standard_provider_name(self):
         """Testet einen normalen Namen ohne Sonderzeichen."""
-        instance = self.DummyInstance(issuer="Cisco Systems")
+        instance = self.DummyInstance(
+            provider=self.DummyProvider(provider="Cisco Systems")
+        )
         path = certificate_upload_path(instance, "cert.pdf")
 
         # 'Cisco Systems' sollte zu 'cisco-systems' werden
         assert path == "certificates/cisco-systems/cert.pdf"
 
-    def test_complex_issuer_name(self):
+    def test_complex_provider_name(self):
         """Testet einen Namen mit Sonderzeichen und Umlauten."""
-        instance = self.DummyInstance(issuer="TÜV Süd! & Co. KG")
+        instance = self.DummyInstance(
+            provider=self.DummyProvider(provider="TÜV Süd! & Co. KG")
+        )
         path = certificate_upload_path(instance, "mein_zertifikat.pdf")
 
         # 'TÜV Süd! & Co. KG' wird bereinigt (Umlaute/Sonderzeichen werden entfernt oder ersetzt)
         assert path == "certificates/tuv-sud-co-kg/mein_zertifikat.pdf"
 
-    def test_fallback_issuer_name(self):
+    def test_fallback_provider_name(self):
         """
         Testet den Randfall, wenn der Name nur aus nicht-konformen
         Zeichen besteht, die von slugify komplett gelöscht werden.
         """
-        instance = self.DummyInstance(issuer="??? *** !!!")
+        instance = self.DummyInstance(
+            provider=self.DummyProvider(provider="??? *** !!!")
+        )
         path = certificate_upload_path(instance, "test.pdf")
 
         # Da der Name wegschmilzt, muss unser Fallback 'unsorted' greifen
@@ -47,36 +69,61 @@ class TestCertificateUploadPath:
 
 
 # =====================================================================
-# 2. Tests für das Certificate Model (Datenbank-Tests)
+# 2. Tests für Models (Datenbank-Tests)
 # =====================================================================
 
 
-# Dieser Decorator erlaubt es Pytest, auf die Test-Datenbank zuzugreifen
 @pytest.mark.django_db
-class TestCertificateModel:
-    def test_certificate_creation_and_str(self):
-        """Testet das Erstellen eines Eintrags und die __str__ Methode."""
+class TestSkillModel:
+    def test_skill_creation_and_str(self):
+        """Testet das Erstellen eines Skills und die __str__ Methode."""
+        skill = Skill.objects.create(
+            name="Python",
+            category=SkillCategory.BACKEND,
+            proficiency=90,
+            icon="fa-brands fa-python",
+            is_featured=True,
+        )
+        assert Skill.objects.count() == 1
+        assert str(skill) == "Python (Backend, 90%)"
+        assert skill.is_featured is True
 
-        # Wir simulieren eine hochgeladene Datei im Speicher
-        dummy_file = SimpleUploadedFile(
-            name="test_file.pdf",
-            content=b"Dummy PDF Content",  # b'' = Byte-String (Dateiinhalt)
-            content_type="application/pdf",
+    def test_skill_proficiency_validation(self):
+        """Testet, dass proficiency Grenzen (1-100) validiert werden."""
+        skill_invalid = Skill(
+            name="Rust",
+            category=SkillCategory.BACKEND,
+            proficiency=120,
+        )
+        with pytest.raises(ValidationError):
+            skill_invalid.full_clean()
+
+
+@pytest.mark.django_db
+class TestTimelineEntryModel:
+    def test_timeline_entry_creation_and_str(self):
+        """Testet das Erstellen eines Timeline-Eintrags mit Skills."""
+        skill1 = Skill.objects.create(name="Django", category=SkillCategory.BACKEND)
+        skill2 = Skill.objects.create(
+            name="PostgreSQL", category=SkillCategory.DATABASE
         )
 
-        # Zertifikat in der Test-Datenbank erstellen
-        cert = Certificate.objects.create(
-            title="Python Advanced", issuer="Udemy", pdf_file=dummy_file
+        entry = TimelineEntry.objects.create(
+            entry_type=TimelineType.EXPERIENCE,
+            title="Senior Python Backend Developer",
+            organization="Tech Solutions GmbH",
+            location="Berlin / Remote",
+            start_date=datetime.date(2023, 1, 1),
+            is_current=True,
+            description="Entwicklung von Microservices und APIs.",
         )
+        entry.skills.add(skill1, skill2)
 
-        # Prüfen, ob das Objekt existiert
-        assert Certificate.objects.count() == 1
-
-        # Prüfen, ob die __str__ Methode exakt das erwartete Format liefert
-        assert str(cert) == "Python Advanced (Udemy)"
-
-        # Prüfen, ob die Datei im richtigen dynamischen Pfad abgelegt werden würde
-        assert "certificates/udemy/test_file" in cert.pdf_file.name
+        assert TimelineEntry.objects.count() == 1
+        assert str(entry) == "Senior Python Backend Developer @ Tech Solutions GmbH"
+        assert entry.skills.count() == 2
+        assert entry.is_current is True
+        assert entry.end_date is None
 
 
 @pytest.mark.django_db
@@ -91,17 +138,42 @@ class TestProviderModel:
 
 
 @pytest.mark.django_db
+class TestCertificateModel:
+    def test_certificate_creation_and_str(self):
+        """Testet das Erstellen eines Eintrags und die __str__ Methode."""
+        provider = Provider.objects.create(provider="Udemy")
+        dummy_file = SimpleUploadedFile(
+            name="test_file.pdf",
+            content=b"Dummy PDF Content",
+            content_type="application/pdf",
+        )
+
+        cert = Certificate.objects.create(
+            title="Python Advanced", provider=provider, pdf_file=dummy_file
+        )
+
+        assert Certificate.objects.count() == 1
+        assert str(cert) == "Python Advanced (Udemy)"
+        assert "certificates/udemy/test_file" in cert.pdf_file.name
+
+
+@pytest.mark.django_db
 class TestProjectModel:
-    def test_project_creation_and_str(self):
-        """Testet das Erstellen eines Projekts und die __str__ Methode."""
+    def test_project_creation_with_skills_and_str(self):
+        """Testet das Erstellen eines Projekts mit verknüpften Skills."""
+        skill = Skill.objects.create(name="FastAPI", category=SkillCategory.BACKEND)
         project = Project.objects.create(
             title="My Portfolio",
             description="Django portfolio app",
             github_url="https://github.com/user/repo",
             live_url="https://live.com",
         )
+        project.skills.add(skill)
+
         assert Project.objects.count() == 1
         assert str(project) == "My Portfolio"
+        assert project.skills.count() == 1
+        assert project.skills.first().name == "FastAPI"
 
 
 # =====================================================================
