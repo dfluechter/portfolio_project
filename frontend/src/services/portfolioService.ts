@@ -1,5 +1,5 @@
 import { apiClient } from '../api/client';
-import type { Certificate, Project, Provider } from '../types';
+import type { Certificate, Project, Provider, Skill, TimelineEntry } from '../types';
 
 export const portfolioService = {
   // Projekte abrufen
@@ -43,6 +43,27 @@ export const portfolioService = {
   // Anbieter abrufen
   async getProviders(): Promise<Provider[]> {
     const { data } = await apiClient.get<Provider[]>('/api/providers/');
+    return data;
+  },
+
+  // Anbieter erstellen (Admin)
+  async createProvider(providerName: string): Promise<Provider> {
+    const { data } = await apiClient.post<Provider>('/api/providers/', {
+      provider: providerName,
+      aktiv: true,
+    });
+    return data;
+  },
+
+  // Skills abrufen
+  async getSkills(): Promise<Skill[]> {
+    const { data } = await apiClient.get<Skill[]>('/api/skills/');
+    return data;
+  },
+
+  // Werdegang / Timeline abrufen
+  async getTimeline(): Promise<TimelineEntry[]> {
+    const { data } = await apiClient.get<TimelineEntry[]>('/api/timeline/');
     return data;
   },
 };
