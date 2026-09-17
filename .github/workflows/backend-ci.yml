@@ -42,6 +42,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate Neon configuration
+        if: github.event_name == 'pull_request'
+        env:
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          test -n "$NEON_PROJECT_ID" || { echo "::error::NEON_PROJECT_ID is not configured"; exit 1; }
+          test -n "$NEON_API_KEY" || { echo "::error::NEON_API_KEY is not configured"; exit 1; }
+
       - name: Create Neon Branch
         if: github.event_name == 'pull_request'
         id: create-branch
