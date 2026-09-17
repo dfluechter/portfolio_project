@@ -69,8 +69,10 @@ export const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // eslint-disable-next-line react/set-state-in-effect
       loadData();
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -108,7 +110,7 @@ export const DashboardPage: React.FC = () => {
       await portfolioService.deleteProject(id);
       setProjects(projects.filter((p) => p.id !== id));
       setStatusMessage({ type: 'success', text: 'Projekt gelöscht.' });
-    } catch (err) {
+    } catch {
       setStatusMessage({ type: 'error', text: 'Fehler beim Löschen des Projekts.' });
     }
   };
@@ -173,7 +175,7 @@ export const DashboardPage: React.FC = () => {
       await portfolioService.deleteCertificate(id);
       setCertificates(certificates.filter((c) => c.id !== id));
       setStatusMessage({ type: 'success', text: 'Zertifikat gelöscht.' });
-    } catch (err) {
+    } catch {
       setStatusMessage({ type: 'error', text: 'Fehler beim Löschen des Zertifikats.' });
     }
   };
