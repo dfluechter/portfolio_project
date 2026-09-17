@@ -58,6 +58,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
+          branch_name: ${{ github.head_ref || github.ref_name }}
           username: neondb_owner
           database: neondb
 
