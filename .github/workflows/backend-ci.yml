@@ -21,7 +21,7 @@ jobs:
           version: "latest"
 
       - name: Set up Python 3.13
-        run: uv python install 3.13
+        run: uv python install 3.13.14
 
       - name: Install dependencies
         run: uv sync --all-groups
@@ -42,6 +42,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create Neon Branch
+        if: github.event_name == 'pull_request'
+        id: create-branch
+        uses: neondatabase/create-branch-action@v5
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          username: neondb_owner
+          database: neondb
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -49,12 +59,14 @@ jobs:
           version: "latest"
 
       - name: Set up Python 3.13
-        run: uv python install 3.13
+        run: uv python install 3.13.14
 
       - name: Install dependencies
         run: uv sync --all-groups
 
       - name: Run Tests with Coverage
+        env:
+          DATABASE_URL: ${{ steps.create-branch.outputs.db_url_with_pooler }}
         run: uv run pytest --cov=core --cov=portfolio --cov-report=term-missing
 
   # ── 3. BUILD VERIFICATION ──
@@ -72,7 +84,7 @@ jobs:
           version: "latest"
 
       - name: Set up Python 3.13
-        run: uv python install 3.13
+        run: uv python install 3.13.14
 
       - name: Install production dependencies
         run: uv sync --frozen --no-dev
