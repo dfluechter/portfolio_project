@@ -21,7 +21,7 @@ jobs:
           version: "latest"
 
       - name: Set up Python 3.13
-        run: uv python install 3.13
+        run: uv python install 3.13.14
 
       - name: Install dependencies
         run: uv sync --all-groups
@@ -42,6 +42,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate Neon configuration
+        env:
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          test -n "$NEON_PROJECT_ID" || { echo "::error::NEON_PROJECT_ID is not configured"; exit 1; }
+          test -n "$NEON_API_KEY" || { echo "::error::NEON_API_KEY is not configured"; exit 1; }
+
+      - name: Create Neon Branch
+        id: create-branch
+        uses: neondatabase/create-branch-action@v5
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          branch_name: ${{ github.head_ref || format('ci-{0}', github.sha) }}
+          username: neondb_owner
+          database: neondb
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -49,13 +67,15 @@ jobs:
           version: "latest"
 
       - name: Set up Python 3.13
-        run: uv python install 3.13
+        run: uv python install 3.13.14
 
       - name: Install dependencies
         run: uv sync --all-groups
 
       - name: Run Tests with Coverage
-        run: uv run pytest --cov=core --cov=portfolio --cov-report=term-missing
+        env:
+          DATABASE_URL: ${{ steps.create-branch.outputs.db_url_with_pooler }}
+        run: uv run pytest --cov=core --cov=portfolio --cov-report=term-missing --cov-fail-under=95
 
   # ── 3. BUILD VERIFICATION ──
   build:
@@ -72,7 +92,7 @@ jobs:
           version: "latest"
 
       - name: Set up Python 3.13
-        run: uv python install 3.13
+        run: uv python install 3.13.14
 
       - name: Install production dependencies
         run: uv sync --frozen --no-dev

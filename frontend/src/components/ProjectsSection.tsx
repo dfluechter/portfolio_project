@@ -1,53 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { ExternalLink, FolderGit2, Sparkles } from 'lucide-react';
-import { portfolioService } from '../services/portfolioService';
+import { useProjects } from '../hooks/usePortfolio';
 import type { Project } from '../types';
 
+const defaultProjects: Project[] = [
+  {
+    id: 1,
+    title: 'Portfolio & Certificate Management Hub',
+    description:
+      'Enterprise-taugliches Portfolio-System mit Django 5.2, Neon PostgreSQL, Supabase S3 Media Storage und React/Vite Frontend.',
+    github_url: 'https://github.com/DominikFluechter/portfolio_project',
+    live_url: 'https://dfluechter.onrender.com',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    title: 'Automated Certificate Scanner & Importer',
+    description:
+      'Intelligenter PDF- & Bild-Parser für Zertifikatsaussteller mit Cloudflare Rate-Limit-Handling und automatischer Metadatenextraktion.',
+    github_url: 'https://github.com/DominikFluechter',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 3,
+    title: 'JWT Auth & RBAC Security Suite',
+    description:
+      'Sicherheitsarchitektur mit Djoser, SimpleJWT, HttpOnly Refresh Token Rotation und granularen Rollenrechten.',
+    github_url: 'https://github.com/DominikFluechter',
+    created_at: new Date().toISOString(),
+  },
+];
+
 export const ProjectsSection: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const data = await portfolioService.getProjects();
-        setProjects(data);
-      } catch (err) {
-        console.warn('API-Fehler beim Laden der Projekte:', err);
-        setProjects([
-          {
-            id: 1,
-            title: 'Portfolio & Certificate Management Hub',
-            description:
-              'Enterprise-taugliches Portfolio-System mit Django 5.2, Neon PostgreSQL, Supabase S3 Media Storage und React/Vite Frontend.',
-            github_url: 'https://github.com/DominikFluechter/portfolio_project',
-            live_url: 'https://dfluechter.onrender.com',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 2,
-            title: 'Automated Certificate Scanner & Importer',
-            description:
-              'Intelligenter PDF- & Bild-Parser für Zertifikatsaussteller mit Cloudflare Rate-Limit-Handling und automatischer Metadatenextraktion.',
-            github_url: 'https://github.com/DominikFluechter',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 3,
-            title: 'JWT Auth & RBAC Security Suite',
-            description:
-              'Sicherheitsarchitektur mit Djoser, SimpleJWT, HttpOnly Refresh Token Rotation und granularen Rollenrechten.',
-            github_url: 'https://github.com/DominikFluechter',
-            created_at: new Date().toISOString(),
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProjects();
-  }, []);
+  const { data: projectsData, isLoading } = useProjects();
+  const projects = projectsData && projectsData.length > 0 ? projectsData : defaultProjects;
 
   return (
     <section id="projects" className="py-20 bg-slate-100/40 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800/80 transition-colors">
@@ -69,7 +55,7 @@ export const ProjectsSection: React.FC = () => {
         </div>
 
         {/* Projects Grid */}
-        {loading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
               <div key={n} className="h-72 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />

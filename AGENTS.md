@@ -2,6 +2,17 @@
 
 This file provides guidance to agents when working with code in this repository.
 
+## Project Rules
+
+- Monorepo: Django API in backend, React TypeScript in frontend.
+- Before editing, produce a short plan and list affected files.
+- Never read, print, create or modify real .env files.
+- Do not add dependencies without explicit approval.
+- Do not modify migrations after they were committed.
+- Keep changes limited to the requested task.
+- Run relevant tests and report exact commands and results.
+- Never commit or push automatically.
+
 ## Stack & Deployment
 
 Django 5.2 + Python 3.13, managed with **uv** (never use `pip` or `poetry`).
@@ -85,7 +96,7 @@ Endpoints under `api/auth/` — Djoser endpoints include:
 - `POST api/auth/users/` — Registration (`USER_CREATE_PASSWORD_RETYPE=True`)
 
 `LOGIN_FIELD = "email"` → Login runs via E-Mail, not Username.
-Access Token: 60 min, Refresh Token: 7 Tage. Header: `Authorization: Bearer <token>`.
+Access Token: 60 min, Refresh Token: 7 days. Header: `Authorization: Bearer <token>`.
 
 ## Code Style & Conventions
 

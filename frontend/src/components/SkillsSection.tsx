@@ -1,38 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Check, Code, Cpu, Database, Layers, Sparkles, Wrench } from 'lucide-react';
-import { portfolioService } from '../services/portfolioService';
+import { useSkills } from '../hooks/usePortfolio';
 import type { Skill } from '../types';
 
+const defaultSkills: Skill[] = [
+  { id: 1, name: 'Python 3.13', category: 'backend', category_display: 'Backend', proficiency: 95, icon: 'python', is_featured: true, created_at: '' },
+  { id: 2, name: 'Django 5.2 / DRF', category: 'backend', category_display: 'Backend', proficiency: 92, icon: 'django', is_featured: true, created_at: '' },
+  { id: 3, name: 'React 19 & Vite', category: 'frontend', category_display: 'Frontend', proficiency: 90, icon: 'react', is_featured: true, created_at: '' },
+  { id: 4, name: 'TypeScript', category: 'frontend', category_display: 'Frontend', proficiency: 88, icon: 'typescript', is_featured: true, created_at: '' },
+  { id: 5, name: 'PostgreSQL / Neon', category: 'database', category_display: 'Datenbanken', proficiency: 85, icon: 'database', is_featured: true, created_at: '' },
+  { id: 6, name: 'Tailwind CSS', category: 'frontend', category_display: 'Frontend', proficiency: 92, icon: 'tailwind', is_featured: false, created_at: '' },
+  { id: 7, name: 'Supabase S3 Storage', category: 'devops', category_display: 'Cloud & DevOps', proficiency: 86, icon: 'cloud', is_featured: false, created_at: '' },
+  { id: 8, name: 'Docker & CI/CD', category: 'devops', category_display: 'Cloud & DevOps', proficiency: 84, icon: 'docker', is_featured: false, created_at: '' },
+  { id: 9, name: 'Pytest & TDD', category: 'tools', category_display: 'Tools & Methodik', proficiency: 90, icon: 'check', is_featured: true, created_at: '' },
+];
+
 export const SkillsSection: React.FC = () => {
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const { data: skillsData, isLoading } = useSkills();
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const fetchSkills = async () => {
-      try {
-        const data = await portfolioService.getSkills();
-        setSkills(data);
-      } catch (err) {
-        console.warn('Skills API Fallback:', err);
-        setSkills([
-          { id: 1, name: 'Python 3.13', category: 'backend', category_display: 'Backend', proficiency: 95, icon: 'python', is_featured: true, created_at: '' },
-          { id: 2, name: 'Django 5.2 / DRF', category: 'backend', category_display: 'Backend', proficiency: 92, icon: 'django', is_featured: true, created_at: '' },
-          { id: 3, name: 'React 19 & Vite', category: 'frontend', category_display: 'Frontend', proficiency: 90, icon: 'react', is_featured: true, created_at: '' },
-          { id: 4, name: 'TypeScript', category: 'frontend', category_display: 'Frontend', proficiency: 88, icon: 'typescript', is_featured: true, created_at: '' },
-          { id: 5, name: 'PostgreSQL / Neon', category: 'database', category_display: 'Datenbanken', proficiency: 85, icon: 'database', is_featured: true, created_at: '' },
-          { id: 6, name: 'Tailwind CSS', category: 'frontend', category_display: 'Frontend', proficiency: 92, icon: 'tailwind', is_featured: false, created_at: '' },
-          { id: 7, name: 'Supabase S3 Storage', category: 'devops', category_display: 'Cloud & DevOps', proficiency: 86, icon: 'cloud', is_featured: false, created_at: '' },
-          { id: 8, name: 'Docker & CI/CD', category: 'devops', category_display: 'Cloud & DevOps', proficiency: 84, icon: 'docker', is_featured: false, created_at: '' },
-          { id: 9, name: 'Pytest & TDD', category: 'tools', category_display: 'Tools & Methodik', proficiency: 90, icon: 'check', is_featured: true, created_at: '' },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSkills();
-  }, []);
+  const skills = skillsData && skillsData.length > 0 ? skillsData : defaultSkills;
 
   const categories = [
     { key: 'all', label: 'Alle Skills', icon: Layers },
@@ -90,7 +77,7 @@ export const SkillsSection: React.FC = () => {
         </div>
 
         {/* Skills Grid */}
-        {loading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <div key={n} className="h-28 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
