@@ -200,5 +200,3 @@ class Migration(migrations.Migration):
             preserve_default=False,
         ),
     ]
-
-

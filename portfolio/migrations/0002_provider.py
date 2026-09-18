@@ -4,25 +4,44 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('portfolio', '0001_initial'),
+        ("portfolio", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Provider',
+            name="Provider",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('provider', models.CharField(max_length=255, unique=True, verbose_name='Anbieter')),
-                ('logo', models.ImageField(blank=True, null=True, upload_to='provider_logos/', verbose_name='Logo')),
-                ('aktiv', models.BooleanField(default=True, verbose_name='Aktiv')),
-                ('url', models.URLField(blank=True, null=True, verbose_name='URL')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "provider",
+                    models.CharField(
+                        max_length=255, unique=True, verbose_name="Anbieter"
+                    ),
+                ),
+                (
+                    "logo",
+                    models.ImageField(
+                        blank=True,
+                        null=True,
+                        upload_to="provider_logos/",
+                        verbose_name="Logo",
+                    ),
+                ),
+                ("aktiv", models.BooleanField(default=True, verbose_name="Aktiv")),
+                ("url", models.URLField(blank=True, null=True, verbose_name="URL")),
             ],
             options={
-                'verbose_name': 'Zertifikatsanbieter',
-                'verbose_name_plural': 'Zertifikatsanbieter',
+                "verbose_name": "Zertifikatsanbieter",
+                "verbose_name_plural": "Zertifikatsanbieter",
             },
         ),
     ]
-
