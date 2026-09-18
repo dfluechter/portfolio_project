@@ -8,6 +8,11 @@ def create_default_provider(apps, schema_editor):
     Provider.objects.get_or_create(
         id=1, defaults={"provider": "Unsortiert (Legacy)", "aktiv": True}
     )
+    if schema_editor.connection.vendor == "postgresql":
+        with schema_editor.connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT setval(pg_get_serial_sequence('portfolio_provider', 'id'), coalesce(max(id), 1), max(id) IS NOT null) FROM portfolio_provider;"
+            )
 
 
 class Migration(migrations.Migration):
