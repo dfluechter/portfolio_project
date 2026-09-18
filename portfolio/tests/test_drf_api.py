@@ -16,8 +16,7 @@ class TestProjectAPI:
         url = reverse("project-list")
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) >= 1
-        assert any(p["provider"] == "Coursera" for p in response.data)
+        assert len(response.data) == 1
 
     def test_unauthenticated_cannot_create_project(self, api_client):
         """Unauthentifizierte Nutzer können keine Projekte erstellen."""
@@ -55,8 +54,7 @@ class TestSkillAPI:
         url = reverse("skill-list")
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) >= 1
-        assert any(p["provider"] == "Coursera" for p in response.data)
+        assert len(response.data) == 1
         assert response.data[0]["name"] == "Python"
         assert response.data[0]["category_display"] == "Backend"
 
@@ -86,8 +84,7 @@ class TestTimelineAPI:
         url = reverse("timeline-list")
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) >= 1
-        assert any(p["provider"] == "Coursera" for p in response.data)
+        assert len(response.data) == 1
 
     def test_authenticated_can_create_timeline_entry(self, auth_client):
         skill = Skill.objects.create(name="PostgreSQL", category="database")
@@ -145,8 +142,7 @@ class TestCertificateAPI:
         url = reverse("certificate-list")
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) >= 1
-        assert any(p["provider"] == "Coursera" for p in response.data)
+        assert len(response.data) == 1
         assert response.data[0]["provider_details"]["provider"] == "Linux Foundation"
 
     def test_authenticated_can_create_certificate_with_file(self, auth_client):
@@ -167,3 +163,4 @@ class TestCertificateAPI:
         assert response.status_code == status.HTTP_201_CREATED
         assert Certificate.objects.filter(title="AWS Solutions Architect").exists()
         assert response.data["provider_details"]["provider"] == "Amazon Web Services"
+
