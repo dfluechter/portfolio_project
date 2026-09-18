@@ -3,6 +3,13 @@
 from django.db import migrations, models
 
 
+def create_default_provider(apps, schema_editor):
+    Provider = apps.get_model("portfolio", "Provider")
+    Provider.objects.get_or_create(
+        id=1, defaults={"provider": "Unsortiert (Legacy)", "aktiv": True}
+    )
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("portfolio", "0001_initial"),
@@ -44,4 +51,5 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "Zertifikatsanbieter",
             },
         ),
+        migrations.RunPython(create_default_provider, migrations.RunPython.noop),
     ]
