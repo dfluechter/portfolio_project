@@ -108,7 +108,7 @@ class Migration(migrations.Migration):
                 "ordering": ("-created_at",),
             },
         ),
-migrations.CreateModel(
+        migrations.CreateModel(
             name="User",
             fields=[
                 (
@@ -184,4 +184,3 @@ migrations.CreateModel(
             },
         ),
     ]
-
