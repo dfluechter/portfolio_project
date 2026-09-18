@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("portfolio", "0001_initial"),
+        ("portfolio", "0002_provider"),
     ]
 
     operations = [
@@ -200,3 +200,5 @@ class Migration(migrations.Migration):
             preserve_default=False,
         ),
     ]
+
+
