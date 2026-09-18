@@ -101,12 +101,13 @@ export const LoginPage: React.FC = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              <label htmlFor="login-email" className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                 E-Mail-Adresse
               </label>
               <div className="relative flex items-center">
                 <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 pointer-events-none" />
                 <input
+                  id="login-email"
                   type="email"
                   required
                   value={email}
@@ -118,12 +119,13 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              <label htmlFor="login-password" className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                 Passwort
               </label>
               <div className="relative flex items-center">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 pointer-events-none" />
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}

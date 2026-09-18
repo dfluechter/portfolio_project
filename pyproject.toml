@@ -14,7 +14,6 @@ dependencies = [
     "psycopg2-binary",
     "python-dotenv",
     "pillow",
-    "pytest-django",
     "dj-database-url",
     "whitenoise",
     "djoser>=2.3.3",
@@ -31,15 +30,11 @@ ignore_missing_imports = true
 check_untyped_defs = true
 exclude = ["^build/", "migrations/"]
 
-# Konfiguration für Tools, die du eventuell noch nutzt
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "core.settings_test"
-python_files = ["tests.py", "test_*.py"]
-
 [tool.coverage.run]
 omit = [
     "core/asgi.py",
     "core/wsgi.py",
+    "portfolio/management/commands/*",
 ]
 
 [tool.ruff]

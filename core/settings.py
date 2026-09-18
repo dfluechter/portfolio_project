@@ -17,16 +17,6 @@ SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-dev-secret-key")
 
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_HSTS_SECONDS = 31536000  # 1 Jahr
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -41,7 +31,7 @@ CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
         "CSRF_TRUSTED_ORIGINS",
-        "http://localhost:8000",
+        "http://localhost:8000,http://localhost:3000,http://127.0.0.1:3000",
     ).split(",")
     if origin.strip()
 ]
@@ -172,8 +162,6 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 # Media files: Supabase Storage via S3
 # -----------------------------------------------------------------------------
 
-import os
-
 # --- Supabase S3 / django-storages Konfiguration ---
 
 USE_SUPABASE_S3 = os.getenv("USE_SUPABASE_S3", "False").lower() == "true"
@@ -208,7 +196,7 @@ if USE_SUPABASE_S3:
             },
         },
         "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
 
@@ -220,7 +208,7 @@ else:
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
     MEDIA_ROOT = BASE_DIR / "media"
@@ -238,6 +226,9 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
 
     SECURE_SSL_REDIRECT = True
+
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -293,9 +284,15 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
         "CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://localhost:5173",
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173",
     ).split(",")
     if origin.strip()
+]
+
+# Erlaubt Preview-Deployments auf Cloudflare Pages und Vercel
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/.*\.pages\.dev$",
+    r"^https:\/\/.*\.vercel\.app$",
 ]
 
 CORS_ALLOW_CREDENTIALS = True

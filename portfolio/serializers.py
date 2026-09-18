@@ -25,7 +25,7 @@ class SkillSerializer(serializers.ModelSerializer):
 class ProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Provider
-        fields = "__all__"
+        fields = ("id", "provider", "logo", "aktiv", "url")
 
 
 class CertificateSerializer(serializers.ModelSerializer):

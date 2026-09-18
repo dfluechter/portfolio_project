@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { PortfolioPage } from './pages/PortfolioPage';
-import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
+
+const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+
+const RouteLoadingFallback = () => (
+  <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 export function App() {
   const [queryClient] = useState(
@@ -25,11 +32,13 @@ export function App() {
       <ThemeProvider>
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-              <Route path="/" element={<PortfolioPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-            </Routes>
+            <Suspense fallback={<RouteLoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<PortfolioPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+              </Routes>
+            </Suspense>
           </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>
