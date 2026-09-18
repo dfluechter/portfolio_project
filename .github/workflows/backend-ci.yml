@@ -77,6 +77,12 @@ jobs:
           DATABASE_URL: ${{ steps.create-branch.outputs.db_url_with_pooler }}
         run: uv run pytest --cov=core --cov=portfolio --cov-report=term-missing --cov-fail-under=95
 
+      - name: Clean up Neon Branch
+        if: always()
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: npx neonctl branches delete ${{ steps.create-branch.outputs.branch_id }} --project-id ${{ secrets.NEON_PROJECT_ID }}
+
   # ── 3. BUILD VERIFICATION ──
   build:
     name: 📦 Verify Build
