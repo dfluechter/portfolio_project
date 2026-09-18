@@ -108,42 +108,7 @@ class Migration(migrations.Migration):
                 "ordering": ("-created_at",),
             },
         ),
-        migrations.CreateModel(
-            name="Provider",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                (
-                    "provider",
-                    models.CharField(
-                        max_length=255, unique=True, verbose_name="Anbieter"
-                    ),
-                ),
-                (
-                    "logo",
-                    models.ImageField(
-                        blank=True,
-                        null=True,
-                        upload_to="provider_logos/",
-                        verbose_name="Logo",
-                    ),
-                ),
-                ("aktiv", models.BooleanField(default=True, verbose_name="Aktiv")),
-                ("url", models.URLField(blank=True, null=True, verbose_name="URL")),
-            ],
-            options={
-                "verbose_name": "Zertifikatsanbieter",
-                "verbose_name_plural": "Zertifikatsanbieter",
-            },
-        ),
-        migrations.CreateModel(
+migrations.CreateModel(
             name="User",
             fields=[
                 (
@@ -219,3 +184,4 @@ class Migration(migrations.Migration):
             },
         ),
     ]
+
