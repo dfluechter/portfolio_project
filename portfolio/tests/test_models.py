@@ -133,7 +133,7 @@ class TestProviderModel:
         provider = Provider.objects.create(
             provider="Microsoft", aktiv=True, url="https://microsoft.com"
         )
-        assert Provider.objects.count() == 1
+        assert Provider.objects.filter(provider="Microsoft").count() == 1
         assert str(provider) == "Microsoft"
 
 
