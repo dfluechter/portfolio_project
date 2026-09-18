@@ -1,56 +1,42 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Briefcase, Calendar, GraduationCap, MapPin, Milestone } from 'lucide-react';
-import { portfolioService } from '../services/portfolioService';
+import { useTimeline } from '../hooks/usePortfolio';
 import type { TimelineEntry } from '../types';
 
+const defaultTimeline: TimelineEntry[] = [
+  {
+    id: 1,
+    entry_type: 'experience',
+    entry_type_display: 'Berufserfahrung',
+    title: 'Full-Stack Software Engineer & Backend Architect',
+    organization: 'Selbstständig / Freiberuflich',
+    location: 'Deutschland (Remote)',
+    start_date: '2023-01-01',
+    end_date: null,
+    is_current: true,
+    description:
+      'Konzeption und Implementierung skalierbarer Webanwendungen mit Django 5, PostgreSQL, Microservices und React/TypeScript Frontends. CI/CD-Automatisierung und Cloud-Deployment.',
+    created_at: '',
+  },
+  {
+    id: 2,
+    entry_type: 'education',
+    entry_type_display: 'Ausbildung & Zertifizierungen',
+    title: 'Continuous Professional Development & Cloud Certification',
+    organization: 'Meta, Google Cloud, AWS, IBM',
+    location: 'Online',
+    start_date: '2022-06-01',
+    end_date: '2024-12-31',
+    is_current: false,
+    description:
+      'Absolvierung fortgeschrittener Zertifizierungsprogramme in den Bereichen Cloud Architecture, Full-Stack Software Engineering, Observability und Machine Learning.',
+    created_at: '',
+  },
+];
+
 export const TimelineSection: React.FC = () => {
-  const [entries, setEntries] = useState<TimelineEntry[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    const fetchTimeline = async () => {
-      try {
-        const data = await portfolioService.getTimeline();
-        setEntries(data);
-      } catch (err) {
-        console.warn('Timeline API Fallback:', err);
-        setEntries([
-          {
-            id: 1,
-            entry_type: 'experience',
-            entry_type_display: 'Berufserfahrung',
-            title: 'Full-Stack Software Engineer & Backend Architect',
-            organization: 'Selbstständig / Freiberuflich',
-            location: 'Deutschland (Remote)',
-            start_date: '2023-01-01',
-            end_date: null,
-            is_current: true,
-            description:
-              'Konzeption und Implementierung skalierbarer Webanwendungen mit Django 5, PostgreSQL, Microservices und React/TypeScript Frontends. CI/CD-Automatisierung und Cloud-Deployment.',
-            created_at: '',
-          },
-          {
-            id: 2,
-            entry_type: 'education',
-            entry_type_display: 'Ausbildung & Zertifizierungen',
-            title: 'Continuous Professional Development & Cloud Certification',
-            organization: 'Meta, Google Cloud, AWS, IBM',
-            location: 'Online',
-            start_date: '2022-06-01',
-            end_date: '2024-12-31',
-            is_current: false,
-            description:
-              'Absolvierung fortgeschrittener Zertifizierungsprogramme in den Bereichen Cloud Architecture, Full-Stack Software Engineering, Observability und Machine Learning.',
-            created_at: '',
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTimeline();
-  }, []);
+  const { data: timelineData, isLoading } = useTimeline();
+  const entries = timelineData && timelineData.length > 0 ? timelineData : defaultTimeline;
 
   return (
     <section id="timeline" className="py-20 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/80 transition-colors">
@@ -72,7 +58,7 @@ export const TimelineSection: React.FC = () => {
         </div>
 
         {/* Timeline Container */}
-        {loading ? (
+        {isLoading ? (
           <div className="space-y-6 max-w-3xl mx-auto">
             {[1, 2].map((n) => (
               <div key={n} className="h-32 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />

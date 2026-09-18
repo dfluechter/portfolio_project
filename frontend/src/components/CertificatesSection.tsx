@@ -1,28 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Award, CheckCircle2, ExternalLink, Search } from 'lucide-react';
-import { portfolioService } from '../services/portfolioService';
+import { useCertificates } from '../hooks/usePortfolio';
 import type { Certificate } from '../types';
 
 export const CertificatesSection: React.FC = () => {
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const { data: certificates = [], isLoading } = useCertificates();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedIssuer, setSelectedIssuer] = useState<string>('all');
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    const fetchCertificates = async () => {
-      try {
-        const data = await portfolioService.getCertificates();
-        setCertificates(data);
-      } catch (err) {
-        console.warn('API-Fehler beim Laden der Zertifikate:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCertificates();
-  }, []);
 
   const getIssuerName = (cert: Certificate): string => {
     return cert.provider_details?.provider || 'Zertifikatsanbieter';
@@ -91,7 +75,7 @@ export const CertificatesSection: React.FC = () => {
         </div>
 
         {/* Certificates Grid */}
-        {loading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
               <div key={n} className="h-44 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />

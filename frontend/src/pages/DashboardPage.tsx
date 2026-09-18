@@ -1,43 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { portfolioService } from '../services/portfolioService';
-import type { Certificate, Project, Provider } from '../types';
-import {
-  Award,
-  ExternalLink,
-  FolderGit2,
-  LayoutDashboard,
-  LogOut,
-  Plus,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+import { useCertificates, useProjects } from '../hooks/usePortfolio';
+import { Award, FolderGit2, LayoutDashboard, LogOut } from 'lucide-react';
+import { CertificateManager } from '../components/dashboard/CertificateManager';
+import { ProjectManager } from '../components/dashboard/ProjectManager';
 
 export const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<'projects' | 'certificates'>('certificates');
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [loadingData, setLoadingData] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<'certificates' | 'projects'>('certificates');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // New Project Form State
-  const [projectTitle, setProjectTitle] = useState('');
-  const [projectDesc, setProjectDesc] = useState('');
-  const [projectGithub, setProjectGithub] = useState('');
-  const [projectLive, setProjectLive] = useState('');
-  const [submittingProject, setSubmittingProject] = useState(false);
-
-  // New Certificate Form State
-  const [certTitle, setCertTitle] = useState('');
-  const [selectedProviderId, setSelectedProviderId] = useState<string>('');
-  const [newProviderName, setNewProviderName] = useState<string>('');
-  const [certFile, setCertFile] = useState<File | null>(null);
-  const [submittingCert, setSubmittingCert] = useState(false);
+  const { data: certificates = [] } = useCertificates();
+  const { data: projects = [] } = useProjects();
 
   // Redirect if not logged in
   useEffect(() => {
@@ -45,140 +22,6 @@ export const DashboardPage: React.FC = () => {
       navigate('/login');
     }
   }, [isLoading, isAuthenticated, navigate]);
-
-  const loadData = async () => {
-    setLoadingData(true);
-    try {
-      const [projData, certData, provData] = await Promise.all([
-        portfolioService.getProjects(),
-        portfolioService.getCertificates(),
-        portfolioService.getProviders(),
-      ]);
-      setProjects(projData);
-      setCertificates(certData);
-      setProviders(provData);
-      if (provData.length > 0 && !selectedProviderId) {
-        setSelectedProviderId(String(provData[0].id));
-      }
-    } catch (err) {
-      console.error('Fehler beim Laden der Dashboard-Daten:', err);
-    } finally {
-      setLoadingData(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      // eslint-disable-next-line react/set-state-in-effect
-      loadData();
-    }
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
-
-  const handleCreateProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmittingProject(true);
-    setStatusMessage(null);
-
-    const formData = new FormData();
-    formData.append('title', projectTitle);
-    formData.append('description', projectDesc);
-    if (projectGithub) formData.append('github_url', projectGithub);
-    if (projectLive) formData.append('live_url', projectLive);
-
-    try {
-      await portfolioService.createProject(formData);
-      setStatusMessage({ type: 'success', text: 'Projekt erfolgreich angelegt!' });
-      setProjectTitle('');
-      setProjectDesc('');
-      setProjectGithub('');
-      setProjectLive('');
-      await loadData();
-    } catch (err: any) {
-      setStatusMessage({
-        type: 'error',
-        text: err.response?.data?.detail || 'Fehler beim Erstellen des Projekts.',
-      });
-    } finally {
-      setSubmittingProject(false);
-    }
-  };
-
-  const handleDeleteProject = async (id: number) => {
-    if (!window.confirm('Möchtest du dieses Projekt wirklich löschen?')) return;
-    try {
-      await portfolioService.deleteProject(id);
-      setProjects(projects.filter((p) => p.id !== id));
-      setStatusMessage({ type: 'success', text: 'Projekt gelöscht.' });
-    } catch {
-      setStatusMessage({ type: 'error', text: 'Fehler beim Löschen des Projekts.' });
-    }
-  };
-
-  const handleCreateCertificate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!certFile) {
-      setStatusMessage({ type: 'error', text: 'Bitte wähle eine PDF-, PNG- oder JPG-Datei aus.' });
-      return;
-    }
-
-    setSubmittingCert(true);
-    setStatusMessage(null);
-
-    try {
-      let providerIdToUse = selectedProviderId;
-
-      // Wenn "new" ausgewählt wurde oder ein neuer Anbietername eingegeben wurde
-      if (selectedProviderId === 'new') {
-        if (!newProviderName.trim()) {
-          setStatusMessage({ type: 'error', text: 'Bitte gib einen Namen für den neuen Anbieter ein.' });
-          setSubmittingCert(false);
-          return;
-        }
-        const createdProv = await portfolioService.createProvider(newProviderName.trim());
-        providerIdToUse = String(createdProv.id);
-      }
-
-      if (!providerIdToUse) {
-        setStatusMessage({ type: 'error', text: 'Bitte wähle einen Anbieter aus.' });
-        setSubmittingCert(false);
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('title', certTitle);
-      formData.append('provider', providerIdToUse);
-      formData.append('pdf_file', certFile);
-
-      await portfolioService.createCertificate(formData);
-      setStatusMessage({ type: 'success', text: 'Zertifikat erfolgreich hochgeladen!' });
-      setCertTitle('');
-      setNewProviderName('');
-      setCertFile(null);
-      await loadData();
-    } catch (err: any) {
-      console.error('Fehler beim Zertifikat-Upload:', err);
-      const msg =
-        err.response?.data?.detail ||
-        err.response?.data?.pdf_file?.[0] ||
-        err.response?.data?.provider?.[0] ||
-        'Fehler beim Hochladen des Zertifikats.';
-      setStatusMessage({ type: 'error', text: msg });
-    } finally {
-      setSubmittingCert(false);
-    }
-  };
-
-  const handleDeleteCertificate = async (id: number) => {
-    if (!window.confirm('Möchtest du dieses Zertifikat wirklich löschen?')) return;
-    try {
-      await portfolioService.deleteCertificate(id);
-      setCertificates(certificates.filter((c) => c.id !== id));
-      setStatusMessage({ type: 'success', text: 'Zertifikat gelöscht.' });
-    } catch {
-      setStatusMessage({ type: 'error', text: 'Fehler beim Löschen des Zertifikats.' });
-    }
-  };
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -208,12 +51,14 @@ export const DashboardPage: React.FC = () => {
 
           <div className="flex items-center gap-4">
             <button
+              type="button"
               onClick={() => navigate('/')}
               className="text-xs font-semibold text-slate-400 hover:text-white transition-colors"
             >
               Zum Portfolio →
             </button>
             <button
+              type="button"
               onClick={logout}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs font-semibold border border-red-500/20 transition-colors"
             >
@@ -229,14 +74,19 @@ export const DashboardPage: React.FC = () => {
         {/* Status Message Notification */}
         {statusMessage && (
           <div
-            className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between ${
+            className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between animate-in fade-in duration-200 ${
               statusMessage.type === 'success'
                 ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
                 : 'bg-red-500/10 border border-red-500/30 text-red-400'
             }`}
           >
             <span>{statusMessage.text}</span>
-            <button onClick={() => setStatusMessage(null)} className="text-slate-400 hover:text-white">
+            <button
+              type="button"
+              onClick={() => setStatusMessage(null)}
+              className="text-slate-400 hover:text-white p-1"
+              aria-label="Nachricht schließen"
+            >
               ✕
             </button>
           </div>
@@ -245,6 +95,7 @@ export const DashboardPage: React.FC = () => {
         {/* Tab Navigation */}
         <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
           <button
+            type="button"
             onClick={() => setActiveTab('certificates')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'certificates'
@@ -256,6 +107,7 @@ export const DashboardPage: React.FC = () => {
             Zertifikate ({certificates.length})
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('projects')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'projects'
@@ -268,264 +120,15 @@ export const DashboardPage: React.FC = () => {
           </button>
         </div>
 
-        {/* TAB 1: CERTIFICATES */}
-        {activeTab === 'certificates' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Upload Certificate Form */}
-            <div className="lg:col-span-1 bg-slate-900/50 border border-slate-800 p-6 rounded-2xl h-fit space-y-4">
-              <div className="flex items-center gap-2 text-white font-bold text-base">
-                <Upload className="w-5 h-5 text-indigo-400" />
-                Neues Zertifikat hochladen
-              </div>
-
-              <form onSubmit={handleCreateCertificate} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Titel des Zertifikats</label>
-                  <input
-                    type="text"
-                    required
-                    value={certTitle}
-                    onChange={(e) => setCertTitle(e.target.value)}
-                    placeholder="z. B. Meta Full-Stack Certificate"
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Zertifikatsanbieter</label>
-                  <select
-                    value={selectedProviderId}
-                    onChange={(e) => setSelectedProviderId(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                  >
-                    {providers.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.provider}
-                      </option>
-                    ))}
-                    <option value="new">+ Neuen Anbieter erstellen...</option>
-                  </select>
-                </div>
-
-                {selectedProviderId === 'new' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-indigo-400 mb-1">Name des neuen Anbieters</label>
-                    <input
-                      type="text"
-                      required
-                      value={newProviderName}
-                      onChange={(e) => setNewProviderName(e.target.value)}
-                      placeholder="z. B. AWS, Coursera, IBM"
-                      className="w-full px-3.5 py-2 bg-slate-950 border border-indigo-500/50 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">
-                    Datei (PDF, PNG, JPG ≤ 5 MB)
-                  </label>
-                  <input
-                    type="file"
-                    required
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={(e) => setCertFile(e.target.files?.[0] || null)}
-                    className="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600/20 file:text-indigo-300 hover:file:bg-indigo-600/30 cursor-pointer"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submittingCert}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 disabled:opacity-50"
-                >
-                  {submittingCert ? 'Wird hochgeladen...' : 'Zertifikat hochladen'}
-                </button>
-              </form>
-            </div>
-
-            {/* Existing Certificates List */}
-            <div className="lg:col-span-2 space-y-4">
-              <h2 className="text-base font-bold text-white">Vorhandene Zertifikate ({certificates.length})</h2>
-              {loadingData ? (
-                <div className="p-8 text-center text-slate-500 text-xs">Lade Zertifikate...</div>
-              ) : certificates.length === 0 ? (
-                <div className="p-8 rounded-2xl bg-slate-900/30 border border-slate-800 text-center text-slate-500 text-xs">
-                  Noch keine Zertifikate in der Datenbank vorhanden.
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-[700px] overflow-y-auto pr-1">
-                  {certificates.map((cert) => {
-                    const providerName = cert.provider_details?.provider || 'Anbieter';
-                    return (
-                      <div
-                        key={cert.id}
-                        className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 flex items-center justify-between gap-4 hover:border-slate-700 transition-colors"
-                      >
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-md border border-violet-500/20">
-                            {providerName}
-                          </span>
-                          <h3 className="font-bold text-white text-sm mt-1">{cert.title}</h3>
-                          <p className="text-[11px] text-slate-500">
-                            Hochgeladen am {new Date(cert.uploaded_at).toLocaleDateString('de-DE')}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {cert.pdf_file && (
-                            <a
-                              href={cert.pdf_file}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-2 text-indigo-400 hover:text-indigo-300 rounded-lg hover:bg-slate-800 transition-colors"
-                              title="Zertifikat ansehen"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          )}
-                          <button
-                            onClick={() => handleDeleteCertificate(cert.id)}
-                            className="p-2 text-slate-500 hover:text-red-400 transition-colors rounded-lg hover:bg-slate-800"
-                            title="Zertifikat löschen"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: PROJECTS */}
-        {activeTab === 'projects' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Create Project Form */}
-            <div className="lg:col-span-1 bg-slate-900/50 border border-slate-800 p-6 rounded-2xl h-fit space-y-4">
-              <div className="flex items-center gap-2 text-white font-bold text-base">
-                <Plus className="w-5 h-5 text-indigo-400" />
-                Neues Projekt hinzufügen
-              </div>
-
-              <form onSubmit={handleCreateProject} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Titel</label>
-                  <input
-                    type="text"
-                    required
-                    value={projectTitle}
-                    onChange={(e) => setProjectTitle(e.target.value)}
-                    placeholder="z. B. Cloud Architecture Tool"
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Beschreibung</label>
-                  <textarea
-                    rows={4}
-                    required
-                    value={projectDesc}
-                    onChange={(e) => setProjectDesc(e.target.value)}
-                    placeholder="Details zum Projekt, Technologien, etc."
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">GitHub URL (optional)</label>
-                  <input
-                    type="url"
-                    value={projectGithub}
-                    onChange={(e) => setProjectGithub(e.target.value)}
-                    placeholder="https://github.com/..."
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Live URL (optional)</label>
-                  <input
-                    type="url"
-                    value={projectLive}
-                    onChange={(e) => setProjectLive(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submittingProject}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 disabled:opacity-50"
-                >
-                  {submittingProject ? 'Wird gespeichert...' : 'Projekt speichern'}
-                </button>
-              </form>
-            </div>
-
-            {/* Existing Projects List */}
-            <div className="lg:col-span-2 space-y-4">
-              <h2 className="text-base font-bold text-white">Vorhandene Projekte ({projects.length})</h2>
-              {loadingData ? (
-                <div className="p-8 text-center text-slate-500 text-xs">Lade Projekte...</div>
-              ) : projects.length === 0 ? (
-                <div className="p-8 rounded-2xl bg-slate-900/30 border border-slate-800 text-center text-slate-500 text-xs">
-                  Noch keine Projekte in der Datenbank angelegt.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {projects.map((proj) => (
-                    <div
-                      key={proj.id}
-                      className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 flex items-start justify-between gap-4"
-                    >
-                      <div className="space-y-1">
-                        <h3 className="font-bold text-white text-sm">{proj.title}</h3>
-                        <p className="text-xs text-slate-400 line-clamp-2">{proj.description}</p>
-                        <div className="flex items-center gap-3 pt-2">
-                          {proj.github_url && (
-                            <a
-                              href={proj.github_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[11px] text-indigo-400 hover:underline flex items-center gap-1"
-                            >
-                              GitHub
-                            </a>
-                          )}
-                          {proj.live_url && (
-                            <a
-                              href={proj.live_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[11px] text-violet-400 hover:underline flex items-center gap-1"
-                            >
-                              <ExternalLink className="w-3 h-3" /> Live Demo
-                            </a>
-                          )}
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleDeleteProject(proj.id)}
-                        className="p-2 text-slate-500 hover:text-red-400 transition-colors rounded-lg hover:bg-slate-800"
-                        title="Projekt löschen"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+        {/* TAB CONTENT */}
+        {activeTab === 'certificates' ? (
+          <CertificateManager onNotify={setStatusMessage} />
+        ) : (
+          <ProjectManager onNotify={setStatusMessage} />
         )}
       </main>
     </div>
   );
 };
+
+export default DashboardPage;
