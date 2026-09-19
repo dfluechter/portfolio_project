@@ -106,6 +106,7 @@ if DATABASE_URL:
         "default": dj_database_url.config(
             default="sqlite:///db.sqlite3",  # Fallback, falls DATABASE_URL leer ist
             conn_max_age=600,
+            conn_health_checks=True,
             ssl_require=True,
         )
     }
@@ -201,7 +202,10 @@ if USE_SUPABASE_S3:
     }
 
     # Basis-URL für Medien-Dateien
-    MEDIA_URL = f"{os.getenv('AWS_S3_ENDPOINT_URL')}/{os.getenv('AWS_STORAGE_BUCKET_NAME', 'portfolio-media')}/"
+    if SUPABASE_PUBLIC_MEDIA_URL:
+        MEDIA_URL = SUPABASE_PUBLIC_MEDIA_URL.rstrip("/") + "/"
+    else:
+        MEDIA_URL = f"{os.getenv('AWS_S3_ENDPOINT_URL')}/{os.getenv('AWS_STORAGE_BUCKET_NAME', 'portfolio-media')}/"
 else:
     STORAGES = {
         "default": {
@@ -227,7 +231,6 @@ if not DEBUG:
 
     SECURE_SSL_REDIRECT = True
 
-    SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
     SECURE_HSTS_SECONDS = 31536000
@@ -289,11 +292,6 @@ CORS_ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
-# Erlaubt Preview-Deployments auf Cloudflare Pages und Vercel
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https:\/\/.*\.pages\.dev$",
-    r"^https:\/\/.*\.vercel\.app$",
-]
 
 CORS_ALLOW_CREDENTIALS = True
 

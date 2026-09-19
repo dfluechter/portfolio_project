@@ -23,3 +23,5 @@ test_media/
 test_s3.py
 
 #/
+.venv/
+.ruff_cache/

@@ -19,7 +19,7 @@ from django.utils.text import slugify
 def validate_file_extension(value: Any) -> None:
     """Prüft, ob die Dateiendung .pdf, .png, oder 'jpg' ist."""
     ext = os.path.splitext(value.name)[1].lower()
-    valid_extensions = [".pdf", ".png", ".jpg"]
+    valid_extensions = [".pdf", ".png", ".jpg", ".jpeg"]
     if ext not in valid_extensions:
         raise ValidationError(
             f"Ungültiges Format! Erlaubt sind nur: {', '.join(valid_extensions)}"
@@ -45,9 +45,6 @@ def certificate_upload_path(instance: Any, filename: str) -> str:
             issuer_name = instance.provider.provider
         else:
             issuer_name = str(instance.provider)
-    elif hasattr(instance, "issuer") and instance.issuer:
-        issuer_name = instance.issuer
-
     clean_issuer = slugify(issuer_name)
     if not clean_issuer:
         clean_issuer = "unsorted"
@@ -165,12 +162,13 @@ class Provider(models.Model):
     aktiv = models.BooleanField(default=True, verbose_name="Aktiv")
     url = models.URLField(blank=True, null=True, verbose_name="URL")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.provider
 
     class Meta:
         verbose_name = "Zertifikatsanbieter"
         verbose_name_plural = "Zertifikatsanbieter"
+        ordering = ("provider",)
 
 
 class Certificate(models.Model):
@@ -193,7 +191,7 @@ class Certificate(models.Model):
         verbose_name_plural = "Zertifikate"
         ordering = ("-uploaded_at",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.title} ({self.provider.provider})"
 
 
@@ -223,7 +221,7 @@ class Project(models.Model):
         verbose_name_plural = "Projekte"
         ordering = ("-created_at",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 

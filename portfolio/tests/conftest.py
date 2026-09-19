@@ -39,3 +39,22 @@ def auth_client(api_client, test_user):
     refresh = RefreshToken.for_user(test_user)
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token!s}")
     return api_client
+
+
+import shutil
+import pytest
+from django.conf import settings
+
+
+@pytest.fixture(autouse=True)
+def cleanup_test_media():
+    """Bereinigt Test-Media-Dateien nach jedem Test."""
+    yield
+    media_root = settings.MEDIA_ROOT
+    if (
+        media_root
+        and hasattr(media_root, "exists")
+        and media_root.exists()
+        and "test_media" in str(media_root)
+    ):
+        shutil.rmtree(media_root, ignore_errors=True)

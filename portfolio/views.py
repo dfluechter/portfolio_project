@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import redirect, render
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
@@ -18,7 +18,6 @@ from .serializers import (
 )
 
 
-@csrf_exempt
 def login_view(request):
     if request.method not in ["GET", "POST"]:
         return HttpResponseNotAllowed(["GET", "POST"])
@@ -42,13 +41,8 @@ def login_view(request):
 
         user = authenticate(request, username=email, password=password)
         if user is not None:
-            if user.is_active:
-                login(request, user)
-                return JsonResponse({"success": True})
-            else:
-                return JsonResponse(
-                    {"detail": "Dieses Benutzerkonto ist deaktiviert."}, status=403
-                )
+            login(request, user)
+            return JsonResponse({"success": True})
         else:
             return JsonResponse(
                 {"detail": "E-Mail-Adresse oder Passwort ungültig."}, status=400
@@ -65,6 +59,7 @@ def dashboard_view(request):
     return render(request, "dashboard.html")
 
 
+@require_POST
 def logout_view(request):
     """
     Meldet den Benutzer ab und leitet auf die Login-Seite weiter.

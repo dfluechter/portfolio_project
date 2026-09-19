@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useState } from 'react';
 import {
   ExternalLink,
@@ -50,11 +51,14 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
       setProjectDesc('');
       setProjectGithub('');
       setProjectLive('');
-    } catch (err: any) {
-      onNotify({
-        type: 'error',
-        text: err.response?.data?.detail || 'Fehler beim Erstellen des Projekts.',
-      });
+    } catch (err: unknown) {
+      let msg = 'Fehler beim Erstellen des Projekts.';
+      if (axios.isAxiosError(err)) {
+        msg = err.response?.data?.detail || msg;
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
+      onNotify({ type: 'error', text: msg });
     }
   };
 

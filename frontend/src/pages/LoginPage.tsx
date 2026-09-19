@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -28,13 +29,19 @@ export const LoginPage: React.FC = () => {
     try {
       await login(email, password);
       navigate('/dashboard');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      const detail =
-        err.response?.data?.detail ||
-        err.response?.data?.non_field_errors?.[0] ||
-        'Anmeldung fehlgeschlagen. Bitte prüfe E-Mail und Passwort.';
-      setError(detail);
+      if (axios.isAxiosError(err)) {
+        const detail =
+          err.response?.data?.detail ||
+          err.response?.data?.non_field_errors?.[0] ||
+          'Anmeldung fehlgeschlagen. Bitte prüfe E-Mail und Passwort.';
+        setError(detail);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Ein unbekannter Fehler ist aufgetreten.');
+      }
     } finally {
       setLoading(false);
     }

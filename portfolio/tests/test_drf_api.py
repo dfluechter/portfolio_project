@@ -163,4 +163,3 @@ class TestCertificateAPI:
         assert response.status_code == status.HTTP_201_CREATED
         assert Certificate.objects.filter(title="AWS Solutions Architect").exists()
         assert response.data["provider_details"]["provider"] == "Amazon Web Services"
-

@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useState } from 'react';
 import {
   Award,
@@ -81,12 +82,16 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
       setNewProviderName('');
       setCertFile(null);
       setSelectedProviderId(providers.length > 0 ? String(providers[0].id) : '');
-    } catch (err: any) {
-      const msg =
-        err.response?.data?.detail ||
-        err.response?.data?.pdf_file?.[0] ||
-        err.response?.data?.provider?.[0] ||
-        'Fehler beim Hochladen des Zertifikats.';
+    } catch (err: unknown) {
+      let msg = 'Fehler beim Hochladen des Zertifikats.';
+      if (axios.isAxiosError(err)) {
+        msg = err.response?.data?.detail ||
+              err.response?.data?.pdf_file?.[0] ||
+              err.response?.data?.provider?.[0] ||
+              msg;
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
       onNotify({ type: 'error', text: msg });
     }
   };

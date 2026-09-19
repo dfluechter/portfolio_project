@@ -109,7 +109,7 @@ class TestLogoutView:
             email="logout@example.com", password="password123"
         )
         self.client.force_login(user)
-        response = self.client.get("/logout/")
+        response = self.client.post("/logout/")
         assert response.status_code == 302
         assert response.url == "/"
 

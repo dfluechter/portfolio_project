@@ -43,5 +43,5 @@ projects:
       healthCheckPath: /health_check
       domains:
       - dfluechter.ipv64.de
-      autoDeployTrigger: commit
+      autoDeployTrigger: off
       renderSubdomainPolicy: disabled
