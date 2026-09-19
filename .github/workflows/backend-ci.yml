@@ -1,14 +1,19 @@
 name: CI/CD Pipeline
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
     paths-ignore:
       - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
   pull_request:
     branches: [main]
     paths-ignore:
       - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
 
 jobs:
   # ── 1. QUALITY & LINTING ──
@@ -82,7 +87,7 @@ jobs:
         run: uv run pytest --cov=core --cov=portfolio --cov-report=term-missing --cov-fail-under=95
 
       - name: Clean up Neon Branch
-        if: always()
+        if: always() && steps.create-branch.outputs.branch_id != ''
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: npx neonctl branches delete ${{ steps.create-branch.outputs.branch_id }} --project-id ${{ secrets.NEON_PROJECT_ID }}
