@@ -42,6 +42,7 @@ def auth_client(api_client, test_user):
 
 
 import shutil
+
 import pytest
 from django.conf import settings
 

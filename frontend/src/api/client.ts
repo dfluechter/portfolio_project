@@ -70,6 +70,7 @@ apiClient.interceptors.response.use(
       if (!refreshToken) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        window.dispatchEvent(new Event('auth:unauthorized'));
         return Promise.reject(error);
       }
 
@@ -91,6 +92,7 @@ apiClient.interceptors.response.use(
         processQueue(refreshError as Error, null);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        window.dispatchEvent(new Event('auth:unauthorized'));
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

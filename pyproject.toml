@@ -27,30 +27,14 @@ dependencies = [
 # start
 
 [tool.mypy]
-python_version = "3.12"
-plugins = ["mypy_django_plugin.main"]
-
-strict = true
-warn_unused_configs = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_return_any = true
-check_untyped_defs = true
-disallow_untyped_defs = true
-disallow_any_generics = true
-
-exclude = ["migrations/"]
-
-[tool.django-stubs]
-django_settings_module = "core.settings"
- # end
-
-
-[tool.mypy]
 python_version = "3.13"
+plugins = ["mypy_django_plugin.main"]
 ignore_missing_imports = true
 check_untyped_defs = true
 exclude = ["^build/", "migrations/"]
+
+[tool.django-stubs]
+django_settings_module = "core.settings"
 
 [tool.coverage.run]
 omit = [
@@ -78,6 +62,7 @@ include = ["core*", "portfolio*"]
 
 [dependency-groups]
 dev = [
+    "django-stubs>=6.1.1",
     "djlint>=1.44.2",
     "mypy>=2.3.0",
     "pytest>=9.1.1",
