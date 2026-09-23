@@ -1,7 +1,9 @@
 import pytest
 from django.urls import reverse
 from rest_framework import status
+
 from portfolio.models import Project
+
 
 @pytest.mark.django_db
 class TestProjectCRUD:
@@ -16,12 +18,17 @@ class TestProjectCRUD:
         project = Project.objects.create(title="Old Title", description="Test")
         url = reverse("project-detail", kwargs={"pk": project.pk})
         response = api_client.put(url, {"title": "New Title"}, format="json")
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
     def test_authenticated_can_update_project(self, auth_client):
         project = Project.objects.create(title="Old Title", description="Test")
         url = reverse("project-detail", kwargs={"pk": project.pk})
-        response = auth_client.put(url, {"title": "New Title", "description": "Test"}, format="json")
+        response = auth_client.put(
+            url, {"title": "New Title", "description": "Test"}, format="json"
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.data["title"] == "New Title"
 
@@ -37,7 +44,10 @@ class TestProjectCRUD:
         project = Project.objects.create(title="Delete Me", description="Test")
         url = reverse("project-detail", kwargs={"pk": project.pk})
         response = api_client.delete(url)
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
         assert Project.objects.filter(pk=project.pk).exists()
 
     def test_authenticated_can_delete_project(self, auth_client):
