@@ -6,50 +6,16 @@ permissions:
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'frontend/**'
-      - '.github/workflows/frontend-ci.yml'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - 'frontend/**'
-      - '.github/workflows/frontend-ci.yml'
 
 jobs:
-  # ── 1. QUALITY & LINTING ──
-  lint:
-    name: 🔍 Lint & Type Check
+  # ── 1. BACKEND QUALITY & TESTS ──
+  backend-lint-test:
+    name: 🐍 Backend Lint & Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          version: "latest"
-
-      - name: Set up Python 3.13
-        run: uv python install 3.13.14
-
-      - name: Install dependencies
-        run: uv sync --all-groups
-
-      - name: Ruff Linter
-        run: uv run ruff check .
-
-      - name: Ruff Formatter Check
-        run: uv run ruff format --check .
-
-      - name: Mypy Type Check
-        run: uv run mypy .
-
-  # ── 2. TESTS & COVERAGE ──
-  test:
-    name: 🧪 Run Pytest Suite
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
       - name: Validate Neon configuration
         env:
@@ -81,6 +47,15 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-groups
 
+      - name: Ruff Linter
+        run: uv run ruff check .
+
+      - name: Ruff Formatter Check
+        run: uv run ruff format --check .
+
+      - name: Mypy Type Check
+        run: uv run mypy .
+
       - name: Run Tests with Coverage
         env:
           DATABASE_URL: ${{ steps.create-branch.outputs.db_url_with_pooler }}
@@ -92,13 +67,42 @@ jobs:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: npx neonctl branches delete ${{ steps.create-branch.outputs.branch_id }} --project-id ${{ secrets.NEON_PROJECT_ID }}
 
-  # ── 3. BUILD VERIFICATION ──
-  build:
-    name: 📦 Verify Build
-    needs: [lint, test]
+  # ── 2. FRONTEND QUALITY & TESTS ──
+  frontend-lint-test:
+    name: ⚛️ Frontend Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Run Tests
+        run: npm run test
+
+      - name: Verify Build
+        run: npm run build
+
+  # ── 3. BUILD VERIFICATION (BACKEND) ──
+  backend-build:
+    name: 📦 Verify Backend Build
+    needs: [backend-lint-test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -127,7 +131,7 @@ jobs:
   # ── 4. DEPLOY TO RENDER ──
   deploy:
     name: 🚀 Deploy to Render
-    needs: [build]
+    needs: [backend-build, frontend-lint-test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -139,4 +143,5 @@ jobs:
             echo "Error: RENDER_DEPLOY_HOOK_URL secret is not set!"
             exit 1
           fi
-          curl -f -X POST "$RENDER_DEPLOY_HOOK_URL"
+          # Using GET request for maximum compatibility with Render hooks
+          curl -f "$RENDER_DEPLOY_HOOK_URL"
