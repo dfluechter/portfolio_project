@@ -1,6 +1,29 @@
 # Portfolio Projekt
 
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/dfluechter/portfolio_project/CI%2FCD%20Pipeline?branch=main&style=for-the-badge&logo=github)
+![Coverage](https://img.shields.io/badge/Coverage-99%25-brightgreen?style=for-the-badge&logo=pytest)
+![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-5.2-092E20?style=for-the-badge&logo=django&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Render](https://img.shields.io/badge/Render-Deployed-46E3B7?style=for-the-badge&logo=render&logoColor=white)
+
 Django REST API (Backend) und React SPA (Frontend) für mein persönliches Portfolio. Verwaltet Zertifikate, Projekte, Skills, Timeline und Zertifikatsanbieter über ein geschütztes Dashboard.
+
+> 📚 **Architektur-Details**: Eine tiefere Analyse der Entscheidungen und Infrastruktur findest du unter [`/docs/architekture.md`](docs/architekture.md).
+
+---
+
+## 📑 Inhaltsverzeichnis
+- [🛠 Tech Stack](#-tech-stack)
+- [📦 Voraussetzungen](#-voraussetzungen)
+- [🚀 Lokales Setup](#-lokales-setup)
+- [🔒 Auth- & Sicherheitskonfiguration](#-auth---sicherheitskonfiguration)
+- [💻 Befehle](#-befehle)
+- [🧪 Test Coverage & Qualitätssicherung](#-test-coverage--qualitätssicherung)
+- [📁 Projektstruktur](#-projektstruktur)
+
+---
 
 ## 🛠 Tech Stack
 
