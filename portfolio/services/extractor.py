@@ -178,7 +178,7 @@ def extract_metadata(
 
     ext = file_path.suffix.lower()
 
-    pdf_meta = {}
+    pdf_meta: dict[str, str] = {}
     if ext == ".pdf":
         source_type = "pdf"
         pdf_meta, extracted_text, ocr_pending = _extract_from_pdf(file_path)

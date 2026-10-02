@@ -124,7 +124,9 @@ class TestCertificateM2MTracks:
         cert.tracks.add(track)
 
         assert track.certificates.count() == 1
-        assert track.certificates.first().title == "Security Cert"
+        first_cert = track.certificates.first()
+        assert first_cert is not None
+        assert first_cert.title == "Security Cert"
 
     def test_certificate_no_tracks_allowed(self):
         """Zertifikat ohne Track-Zuordnung ist gültig."""

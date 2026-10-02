@@ -38,6 +38,7 @@ class TestCertificateUploadPath:
     class DummyInstance:
         def __init__(self, provider):
             self.provider = provider
+            self.sha256_hash = ""
 
     def test_standard_provider_name(self):
         """Testet einen normalen Namen ohne Sonderzeichen."""
