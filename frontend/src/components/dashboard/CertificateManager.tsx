@@ -14,6 +14,7 @@ import {
   useCreateProvider,
   useDeleteCertificate,
   useProviders,
+  useTracks,
 } from '../../hooks/usePortfolio';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -24,6 +25,7 @@ interface CertificateManagerProps {
 export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify }) => {
   const { data: certificates = [], isLoading: loadingCerts } = useCertificates();
   const { data: providers = [], isLoading: loadingProviders } = useProviders();
+  const { data: tracks = [], isLoading: loadingTracks } = useTracks();
 
   const createCertMutation = useCreateCertificate();
   const deleteCertMutation = useDeleteCertificate();
@@ -34,6 +36,7 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
   const [selectedProviderId, setSelectedProviderId] = useState<string>('');
   const [newProviderName, setNewProviderName] = useState<string>('');
   const [certFile, setCertFile] = useState<File | null>(null);
+  const [selectedTracks, setSelectedTracks] = useState<string[]>([]);
 
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,6 +76,7 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
       const formData = new FormData();
       formData.append('title', certTitle);
       formData.append('provider', providerIdToUse);
+      selectedTracks.forEach((trackId) => formData.append('tracks', trackId));
       formData.append('pdf_file', certFile);
 
       await createCertMutation.mutateAsync(formData);
@@ -81,6 +85,7 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
       setCertTitle('');
       setNewProviderName('');
       setCertFile(null);
+      setSelectedTracks([]);
       setSelectedProviderId(providers.length > 0 ? String(providers[0].id) : '');
     } catch (err: unknown) {
       let msg = 'Fehler beim Hochladen des Zertifikats.';
@@ -157,6 +162,30 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
               ))}
               <option value="new">+ Neuen Anbieter erstellen...</option>
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="cert-tracks" className="block text-xs font-semibold text-slate-400 mb-1">
+              Zugeordnete Tracks (optional)
+            </label>
+            <select
+              id="cert-tracks"
+              multiple
+              value={selectedTracks}
+              onChange={(e) => {
+                const options = Array.from(e.target.selectedOptions, option => option.value);
+                setSelectedTracks(options);
+              }}
+              disabled={loadingTracks}
+              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50 min-h-[80px]"
+            >
+              {tracks.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-slate-500 mt-1">Mit Strg/Cmd mehrere auswählen</p>
           </div>
 
           {selectedProviderId === 'new' && (

@@ -5,52 +5,132 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('portfolio', '0003_skill_timelineentry_certificate_provider_and_more'),
+        ("portfolio", "0003_skill_timelineentry_certificate_provider_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PendingCertificate',
+            name="PendingCertificate",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('original_file_name', models.CharField(max_length=255, verbose_name='Ursprünglicher Dateiname')),
-                ('file_path', models.CharField(max_length=1024, verbose_name='Lokaler Dateipfad')),
-                ('extracted_text', models.TextField(blank=True, verbose_name='Extrahierter Text (Rohdaten)')),
-                ('guessed_title', models.CharField(blank=True, max_length=255, verbose_name='Vermuteter Titel')),
-                ('guessed_provider', models.CharField(blank=True, max_length=255, verbose_name='Vermuteter Anbieter')),
-                ('status', models.CharField(choices=[('pending', 'Ausstehend'), ('approved', 'Freigegeben'), ('rejected', 'Abgelehnt')], default='pending', max_length=20, verbose_name='Status')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Eingelesen am')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "original_file_name",
+                    models.CharField(
+                        max_length=255, verbose_name="Ursprünglicher Dateiname"
+                    ),
+                ),
+                (
+                    "file_path",
+                    models.CharField(max_length=1024, verbose_name="Lokaler Dateipfad"),
+                ),
+                (
+                    "extracted_text",
+                    models.TextField(
+                        blank=True, verbose_name="Extrahierter Text (Rohdaten)"
+                    ),
+                ),
+                (
+                    "guessed_title",
+                    models.CharField(
+                        blank=True, max_length=255, verbose_name="Vermuteter Titel"
+                    ),
+                ),
+                (
+                    "guessed_provider",
+                    models.CharField(
+                        blank=True, max_length=255, verbose_name="Vermuteter Anbieter"
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Ausstehend"),
+                            ("approved", "Freigegeben"),
+                            ("rejected", "Abgelehnt"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                        verbose_name="Status",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name="Eingelesen am"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Ausstehendes Zertifikat (Inbox)',
-                'verbose_name_plural': 'Ausstehende Zertifikate (Inbox)',
-                'ordering': ('-created_at',),
+                "verbose_name": "Ausstehendes Zertifikat (Inbox)",
+                "verbose_name_plural": "Ausstehende Zertifikate (Inbox)",
+                "ordering": ("-created_at",),
             },
         ),
         migrations.CreateModel(
-            name='Track',
+            name="Track",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, unique=True, verbose_name='Track-Name')),
-                ('slug', models.SlugField(max_length=100, unique=True, verbose_name='Slug')),
-                ('description', models.TextField(blank=True, verbose_name='Beschreibung')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Erstellt am')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        max_length=100, unique=True, verbose_name="Track-Name"
+                    ),
+                ),
+                (
+                    "slug",
+                    models.SlugField(max_length=100, unique=True, verbose_name="Slug"),
+                ),
+                (
+                    "description",
+                    models.TextField(blank=True, verbose_name="Beschreibung"),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Erstellt am"),
+                ),
             ],
             options={
-                'verbose_name': 'Track',
-                'verbose_name_plural': 'Tracks',
-                'ordering': ('name',),
+                "verbose_name": "Track",
+                "verbose_name_plural": "Tracks",
+                "ordering": ("name",),
             },
         ),
         migrations.AlterModelOptions(
-            name='provider',
-            options={'ordering': ('provider',), 'verbose_name': 'Zertifikatsanbieter', 'verbose_name_plural': 'Zertifikatsanbieter'},
+            name="provider",
+            options={
+                "ordering": ("provider",),
+                "verbose_name": "Zertifikatsanbieter",
+                "verbose_name_plural": "Zertifikatsanbieter",
+            },
         ),
         migrations.AddField(
-            model_name='certificate',
-            name='track',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='certificates', to='portfolio.track', verbose_name='Zugeordneter Track'),
+            model_name="certificate",
+            name="track",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="certificates",
+                to="portfolio.track",
+                verbose_name="Zugeordneter Track",
+            ),
         ),
     ]

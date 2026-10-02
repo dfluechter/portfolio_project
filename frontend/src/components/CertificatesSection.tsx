@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Award, CheckCircle2, ExternalLink, Search } from 'lucide-react';
-import { useCertificates } from '../hooks/usePortfolio';
+import { useCertificates, useTracks } from '../hooks/usePortfolio';
 import type { Certificate } from '../types';
 
 export const CertificatesSection: React.FC = () => {
   const { data: certificates = [], isLoading } = useCertificates();
+  const { data: tracks = [] } = useTracks();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedIssuer, setSelectedIssuer] = useState<string>('all');
+  const [selectedTrackId, setSelectedTrackId] = useState<string>('all');
 
   const getIssuerName = (cert: Certificate): string => {
     return cert.provider_details?.provider || 'Zertifikatsanbieter';
@@ -20,7 +22,9 @@ export const CertificatesSection: React.FC = () => {
       cert.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       issuerName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesIssuer = selectedIssuer === 'all' || issuerName === selectedIssuer;
-    return matchesSearch && matchesIssuer;
+    const matchesTrack = selectedTrackId === 'all' || cert.tracks?.includes(Number(selectedTrackId));
+    
+    return matchesSearch && matchesIssuer && matchesTrack;
   });
 
   return (
@@ -44,16 +48,34 @@ export const CertificatesSection: React.FC = () => {
 
         {/* Filter & Search Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
-          {/* Search Input */}
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Zertifikat oder Aussteller suchen..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors shadow-sm"
-            />
+          <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3">
+            {/* Search Input */}
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Suchen..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors shadow-sm"
+              />
+            </div>
+            
+            {/* Track Filter */}
+            {tracks.length > 0 && (
+              <select
+                value={selectedTrackId}
+                onChange={(e) => setSelectedTrackId(e.target.value)}
+                className="w-full sm:w-auto px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors shadow-sm"
+              >
+                <option value="all">Alle Tracks</option>
+                {tracks.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Issuer Badges */}

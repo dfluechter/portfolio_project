@@ -14,7 +14,6 @@ from portfolio.models import (
     Track,
 )
 from portfolio.services.extractor import (
-    ExtractionResult,
     compute_file_hash,
     extract_metadata,
     guess_track,
@@ -121,8 +120,11 @@ class Command(BaseCommand):
 
             # Metadaten extrahieren
             try:
-                result: ExtractionResult = extract_metadata(
-                    file_path, provider_hint=provider_hint, enable_ocr=False,
+                result = extract_metadata(
+                    file_path=file_path,
+                    source_root=source_path,
+                    track_rules=TRACK_RULES,
+                    enable_ocr=False,
                 )
             except Exception as exc:  # noqa: BLE001
                 run.files_errored += 1
@@ -130,6 +132,11 @@ class Command(BaseCommand):
                 self.stderr.write(
                     self.style.ERROR(f"  ERROR: {file_path.name} – {exc}")
                 )
+                continue
+
+            if not result:
+                run.files_errored += 1
+                run.append_log(f"ERROR {file_path.name}: Keine Metadaten extrahiert")
                 continue
 
             # Track-Vorschlag
@@ -142,7 +149,9 @@ class Command(BaseCommand):
 
             # Storage-Key berechnen
             storage_key = safe_storage_key(
-                provider_slug, file_hash, file_path.name,
+                provider_slug,
+                file_hash,
+                file_path.name,
             )
 
             # Log-Ausgabe (ohne absolute Pfade!)
@@ -177,7 +186,6 @@ class Command(BaseCommand):
                 cert = Certificate(
                     title=result.guessed_title or file_path.stem,
                     provider=provider_obj,
-                    track=track_obj,
                     sha256_hash=file_hash,
                     is_published=False,
                     credential_id=result.credential_id,
@@ -196,14 +204,15 @@ class Command(BaseCommand):
                     safe_name = storage_key.split("/")[-1]
                     cert.pdf_file.save(safe_name, file_content, save=True)
 
+                if track_obj:
+                    cert.tracks.add(track_obj)
+
                 run.files_imported += 1
 
             except Exception as exc:  # noqa: BLE001
                 run.files_errored += 1
                 run.append_log(f"ERROR {file_path.name}: Import – {exc}")
-                self.stderr.write(
-                    self.style.ERROR(f"  FEHLER beim Import: {exc}")
-                )
+                self.stderr.write(self.style.ERROR(f"  FEHLER beim Import: {exc}"))
 
         # ── Run abschließen ──
         run.finished_at = timezone.now()
@@ -225,9 +234,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"\n{summary}"))
 
-    def _collect_files(
-        self, source: Path, source_type: str
-    ) -> list[tuple[Path, str]]:
+    def _collect_files(self, source: Path, source_type: str) -> list[tuple[Path, str]]:
         """
         Sammelt Dateien mit Provider-Hint.
         structured: Unterordner = Anbietername

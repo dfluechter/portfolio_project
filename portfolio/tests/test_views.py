@@ -88,7 +88,10 @@ class TestDashboardView:
     def test_unauthenticated_redirects_to_login(self):
         response = self.client.get("/dashboard/")
         assert response.status_code == 302
-        assert response["Location"].startswith("/?next=/dashboard/") or response["Location"] == "/"
+        assert (
+            response["Location"].startswith("/?next=/dashboard/")
+            or response["Location"] == "/"
+        )
 
     def test_authenticated_returns_200(self):
         user = User.objects.create_user(

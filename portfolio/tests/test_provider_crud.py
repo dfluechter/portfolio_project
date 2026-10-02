@@ -22,7 +22,10 @@ class TestProviderAndCertificateCRUD:
             "cert.pdf", b"data", content_type="application/pdf"
         )
         Certificate.objects.create(
-            title="Python", provider=provider, pdf_file=dummy_file
+            title="Python",
+            provider=provider,
+            pdf_file=dummy_file,
+            sha256_hash="a" * 64,
         )
 
         url = reverse("provider-detail", kwargs={"pk": provider.pk})

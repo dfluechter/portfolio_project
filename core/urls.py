@@ -27,7 +27,9 @@ router.register(r"certificates", CertificateViewSet, basename="certificate")
 router.register(r"skills", SkillViewSet, basename="skill")
 router.register(r"timeline", TimelineEntryViewSet, basename="timeline")
 router.register(r"tracks", TrackViewSet, basename="track")
-router.register(r"pending-certificates", PendingCertificateViewSet, basename="pendingcertificate")
+router.register(
+    r"pending-certificates", PendingCertificateViewSet, basename="pendingcertificate"
+)
 
 urlpatterns = [
     path("", login_view, name="login"),

@@ -12,24 +12,40 @@ def migrate_track_fk_to_m2m(apps, schema_editor):
         cert.tracks.add(cert.track)
 
 
-def generate_placeholder_hashes(apps, schema_editor):
-    """Generiert deterministische Placeholder-Hashes für Zertifikate ohne sha256_hash.
+def generate_real_hashes(apps, schema_editor):
+    """Berechnet echte SHA-256-Hashes für bestehende Zertifikate aus den PDF-Dateien.
 
-    Format: SHA-256 von 'legacy-{pk}-{title}-{provider_id}'.
-    Diese Placeholder werden beim nächsten sync_certificates durch echte
-    Datei-Hashes ersetzt.
+    Falls eine Datei lokal fehlt (z.B. in der Entwicklungsumgebung), 
+    wird auf einen eindeutigen Dummy-Hash zurückgegriffen.
     """
     Certificate = apps.get_model("portfolio", "Certificate")
     for cert in Certificate.objects.filter(sha256_hash="").iterator():
-        raw = f"legacy-{cert.pk}-{cert.title}-{cert.provider_id}"
-        cert.sha256_hash = hashlib.sha256(raw.encode()).hexdigest()
+        file_hashed = False
+        if bool(cert.pdf_file) and cert.pdf_file.name:
+            try:
+                sha256 = hashlib.sha256()
+                with cert.pdf_file.open("rb") as f:
+                    # Django File objects might not have chunks() in all storage backends,
+                    # but they do support read(). For safety with large files:
+                    for chunk in f.chunks() if hasattr(f, "chunks") else iter(lambda: f.read(4096), b""):
+                        sha256.update(chunk)
+                cert.sha256_hash = sha256.hexdigest()
+                file_hashed = True
+            except Exception:
+                pass
+
+        if not file_hashed:
+            # Fallback für lokale Tests ohne die echte PDF-Datei
+            raw = f"legacy-{cert.pk}-{cert.title}-{cert.provider_id}"
+            cert.sha256_hash = hashlib.sha256(raw.encode()).hexdigest()
+            
         cert.save(update_fields=["sha256_hash"])
 
 
 def reverse_m2m_to_fk(apps, schema_editor):
     """Rückwärtsmigration: Erster M2M-Track → FK track."""
     Certificate = apps.get_model("portfolio", "Certificate")
-    for cert in Certificate.objects.prefetch_related("tracks").iterator():
+    for cert in Certificate.objects.prefetch_related("tracks").all():
         first_track = cert.tracks.first()
         if first_track:
             cert.track = first_track
@@ -43,7 +59,6 @@ def reverse_placeholder_hashes(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("portfolio", "0007_add_certificate_tracks_m2m_and_pending_sha256"),
     ]
@@ -54,7 +69,7 @@ class Migration(migrations.Migration):
             reverse_code=reverse_m2m_to_fk,
         ),
         migrations.RunPython(
-            generate_placeholder_hashes,
+            generate_real_hashes,
             reverse_code=reverse_placeholder_hashes,
         ),
     ]

@@ -108,11 +108,18 @@ class TimelineEntrySerializer(serializers.ModelSerializer):
 
 
 class TrackSerializer(serializers.ModelSerializer):
-    certificates = CertificateSerializer(many=True, read_only=True)
+    certificates = serializers.SerializerMethodField()
 
     class Meta:
         model = Track
         fields = ("id", "name", "slug", "description", "certificates", "created_at")
+
+    def get_certificates(self, obj):
+        request = self.context.get("request")
+        qs = obj.certificates.all()
+        if request and not request.user.is_authenticated:
+            qs = qs.filter(is_published=True)
+        return CertificateSerializer(qs, many=True, context=self.context).data
 
 
 class PendingCertificateSerializer(serializers.ModelSerializer):

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
+// @ts-ignore - Mock setup
 import * as api from '../api/client';
-import React from 'react';
 
 // Wir mocken die API calls
 vi.mock('../api/client', () => ({
@@ -18,6 +18,7 @@ describe('AuthContext', () => {
 
   it('provides initial loading state', async () => {
     // Wenn refreshUser fehlschlägt, landen wir in setUser(null)
+    // @ts-ignore
     (api.refreshUser as any).mockRejectedValue(new Error('no auth'));
 
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
@@ -29,6 +30,7 @@ describe('AuthContext', () => {
   });
 
   it('listens to auth:unauthorized event and logs out', async () => {
+    // @ts-ignore
     (api.refreshUser as any).mockRejectedValue(new Error('no auth'));
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
     

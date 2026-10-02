@@ -138,12 +138,36 @@ class TestCertificateAPI:
             content=b"Dummy content",
             content_type="application/pdf",
         )
-        Certificate.objects.create(title="LFCS", provider=provider, pdf_file=dummy_file)
+        Certificate.objects.create(
+            title="LFCS",
+            provider=provider,
+            pdf_file=dummy_file,
+            sha256_hash="a" * 64,
+            is_published=True,
+        )
         url = reverse("certificate-list")
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1
         assert response.data[0]["provider_details"]["provider"] == "Linux Foundation"
+
+    def test_unauthenticated_cannot_see_unpublished_certificates(self, api_client):
+        provider = Provider.objects.create(provider="CompTIA")
+        dummy_file = SimpleUploadedFile(
+            "cert.pdf", b"data", content_type="application/pdf"
+        )
+        Certificate.objects.create(
+            title="Security+",
+            provider=provider,
+            pdf_file=dummy_file,
+            sha256_hash="b" * 64,
+            is_published=False,
+        )
+        url = reverse("certificate-list")
+        response = api_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 0
+
 
     def test_authenticated_can_create_certificate_with_file(self, auth_client):
         provider = Provider.objects.create(provider="Amazon Web Services")

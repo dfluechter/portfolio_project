@@ -108,9 +108,26 @@ class ProviderViewSet(viewsets.ModelViewSet):
 
 
 class CertificateViewSet(viewsets.ModelViewSet):
-    queryset = Certificate.objects.all().select_related("provider")
     serializer_class = CertificateSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def get_queryset(self):
+        qs = Certificate.objects.all().select_related("provider")
+        if not self.request.user.is_authenticated:
+            qs = qs.filter(is_published=True)
+        return qs
+
+    def perform_create(self, serializer):
+        """Berechnet SHA-256 aus der hochgeladenen Datei vor dem Speichern."""
+        pdf_file = self.request.FILES.get("pdf_file")
+        if pdf_file:
+            sha256 = hashlib.sha256()
+            for chunk in pdf_file.chunks():
+                sha256.update(chunk)
+            pdf_file.seek(0)  # Datei-Cursor zurücksetzen für Storage
+            serializer.save(sha256_hash=sha256.hexdigest())
+        else:
+            serializer.save()
 
 
 class SkillViewSet(viewsets.ModelViewSet):
@@ -173,9 +190,7 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
                 )
 
         if not os.path.exists(pending.file_path):
-            return Response(
-                {"detail": "Datei existiert nicht mehr lokal."}, status=400
-            )
+            return Response({"detail": "Datei existiert nicht mehr lokal."}, status=400)
 
         # SHA-256 berechnen und Duplikat prüfen
         sha256 = hashlib.sha256()

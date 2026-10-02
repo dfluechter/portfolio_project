@@ -157,13 +157,109 @@ class TestCertificateModel:
         )
 
         cert = Certificate.objects.create(
-            title="Python Advanced", provider=provider, pdf_file=dummy_file
+            title="Python Advanced",
+            provider=provider,
+            pdf_file=dummy_file,
+            sha256_hash="a" * 64,
         )
 
         assert Certificate.objects.count() == 1
         assert str(cert) == "Python Advanced (Udemy)"
         assert cert.pdf_file.name is not None
-        assert "certificates/udemy/unsorted/test_file" in cert.pdf_file.name
+        assert "certificates/udemy/" in cert.pdf_file.name
+        assert cert.is_published is False
+
+
+@pytest.mark.django_db
+class TestTrackModel:
+    def test_track_creation_and_str(self):
+        """Testet das Erstellen eines Tracks und die __str__ Methode."""
+        track = Track.objects.create(
+            name="Python Django",
+            slug="python-django",
+            description="Alles rund um Django",
+        )
+        assert Track.objects.count() == 1
+        assert str(track) == "Python Django"
+        assert track.slug == "python-django"
+
+    def test_track_slug_unique(self):
+        """Testet, dass doppelte Slugs einen IntegrityError auslösen."""
+        from django.db import IntegrityError
+
+        Track.objects.create(name="Track A", slug="same-slug")
+        with pytest.raises(IntegrityError):
+            Track.objects.create(name="Track B", slug="same-slug")
+
+
+@pytest.mark.django_db
+class TestPendingCertificateModel:
+    def test_creation_and_str(self):
+        """Testet Erstellung und Status-Display."""
+        pending = PendingCertificate.objects.create(
+            original_file_name="cert.pdf",
+            file_path="/fake/path/cert.pdf",
+            guessed_title="Azure Admin",
+            guessed_provider="Microsoft",
+        )
+        assert PendingCertificate.objects.count() == 1
+        assert str(pending) == "[Ausstehend] cert.pdf"
+        assert pending.status == PendingCertificateStatus.PENDING
+
+    def test_sha256_hash_nullable_unique(self):
+        """Mehrere PendingCertificates ohne Hash (NULL) sind erlaubt."""
+        PendingCertificate.objects.create(
+            original_file_name="a.pdf",
+            file_path="/fake/a.pdf",
+            sha256_hash=None,
+        )
+        PendingCertificate.objects.create(
+            original_file_name="b.pdf",
+            file_path="/fake/b.pdf",
+            sha256_hash=None,
+        )
+        assert PendingCertificate.objects.count() == 2
+
+    def test_sha256_hash_unique_constraint(self):
+        """Doppelte Hashes lösen IntegrityError aus."""
+        from django.db import IntegrityError
+
+        hash_val = "b" * 64
+        PendingCertificate.objects.create(
+            original_file_name="a.pdf",
+            file_path="/fake/a.pdf",
+            sha256_hash=hash_val,
+        )
+        with pytest.raises(IntegrityError):
+            PendingCertificate.objects.create(
+                original_file_name="b.pdf",
+                file_path="/fake/b.pdf",
+                sha256_hash=hash_val,
+            )
+
+
+@pytest.mark.django_db
+class TestCertificateImportRunModel:
+    def test_creation_and_str(self):
+        """Testet Erstellung und __str__ Methode."""
+        run = CertificateImportRun.objects.create(
+            started_at=datetime.datetime(2026, 1, 1, 10, 0, tzinfo=datetime.UTC),
+            files_found=5,
+            files_imported=3,
+            status=ImportRunStatus.SUCCESS,
+        )
+        assert CertificateImportRun.objects.count() == 1
+        assert "[Erfolgreich]" in str(run)
+        assert "(3/5)" in str(run)
+
+    def test_append_log(self):
+        """Testet, dass append_log korrekt konkateniert."""
+        run = CertificateImportRun.objects.create(
+            started_at=datetime.datetime(2026, 1, 1, 10, 0, tzinfo=datetime.UTC),
+        )
+        run.append_log("Zeile 1")
+        run.append_log("Zeile 2")
+        assert run.log == "Zeile 1\nZeile 2"
 
 
 @pytest.mark.django_db

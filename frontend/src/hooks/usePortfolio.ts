@@ -7,6 +7,7 @@ export const portfolioKeys = {
   projects: () => [...portfolioKeys.all, 'projects'] as const,
   certificates: () => [...portfolioKeys.all, 'certificates'] as const,
   providers: () => [...portfolioKeys.all, 'providers'] as const,
+  tracks: () => [...portfolioKeys.all, 'tracks'] as const,
   timeline: () => [...portfolioKeys.all, 'timeline'] as const,
 };
 
@@ -17,6 +18,14 @@ export const useSkills = () => {
     queryKey: portfolioKeys.skills(),
     queryFn: portfolioService.getSkills,
     staleTime: 1000 * 60 * 5, // 5 Minuten Cache
+  });
+};
+
+export const useTracks = () => {
+  return useQuery({
+    queryKey: portfolioKeys.tracks(),
+    queryFn: portfolioService.getTracks,
+    staleTime: 1000 * 60 * 5,
   });
 };
 

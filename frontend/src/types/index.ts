@@ -56,11 +56,22 @@ export interface Provider {
   url?: string | null;
 }
 
+export interface Track {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  created_at: string;
+}
+
 export interface Certificate {
   id: number;
   title: string;
   provider: number;
   provider_details?: Provider;
+  tracks?: number[];
   pdf_file: string;
   uploaded_at: string;
+  sha256_hash?: string;
+  is_published?: boolean;
 }

@@ -6,18 +6,22 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from portfolio.models import (
+    TRACK_RULES,
+    Certificate,
     CertificateImportRun,
     ImportRunStatus,
     PendingCertificate,
 )
 from portfolio.services.extractor import (
-    extract_text_from_file,
-    guess_metadata_from_text,
+    compute_file_hash,
+    extract_metadata,
 )
 
 
 class Command(BaseCommand):
-    help = "Scannt das Inbox-Verzeichnis nach neuen Zertifikaten und liest Metadaten ein."
+    help = (
+        "Scannt das Inbox-Verzeichnis nach neuen Zertifikaten und liest Metadaten ein."
+    )
 
     def handle(self, *args, **options):
         inbox_path_str = os.getenv(
@@ -53,8 +57,19 @@ class Command(BaseCommand):
 
             run.files_found += 1
 
-            # Bereits eingelesen?
-            if PendingCertificate.objects.filter(file_path=str(file_path)).exists():
+            # SHA-256 berechnen für Idempotenz
+            try:
+                file_hash = compute_file_hash(file_path)
+            except Exception as exc:  # noqa: BLE001
+                run.files_errored += 1
+                run.append_log(f"ERROR {file_path.name}: Hash-Berechnung – {exc}")
+                continue
+
+            # Bereits eingelesen oder als Zertifikat vorhanden?
+            if (
+                PendingCertificate.objects.filter(sha256_hash=file_hash).exists()
+                or Certificate.objects.filter(sha256_hash=file_hash).exists()
+            ):
                 run.files_skipped += 1
                 run.append_log(f"SKIP  {file_path.name} (bereits vorhanden)")
                 continue
@@ -63,7 +78,7 @@ class Command(BaseCommand):
 
             # Extraktion
             try:
-                text = extract_text_from_file(file_path)
+                result = extract_metadata(file_path, inbox_path, TRACK_RULES)
             except Exception as exc:  # noqa: BLE001
                 run.files_errored += 1
                 run.append_log(f"ERROR {file_path.name}: Extraktion – {exc}")
@@ -72,22 +87,26 @@ class Command(BaseCommand):
                 )
                 continue
 
-            metadata = guess_metadata_from_text(text)
+            if not result:
+                run.files_errored += 1
+                run.append_log(f"ERROR {file_path.name}: Keine Daten extrahiert")
+                continue
 
             PendingCertificate.objects.create(
-                original_file_name=file_path.name,
-                file_path=str(file_path),
-                extracted_text=text,
-                guessed_title=metadata.get("title", ""),
-                guessed_provider=metadata.get("provider", ""),
+                original_file_name=file_path.name[:255].replace("\x00", ""),
+                file_path=str(file_path)[:1024].replace("\x00", ""),
+                extracted_text=(result.extracted_text or "").replace("\x00", ""),
+                guessed_title=(result.guessed_title or "")[:255].replace("\x00", ""),
+                guessed_provider=(result.guessed_provider or "")[:255].replace("\x00", ""),
+                sha256_hash=file_hash,
             )
             run.files_imported += 1
             run.append_log(
-                f"OK    {file_path.name} → Titel: {metadata.get('title', '–')}"
+                f"OK    {file_path.name} → Titel: {result.guessed_title or '–'}"
             )
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"  -> Gespeichert als Pending (Titel: {metadata.get('title')})"
+                    f"  -> Gespeichert als Pending (Titel: {result.guessed_title})"
                 )
             )
 

@@ -46,6 +46,12 @@ export const portfolioService = {
     return data;
   },
 
+  // Tracks abrufen
+  async getTracks(): Promise<import('../types').Track[]> {
+    const { data } = await apiClient.get<import('../types').Track[]>('/api/tracks/');
+    return data;
+  },
+
   // Anbieter erstellen (Admin)
   async createProvider(providerName: string): Promise<Provider> {
     const { data } = await apiClient.post<Provider>('/api/providers/', {

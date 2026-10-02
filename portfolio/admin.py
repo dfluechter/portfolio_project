@@ -112,19 +112,26 @@ class ProjectAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at",)
     filter_horizontal = ("skills",)
 
+
 @admin.register(Track)
 class TrackAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug', 'created_at')
-    search_fields = ('name', 'description')
-    prepopulated_fields = {'slug': ('name',)}
+    list_display = ("name", "slug", "created_at")
+    search_fields = ("name", "description")
+    prepopulated_fields = {"slug": ("name",)}
 
 
 @admin.register(PendingCertificate)
 class PendingCertificateAdmin(admin.ModelAdmin):
-    list_display = ('original_file_name', 'guessed_title', 'guessed_provider', 'status', 'created_at')
-    list_filter = ('status',)
-    search_fields = ('original_file_name', 'guessed_title', 'guessed_provider')
-    readonly_fields = ('created_at', 'extracted_text')
+    list_display = (
+        "original_file_name",
+        "guessed_title",
+        "guessed_provider",
+        "status",
+        "created_at",
+    )
+    list_filter = ("status",)
+    search_fields = ("original_file_name", "guessed_title", "guessed_provider")
+    readonly_fields = ("created_at", "extracted_text")
 
 
 @admin.register(CertificateImportRun)
@@ -150,4 +157,3 @@ class CertificateImportRunAdmin(admin.ModelAdmin):
         "inbox_path",
         "log",
     )
-
