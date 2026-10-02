@@ -1,0 +1,49 @@
+{
+  "user_id": "user123",
+  "goals": [
+    {
+      "id": "goal_1",
+      "title": "6个月内减重5公斤",
+      "type": "weight-loss",
+      "start_date": "2025-01-01",
+      "target_date": "2025-06-30",
+      "current_value": 3.5,
+      "target_value": 5.0,
+      "unit": "kg",
+      "status": "in_progress",
+      "smart_evaluation": {
+        "specific": 5,
+        "measurable": 5,
+        "achievable": 4,
+        "relevant": 5,
+        "time_bound": 5
+      }
+    },
+    {
+      "id": "goal_2",
+      "title": "每周运动4次",
+      "type": "exercise",
+      "start_date": "2025-01-01",
+      "target_date": "2025-12-31",
+      "current_value": 45,
+      "target_value": 208,
+      "unit": "times",
+      "status": "in_progress"
+    }
+  ],
+  "habits": [
+    {
+      "id": "habit_1",
+      "title": "morning-stretch",
+      "frequency": "daily",
+      "start_date": "2025-01-01",
+      "current_streak": 21,
+      "longest_streak": 21,
+      "completion_rate": 95.2
+    }
+  ],
+  "motivation": {
+    "current_score": 8,
+    "trend": "stable"
+  }
+}

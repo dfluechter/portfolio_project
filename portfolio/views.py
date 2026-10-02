@@ -1,20 +1,37 @@
+import hashlib
 import json
+import os
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.core.files.base import ContentFile
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAdminUser, IsAuthenticatedOrReadOnly
+from rest_framework.response import Response
 
-from .models import Certificate, Project, Provider, Skill, TimelineEntry
+from .models import (
+    Certificate,
+    PendingCertificate,
+    PendingCertificateStatus,
+    Project,
+    Provider,
+    Skill,
+    TimelineEntry,
+    Track,
+)
 from .serializers import (
     CertificateSerializer,
+    PendingCertificateDetailSerializer,
+    PendingCertificateSerializer,
     ProjectSerializer,
     ProviderSerializer,
     SkillSerializer,
     TimelineEntrySerializer,
+    TrackSerializer,
 )
 
 
@@ -106,3 +123,103 @@ class TimelineEntryViewSet(viewsets.ModelViewSet):
     queryset = TimelineEntry.objects.all().prefetch_related("skills")
     serializer_class = TimelineEntrySerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
+
+
+class TrackViewSet(viewsets.ModelViewSet):
+    queryset = Track.objects.all().prefetch_related("certificates")
+    serializer_class = TrackSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+
+class PendingCertificateViewSet(viewsets.ModelViewSet):
+    """Nur für Staff-Nutzer – nie öffentlich lesbar."""
+
+    queryset = PendingCertificate.objects.all()
+    serializer_class = PendingCertificateSerializer
+    permission_classes = (IsAdminUser,)
+
+    def get_serializer_class(self):
+        """Detail-Ansicht liefert extracted_text mit, Liste nicht."""
+        if self.action == "retrieve":
+            return PendingCertificateDetailSerializer
+        return PendingCertificateSerializer
+
+    @action(detail=True, methods=["post"])
+    def approve(self, request, pk=None):
+        pending = self.get_object()
+        if pending.status != PendingCertificateStatus.PENDING:
+            return Response({"detail": "Bereits verarbeitet."}, status=400)
+
+        title = request.data.get("title", pending.guessed_title)
+        provider_name = request.data.get("provider", pending.guessed_provider)
+        track_ids = request.data.get("track_ids", [])
+
+        if not title or not provider_name:
+            return Response(
+                {"detail": "Titel und Anbieter sind erforderlich."}, status=400
+            )
+
+        provider, _ = Provider.objects.get_or_create(
+            provider=provider_name, defaults={"aktiv": True}
+        )
+
+        tracks = []
+        for track_id in track_ids:
+            try:
+                tracks.append(Track.objects.get(pk=track_id))
+            except Track.DoesNotExist:
+                return Response(
+                    {"detail": f"Track {track_id} nicht gefunden."}, status=400
+                )
+
+        if not os.path.exists(pending.file_path):
+            return Response(
+                {"detail": "Datei existiert nicht mehr lokal."}, status=400
+            )
+
+        # SHA-256 berechnen und Duplikat prüfen
+        sha256 = hashlib.sha256()
+        with open(pending.file_path, "rb") as f:
+            file_bytes = f.read()
+            sha256.update(file_bytes)
+        file_hash = sha256.hexdigest()
+
+        if Certificate.objects.filter(sha256_hash=file_hash).exists():
+            return Response(
+                {"detail": "Zertifikat mit identischem Dateiinhalt existiert bereits."},
+                status=400,
+            )
+
+        file_content = ContentFile(file_bytes)
+        ext = os.path.splitext(pending.file_path)[1].lower()
+        content_types = {
+            ".pdf": "application/pdf",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+        }
+        file_content.content_type = content_types.get(  # type: ignore[attr-defined]
+            ext, "application/octet-stream"
+        )
+
+        cert = Certificate(
+            title=title,
+            provider=provider,
+            sha256_hash=file_hash,
+            is_published=False,
+        )
+        cert.pdf_file.save(pending.original_file_name, file_content, save=True)
+
+        if tracks:
+            cert.tracks.set(tracks)
+
+        pending.status = PendingCertificateStatus.APPROVED
+        pending.save()
+        return Response({"detail": "Erfolgreich freigegeben."})
+
+    @action(detail=True, methods=["post"])
+    def reject(self, request, pk=None):
+        pending = self.get_object()
+        pending.status = PendingCertificateStatus.REJECTED
+        pending.save()
+        return Response({"detail": "Abgelehnt."})

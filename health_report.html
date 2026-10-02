@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康目标分析报告</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f7fa; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 20px; margin-bottom: 20px; }
+        .chart-container { width: 100%; height: 400px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>健康目标分析报告</h1>
+            <p>生成时间: 2026-09-24 14:31:52</p>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>SMART 评估概览</h2>
+                <div id="smartChart" class="chart-container"></div>
+            </div>
+            <div class="card">
+                <h2>目标进度</h2>
+                <div id="progressChart" class="chart-container"></div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>习惯追踪 - 连续天数</h2>
+            <div id="habitChart" class="chart-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // SMART Radar Chart
+        var smartChart = echarts.init(document.getElementById('smartChart'));
+        var smartOption = {
+            tooltip: {},
+            radar: {
+                indicator: [
+                    { name: '具体性 (Specific)', max: 5 },
+                    { name: '可衡量性 (Measurable)', max: 5 },
+                    { name: '可实现性 (Achievable)', max: 5 },
+                    { name: '相关性 (Relevant)', max: 5 },
+                    { name: '有时限 (Time-bound)', max: 5 }
+                ]
+            },
+            series: [{
+                name: 'SMART 评估',
+                type: 'radar',
+                data: [
+                    {
+                        value: [5, 5, 4, 5, 5],
+                        name: '减重目标'
+                    }
+                ],
+                areaStyle: { color: 'rgba(54, 162, 235, 0.2)' }
+            }]
+        };
+        smartChart.setOption(smartOption);
+
+        // Progress Bar Chart
+        var progressChart = echarts.init(document.getElementById('progressChart'));
+        var progressOption = {
+            tooltip: { formatter: '{b}: {c}%' },
+            xAxis: { type: 'value', max: 100 },
+            yAxis: { type: 'category', data: ["6\u4e2a\u6708\u5185\u51cf\u91cd5\u516c\u65a4", "\u6bcf\u5468\u8fd0\u52a84\u6b21"] },
+            series: [{
+                type: 'bar',
+                data: [70.0, 21.6],
+                itemStyle: { color: '#4CAF50' },
+                label: { show: true, position: 'right', formatter: '{c}%' }
+            }]
+        };
+        progressChart.setOption(progressOption);
+
+        // Habits Chart
+        var habitChart = echarts.init(document.getElementById('habitChart'));
+        var habitOption = {
+            tooltip: {},
+            xAxis: { type: 'category', data: ["morning-stretch"] },
+            yAxis: { type: 'value', name: '连续天数' },
+            series: [{
+                type: 'bar',
+                data: [21],
+                itemStyle: { color: '#FF9800' }
+            }]
+        };
+        habitChart.setOption(habitOption);
+        
+        window.addEventListener('resize', function() {
+            smartChart.resize();
+            progressChart.resize();
+            habitChart.resize();
+        });
+    </script>
+</body>
+</html>

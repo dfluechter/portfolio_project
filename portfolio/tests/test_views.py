@@ -21,7 +21,7 @@ class TestLoginView:
         self.client.force_login(user)
         response = self.client.get("/")
         assert response.status_code == 302
-        assert response.url == "/dashboard/"
+        assert response["Location"] == "/dashboard/"
 
     def test_post_invalid_json_format_returns_400(self):
         response = self.client.post(
@@ -88,7 +88,7 @@ class TestDashboardView:
     def test_unauthenticated_redirects_to_login(self):
         response = self.client.get("/dashboard/")
         assert response.status_code == 302
-        assert response.url.startswith("/?next=/dashboard/") or response.url == "/"
+        assert response["Location"].startswith("/?next=/dashboard/") or response["Location"] == "/"
 
     def test_authenticated_returns_200(self):
         user = User.objects.create_user(
@@ -111,7 +111,7 @@ class TestLogoutView:
         self.client.force_login(user)
         response = self.client.post("/logout/")
         assert response.status_code == 302
-        assert response.url == "/"
+        assert response["Location"] == "/"
 
 
 class TestHealthCheckView:

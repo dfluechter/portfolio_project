@@ -72,7 +72,7 @@ class Command(BaseCommand):
                                     ".png": "image/png",
                                     ".jpg": "image/jpeg",
                                 }
-                                file_content.content_type = content_types.get(
+                                file_content.content_type = content_types.get(  # type: ignore[attr-defined]
                                     file_path.suffix.lower(), "application/octet-stream"
                                 )
                                 cert = Certificate(title=title, provider=provider_obj)

@@ -208,13 +208,11 @@ class Certificate(models.Model):
         related_name="certificates",
         verbose_name="Zertifikatsanbieter",
     )
-    track = models.ForeignKey(
+    tracks = models.ManyToManyField(
         Track,
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
         related_name="certificates",
-        verbose_name="Zugeordneter Track",
+        verbose_name="Zugeordnete Tracks",
     )
     pdf_file = models.FileField(
         upload_to=certificate_upload_path,
@@ -222,7 +220,12 @@ class Certificate(models.Model):
         validators=[validate_file_extension, validate_file_size],
     )
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Hochgeladen am")
-    sha256_hash = models.CharField(max_length=64, unique=True, db_index=True, verbose_name="SHA-256 Hash", default="")
+    sha256_hash = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        verbose_name="SHA-256 Hash",
+    )
     is_published = models.BooleanField(default=False, verbose_name="Veröffentlicht")
     credential_id = models.CharField(max_length=255, blank=True, verbose_name="Credential-ID")
     issued_date = models.DateField(null=True, blank=True, verbose_name="Ausstellungsdatum")
@@ -255,6 +258,14 @@ class PendingCertificate(models.Model):
         choices=PendingCertificateStatus.choices,
         default=PendingCertificateStatus.PENDING,
         verbose_name="Status"
+    )
+    sha256_hash = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        null=True,
+        blank=True,
+        verbose_name="SHA-256 Hash",
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Eingelesen am")
 

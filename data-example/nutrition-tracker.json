@@ -1,0 +1,12 @@
+{
+  "user_id": "user123",
+  "records": [
+    {
+      "date": "2025-03-20",
+      "daily_calories": 1800,
+      "protein": 120,
+      "carbs": 150,
+      "fat": 60
+    }
+  ]
+}

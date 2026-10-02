@@ -6,12 +6,17 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from portfolio.models import (
     Certificate,
+    CertificateImportRun,
+    ImportRunStatus,
+    PendingCertificate,
+    PendingCertificateStatus,
     Project,
     Provider,
     Skill,
     SkillCategory,
     TimelineEntry,
     TimelineType,
+    Track,
     certificate_upload_path,
 )
 

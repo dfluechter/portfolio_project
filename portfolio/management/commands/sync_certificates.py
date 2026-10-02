@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from django.core.files.base import ContentFile
@@ -7,12 +6,12 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from portfolio.models import (
+    TRACK_RULES,
     Certificate,
     CertificateImportRun,
     ImportRunStatus,
     Provider,
     Track,
-    TRACK_RULES,
 )
 from portfolio.services.extractor import (
     ExtractionResult,

@@ -3,10 +3,10 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+import pytesseract
 from django.utils.text import slugify
 from PIL import Image
 from pypdf import PdfReader
-import pytesseract
 
 
 @dataclass

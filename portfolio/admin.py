@@ -1,7 +1,17 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import Certificate, Project, Provider, Skill, TimelineEntry, User
+from .models import (
+    Certificate,
+    CertificateImportRun,
+    PendingCertificate,
+    Project,
+    Provider,
+    Skill,
+    TimelineEntry,
+    Track,
+    User,
+)
 
 
 @admin.register(User)
@@ -101,3 +111,43 @@ class ProjectAdmin(admin.ModelAdmin):
     list_filter = ("created_at",)
     readonly_fields = ("created_at",)
     filter_horizontal = ("skills",)
+
+@admin.register(Track)
+class TrackAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'created_at')
+    search_fields = ('name', 'description')
+    prepopulated_fields = {'slug': ('name',)}
+
+
+@admin.register(PendingCertificate)
+class PendingCertificateAdmin(admin.ModelAdmin):
+    list_display = ('original_file_name', 'guessed_title', 'guessed_provider', 'status', 'created_at')
+    list_filter = ('status',)
+    search_fields = ('original_file_name', 'guessed_title', 'guessed_provider')
+    readonly_fields = ('created_at', 'extracted_text')
+
+
+@admin.register(CertificateImportRun)
+class CertificateImportRunAdmin(admin.ModelAdmin):
+    list_display = (
+        "started_at",
+        "status",
+        "files_found",
+        "files_imported",
+        "files_skipped",
+        "files_errored",
+        "finished_at",
+    )
+    list_filter = ("status",)
+    readonly_fields = (
+        "started_at",
+        "finished_at",
+        "files_found",
+        "files_imported",
+        "files_skipped",
+        "files_errored",
+        "status",
+        "inbox_path",
+        "log",
+    )
+

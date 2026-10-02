@@ -619,6 +619,7 @@
 
       <!-- Authentication Form -->
       <form id="auth-form" onsubmit="handleAuthSubmit(event)" novalidate>
+        {% csrf_token %}
         
         <!-- Email Input -->
         <div class="form-group-custom">
@@ -875,9 +876,13 @@
         }
 
         try {
+          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || "";
           const response = await fetch("/", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "X-CSRFToken": csrfToken
+            },
             body: JSON.stringify({ email, password })
           });
 
@@ -906,9 +911,13 @@
       } else {
         // Password Reset Request
         try {
+          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || "";
           const response = await fetch("/api/auth/users/reset_password/", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "X-CSRFToken": csrfToken
+            },
             body: JSON.stringify({ email })
           });
 
