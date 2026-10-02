@@ -123,7 +123,7 @@ class TrackSerializer(serializers.ModelSerializer):
 
 
 class PendingCertificateSerializer(serializers.ModelSerializer):
-    """Inbox-Übersicht – kein file_path, kein extracted_text."""
+    """Inbox-Übersicht - kein file_path, kein extracted_text."""
 
     class Meta:
         model = PendingCertificate

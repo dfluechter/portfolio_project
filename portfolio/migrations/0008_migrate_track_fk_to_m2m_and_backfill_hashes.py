@@ -31,7 +31,7 @@ def generate_real_hashes(apps, schema_editor):
                         sha256.update(chunk)
                 cert.sha256_hash = sha256.hexdigest()
                 file_hashed = True
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
         if not file_hashed:

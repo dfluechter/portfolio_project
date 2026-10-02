@@ -34,7 +34,7 @@ CONTENT_TYPES = {
 class Command(BaseCommand):
     help = (
         "Synchronisiert Zertifikate aus einem lokalen Quellverzeichnis. "
-        "Standardmäßig Dry-Run – erst --apply schreibt in DB und Storage."
+        "Standardmäßig Dry-Run - erst --apply schreibt in DB und Storage."
     )
 
     def add_arguments(self, parser):
@@ -73,7 +73,7 @@ class Command(BaseCommand):
             raise CommandError(f"Quellverzeichnis existiert nicht: {source_path}")
 
         if source_path.is_symlink():
-            raise CommandError("Quellverzeichnis ist ein Symlink – abgelehnt.")
+            raise CommandError("Quellverzeichnis ist ein Symlink - abgelehnt.")
 
         mode_label = "APPLY" if apply_mode else "DRY-RUN"
         self.stdout.write(
@@ -100,7 +100,7 @@ class Command(BaseCommand):
                 run.files_errored += 1
                 run.append_log(f"REJECT {file_path.name} (Sicherheitsprüfung)")
                 self.stderr.write(
-                    self.style.ERROR(f"  REJECT: {file_path.name} – Pfadprüfung")
+                    self.style.ERROR(f"  REJECT: {file_path.name} - Pfadprüfung")
                 )
                 continue
 
@@ -109,7 +109,7 @@ class Command(BaseCommand):
                 file_hash = compute_file_hash(file_path)
             except Exception as exc:  # noqa: BLE001
                 run.files_errored += 1
-                run.append_log(f"ERROR {file_path.name}: Hash – {exc}")
+                run.append_log(f"ERROR {file_path.name}: Hash - {exc}")
                 continue
 
             # Duplikat-Check per Hash
@@ -128,9 +128,9 @@ class Command(BaseCommand):
                 )
             except Exception as exc:  # noqa: BLE001
                 run.files_errored += 1
-                run.append_log(f"ERROR {file_path.name}: Extraktion – {exc}")
+                run.append_log(f"ERROR {file_path.name}: Extraktion - {exc}")
                 self.stderr.write(
-                    self.style.ERROR(f"  ERROR: {file_path.name} – {exc}")
+                    self.style.ERROR(f"  ERROR: {file_path.name} - {exc}")
                 )
                 continue
 
@@ -163,7 +163,7 @@ class Command(BaseCommand):
             run.append_log(
                 f"{'PLAN' if dry_run else 'OK'}  "
                 f"{file_path.name} hash={file_hash[:12]} "
-                f"provider={provider_name} track={track_slug or '–'}"
+                f"provider={provider_name} track={track_slug or '-'}"
             )
 
             if dry_run:
@@ -211,7 +211,7 @@ class Command(BaseCommand):
 
             except Exception as exc:  # noqa: BLE001
                 run.files_errored += 1
-                run.append_log(f"ERROR {file_path.name}: Import – {exc}")
+                run.append_log(f"ERROR {file_path.name}: Import - {exc}")
                 self.stderr.write(self.style.ERROR(f"  FEHLER beim Import: {exc}"))
 
         # ── Run abschließen ──

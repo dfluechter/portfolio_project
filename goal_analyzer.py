@@ -1,33 +1,36 @@
 import json
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 def load_data():
     base_dir = "data-example"
     tracker_path = os.path.join(base_dir, "health-goals-tracker.json")
-    nutrition_path = os.path.join(base_dir, "nutrition-tracker.json")
-    
-    with open(tracker_path, 'r', encoding='utf-8') as f:
+    os.path.join(base_dir, "nutrition-tracker.json")
+
+    with open(tracker_path, "r", encoding="utf-8") as f:
         tracker_data = json.load(f)
-        
+
     return tracker_data
+
 
 def generate_html_report(data):
     goals = data.get("goals", [])
     habits = data.get("habits", [])
-    
+
     # Calculate progress for goals
     goal_charts = []
     for goal in goals:
-        progress = (goal['current_value'] / goal['target_value']) * 100
-        goal_charts.append({
-            'title': goal['title'],
-            'progress': progress,
-            'current': goal['current_value'],
-            'target': goal['target_value']
-        })
-        
+        progress = (goal["current_value"] / goal["target_value"]) * 100
+        goal_charts.append(
+            {
+                "title": goal["title"],
+                "progress": progress,
+                "current": goal["current_value"],
+                "target": goal["target_value"],
+            }
+        )
+
     html_content = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -48,7 +51,7 @@ def generate_html_report(data):
     <div class="container">
         <div class="header">
             <h1>健康目标分析报告</h1>
-            <p>生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>生成时间: {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")}</p>
         </div>
         
         <div class="grid">
@@ -101,10 +104,10 @@ def generate_html_report(data):
         var progressOption = {{
             tooltip: {{ formatter: '{{b}}: {{c}}%' }},
             xAxis: {{ type: 'value', max: 100 }},
-            yAxis: {{ type: 'category', data: {json.dumps([g['title'] for g in goal_charts])} }},
+            yAxis: {{ type: 'category', data: {json.dumps([g["title"] for g in goal_charts])} }},
             series: [{{
                 type: 'bar',
-                data: {json.dumps([round(g['progress'], 1) for g in goal_charts])},
+                data: {json.dumps([round(g["progress"], 1) for g in goal_charts])},
                 itemStyle: {{ color: '#4CAF50' }},
                 label: {{ show: true, position: 'right', formatter: '{{c}}%' }}
             }}]
@@ -115,11 +118,11 @@ def generate_html_report(data):
         var habitChart = echarts.init(document.getElementById('habitChart'));
         var habitOption = {{
             tooltip: {{}},
-            xAxis: {{ type: 'category', data: {json.dumps([h['title'] for h in habits])} }},
+            xAxis: {{ type: 'category', data: {json.dumps([h["title"] for h in habits])} }},
             yAxis: {{ type: 'value', name: '连续天数' }},
             series: [{{
                 type: 'bar',
-                data: {json.dumps([h['current_streak'] for h in habits])},
+                data: {json.dumps([h["current_streak"] for h in habits])},
                 itemStyle: {{ color: '#FF9800' }}
             }}]
         }};
@@ -138,39 +141,41 @@ def generate_html_report(data):
         f.write(html_content)
     print("HTML report generated at health_report.html")
 
+
 def generate_markdown_report(data):
     goals = data.get("goals", [])
     habits = data.get("habits", [])
-    
+
     md = "# 健康目标分析报告\n\n"
-    
+
     for goal in goals:
         md += f"## 目标: {goal['title']}\n"
         md += f"- **状态**: {goal['status']}\n"
-        progress = (goal['current_value'] / goal['target_value']) * 100
+        progress = (goal["current_value"] / goal["target_value"]) * 100
         md += f"- **进度**: {progress:.1f}% ({goal['current_value']} / {goal['target_value']} {goal['unit']})\n"
-        
-        if 'smart_evaluation' in goal:
-            s = goal['smart_evaluation']
+
+        if "smart_evaluation" in goal:
+            s = goal["smart_evaluation"]
             overall = sum(s.values()) / 5
             md += f"### SMART评估 (总体评分: {overall:.1f}/5)\n"
-            md += f"- 具体性: {'⭐'*s['specific']} ({s['specific']}/5)\n"
-            md += f"- 可衡量性: {'⭐'*s['measurable']} ({s['measurable']}/5)\n"
-            md += f"- 可实现性: {'⭐'*s['achievable']} ({s['achievable']}/5)\n"
-            md += f"- 相关性: {'⭐'*s['relevant']} ({s['relevant']}/5)\n"
-            md += f"- 有时限: {'⭐'*s['time_bound']} ({s['time_bound']}/5)\n"
+            md += f"- 具体性: {'⭐' * s['specific']} ({s['specific']}/5)\n"
+            md += f"- 可衡量性: {'⭐' * s['measurable']} ({s['measurable']}/5)\n"
+            md += f"- 可实现性: {'⭐' * s['achievable']} ({s['achievable']}/5)\n"
+            md += f"- 相关性: {'⭐' * s['relevant']} ({s['relevant']}/5)\n"
+            md += f"- 有时限: {'⭐' * s['time_bound']} ({s['time_bound']}/5)\n"
         md += "\n"
-        
+
     md += "## 习惯追踪\n"
     for habit in habits:
         md += f"### {habit['title']}\n"
         md += f"- 当前连续: {habit['current_streak']}天 🔥\n"
         md += f"- 历史最长: {habit['longest_streak']}天\n"
         md += f"- 完成率: {habit['completion_rate']}%\n\n"
-        
+
     with open("health_report.md", "w", encoding="utf-8") as f:
         f.write(md)
     print("Markdown report generated at health_report.md")
+
 
 if __name__ == "__main__":
     data = load_data()

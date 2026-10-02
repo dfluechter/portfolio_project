@@ -117,7 +117,7 @@ class ProjectAdmin(admin.ModelAdmin):
 class TrackAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "created_at")
     search_fields = ("name", "description")
-    prepopulated_fields = {"slug": ("name",)}
+    prepopulated_fields = {"slug": ("name",)}  # noqa: RUF012
 
 
 @admin.register(PendingCertificate)

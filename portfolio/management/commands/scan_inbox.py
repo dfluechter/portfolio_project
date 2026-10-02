@@ -62,7 +62,7 @@ class Command(BaseCommand):
                 file_hash = compute_file_hash(file_path)
             except Exception as exc:  # noqa: BLE001
                 run.files_errored += 1
-                run.append_log(f"ERROR {file_path.name}: Hash-Berechnung – {exc}")
+                run.append_log(f"ERROR {file_path.name}: Hash-Berechnung - {exc}")
                 continue
 
             # Bereits eingelesen oder als Zertifikat vorhanden?
@@ -81,7 +81,7 @@ class Command(BaseCommand):
                 result = extract_metadata(file_path, inbox_path, TRACK_RULES)
             except Exception as exc:  # noqa: BLE001
                 run.files_errored += 1
-                run.append_log(f"ERROR {file_path.name}: Extraktion – {exc}")
+                run.append_log(f"ERROR {file_path.name}: Extraktion - {exc}")
                 self.stderr.write(
                     self.style.ERROR(f"  Extraktion fehlgeschlagen: {exc}")
                 )
@@ -102,7 +102,7 @@ class Command(BaseCommand):
             )
             run.files_imported += 1
             run.append_log(
-                f"OK    {file_path.name} → Titel: {result.guessed_title or '–'}"
+                f"OK    {file_path.name} → Titel: {result.guessed_title or '-'}"
             )
             self.stdout.write(
                 self.style.SUCCESS(

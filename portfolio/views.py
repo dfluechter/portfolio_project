@@ -149,7 +149,7 @@ class TrackViewSet(viewsets.ModelViewSet):
 
 
 class PendingCertificateViewSet(viewsets.ModelViewSet):
-    """Nur für Staff-Nutzer – nie öffentlich lesbar."""
+    """Nur für Staff-Nutzer - nie öffentlich lesbar."""
 
     queryset = PendingCertificate.objects.all()
     serializer_class = PendingCertificateSerializer

@@ -1,4 +1,4 @@
-"""Tests für den idempotenten Zertifikatsimport (Phase 1 – Datenmodell)."""
+"""Tests für den idempotenten Zertifikatsimport (Phase 1 - Datenmodell)."""
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile

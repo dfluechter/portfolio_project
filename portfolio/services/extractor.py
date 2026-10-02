@@ -63,7 +63,7 @@ def validate_source_path(file_path: Path, source_root: Path) -> bool:
         resolved_path = file_path.resolve()
         resolved_root = source_root.resolve()
         return resolved_root in resolved_path.parents
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
 
@@ -95,7 +95,7 @@ def _extract_from_pdf(file_path: Path) -> tuple[dict, str, bool]:
             # If no usable text layer exists, set ocr_pending
             if not extracted_text.strip():
                 ocr_pending = True
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         pass
 
     return metadata, extracted_text, ocr_pending
@@ -125,7 +125,7 @@ def _extract_from_image(file_path: Path, enable_ocr: bool) -> tuple[dict, str, s
 
             if enable_ocr:
                 extracted_text = pytesseract.image_to_string(img)
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         pass
     return metadata, extracted_text, dimensions
 
@@ -184,7 +184,7 @@ def extract_metadata(
         pdf_meta, extracted_text, ocr_pending = _extract_from_pdf(file_path)
     elif ext in [".png", ".jpg", ".jpeg"]:
         source_type = "image"
-        img_meta, extracted_text, image_dimensions = _extract_from_image(
+        _img_meta, extracted_text, image_dimensions = _extract_from_image(
             file_path, enable_ocr
         )
     else:
