@@ -34,6 +34,18 @@ def validate_file_size(value: Any) -> None:
 
 
 # ==============================================================================
+# KONFIGURATION
+# ==============================================================================
+TRACK_RULES: dict[str, list[str]] = {
+    "python-django": ["python", "django", "django rest framework", "fastapi"],
+    "frontend-react": ["react", "typescript", "javascript", "frontend"],
+    "cloud-devops": ["azure", "aws", "docker", "kubernetes", "github actions", "devops"],
+    "data-ai": ["artificial intelligence", "machine learning", "data science", "generative ai"],
+    "security": ["security", "cybersecurity", "identity", "compliance"],
+}
+
+
+# ==============================================================================
 # MODELLE
 # ==============================================================================
 def certificate_upload_path(instance: Any, filename: str) -> str:
@@ -48,7 +60,9 @@ def certificate_upload_path(instance: Any, filename: str) -> str:
     clean_issuer = slugify(issuer_name)
     if not clean_issuer:
         clean_issuer = "unsorted"
-    return f"certificates/{clean_issuer}/{filename}"
+        
+    hash_prefix = instance.sha256_hash[:12] if getattr(instance, "sha256_hash", None) else "unsorted"
+    return f"certificates/{clean_issuer}/{hash_prefix}/{filename}"
 
 
 class SkillCategory(models.TextChoices):
@@ -171,6 +185,21 @@ class Provider(models.Model):
         ordering = ("provider",)
 
 
+class Track(models.Model):
+    name = models.CharField(max_length=100, unique=True, verbose_name="Track-Name")
+    slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug")
+    description = models.TextField(blank=True, verbose_name="Beschreibung")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Erstellt am")
+
+    class Meta:
+        verbose_name = "Track"
+        verbose_name_plural = "Tracks"
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Certificate(models.Model):
     title = models.CharField(max_length=255, verbose_name="Titel des Zertifikats")
     provider = models.ForeignKey(
@@ -179,12 +208,26 @@ class Certificate(models.Model):
         related_name="certificates",
         verbose_name="Zertifikatsanbieter",
     )
+    track = models.ForeignKey(
+        Track,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="certificates",
+        verbose_name="Zugeordneter Track",
+    )
     pdf_file = models.FileField(
         upload_to=certificate_upload_path,
         verbose_name="PDF / PNG / JPG Datei",
         validators=[validate_file_extension, validate_file_size],
     )
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Hochgeladen am")
+    sha256_hash = models.CharField(max_length=64, unique=True, db_index=True, verbose_name="SHA-256 Hash", default="")
+    is_published = models.BooleanField(default=False, verbose_name="Veröffentlicht")
+    credential_id = models.CharField(max_length=255, blank=True, verbose_name="Credential-ID")
+    issued_date = models.DateField(null=True, blank=True, verbose_name="Ausstellungsdatum")
+    storage_key = models.CharField(max_length=512, blank=True, verbose_name="Storage-Objektschlüssel")
+    ocr_pending = models.BooleanField(default=False, verbose_name="OCR ausstehend")
 
     class Meta:
         verbose_name = "Zertifikat"
@@ -193,6 +236,97 @@ class Certificate(models.Model):
 
     def __str__(self) -> str:
         return f"{self.title} ({self.provider.provider})"
+
+
+class PendingCertificateStatus(models.TextChoices):
+    PENDING = "pending", "Ausstehend"
+    APPROVED = "approved", "Freigegeben"
+    REJECTED = "rejected", "Abgelehnt"
+
+
+class PendingCertificate(models.Model):
+    original_file_name = models.CharField(max_length=255, verbose_name="Ursprünglicher Dateiname")
+    file_path = models.CharField(max_length=1024, verbose_name="Lokaler Dateipfad")
+    extracted_text = models.TextField(blank=True, verbose_name="Extrahierter Text (Rohdaten)")
+    guessed_title = models.CharField(max_length=255, blank=True, verbose_name="Vermuteter Titel")
+    guessed_provider = models.CharField(max_length=255, blank=True, verbose_name="Vermuteter Anbieter")
+    status = models.CharField(
+        max_length=20,
+        choices=PendingCertificateStatus.choices,
+        default=PendingCertificateStatus.PENDING,
+        verbose_name="Status"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Eingelesen am")
+
+    class Meta:
+        verbose_name = "Ausstehendes Zertifikat (Inbox)"
+        verbose_name_plural = "Ausstehende Zertifikate (Inbox)"
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"[{self.get_status_display()}] {self.original_file_name}"
+
+
+class ImportRunStatus(models.TextChoices):
+    RUNNING = "running", "Läuft"
+    SUCCESS = "success", "Erfolgreich"
+    PARTIAL = "partial", "Teilweise erfolgreich"
+    FAILED = "failed", "Fehlgeschlagen"
+
+
+class CertificateImportRun(models.Model):
+    """Protokolliert einen einzelnen Scan-/Import-Lauf des scan_inbox-Commands."""
+
+    # Zeitstempel
+    started_at = models.DateTimeField(verbose_name="Gestartet um")
+    finished_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Beendet um"
+    )
+
+    # Zähler
+    files_found = models.PositiveIntegerField(
+        default=0, verbose_name="Dateien gefunden"
+    )
+    files_imported = models.PositiveIntegerField(
+        default=0, verbose_name="Dateien importiert"
+    )
+    files_skipped = models.PositiveIntegerField(
+        default=0, verbose_name="Dateien übersprungen"
+    )
+    files_errored = models.PositiveIntegerField(
+        default=0, verbose_name="Dateien fehlerhaft"
+    )
+
+    # Status & Log
+    status = models.CharField(
+        max_length=20,
+        choices=ImportRunStatus.choices,
+        default=ImportRunStatus.RUNNING,
+        verbose_name="Status",
+    )
+    log = models.TextField(blank=True, verbose_name="Log-Protokoll")
+
+    # Quelle
+    inbox_path = models.CharField(
+        max_length=1024, blank=True, verbose_name="Inbox-Verzeichnis"
+    )
+
+    class Meta:
+        verbose_name = "Import-Lauf"
+        verbose_name_plural = "Import-Läufe"
+        ordering = ("-started_at",)
+
+    def __str__(self) -> str:
+        return (
+            f"[{self.get_status_display()}] {self.started_at:%Y-%m-%d %H:%M} "
+            f"({self.files_imported}/{self.files_found})"
+        )
+
+    def append_log(self, message: str) -> None:
+        """Hängt eine Zeile an das Log-Feld an (ohne sofort zu speichern)."""
+        if self.log:
+            self.log += "\n"
+        self.log += message
 
 
 class Project(models.Model):

@@ -39,20 +39,22 @@ class TestCertificateUploadPath:
         instance = self.DummyInstance(
             provider=self.DummyProvider(provider="Cisco Systems")
         )
+        instance.sha256_hash = "12345678901234567890"
         path = certificate_upload_path(instance, "cert.pdf")
 
         # 'Cisco Systems' sollte zu 'cisco-systems' werden
-        assert path == "certificates/cisco-systems/cert.pdf"
+        assert path == "certificates/cisco-systems/123456789012/cert.pdf"
 
     def test_complex_provider_name(self):
         """Testet einen Namen mit Sonderzeichen und Umlauten."""
         instance = self.DummyInstance(
             provider=self.DummyProvider(provider="TÜV Süd! & Co. KG")
         )
+        instance.sha256_hash = ""
         path = certificate_upload_path(instance, "mein_zertifikat.pdf")
 
         # 'TÜV Süd! & Co. KG' wird bereinigt (Umlaute/Sonderzeichen werden entfernt oder ersetzt)
-        assert path == "certificates/tuv-sud-co-kg/mein_zertifikat.pdf"
+        assert path == "certificates/tuv-sud-co-kg/unsorted/mein_zertifikat.pdf"
 
     def test_fallback_provider_name(self):
         """
@@ -62,10 +64,11 @@ class TestCertificateUploadPath:
         instance = self.DummyInstance(
             provider=self.DummyProvider(provider="??? *** !!!")
         )
+        instance.sha256_hash = ""
         path = certificate_upload_path(instance, "test.pdf")
 
         # Da der Name wegschmilzt, muss unser Fallback 'unsorted' greifen
-        assert path == "certificates/unsorted/test.pdf"
+        assert path == "certificates/unsorted/unsorted/test.pdf"
 
 
 # =====================================================================
@@ -154,7 +157,8 @@ class TestCertificateModel:
 
         assert Certificate.objects.count() == 1
         assert str(cert) == "Python Advanced (Udemy)"
-        assert "certificates/udemy/test_file" in cert.pdf_file.name
+        assert cert.pdf_file.name is not None
+        assert "certificates/udemy/unsorted/test_file" in cert.pdf_file.name
 
 
 @pytest.mark.django_db
@@ -173,7 +177,9 @@ class TestProjectModel:
         assert Project.objects.count() == 1
         assert str(project) == "My Portfolio"
         assert project.skills.count() == 1
-        assert project.skills.first().name == "FastAPI"
+        first_skill = project.skills.first()
+        assert first_skill is not None
+        assert first_skill.name == "FastAPI"
 
 
 # =====================================================================
