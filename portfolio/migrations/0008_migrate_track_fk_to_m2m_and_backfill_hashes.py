@@ -15,7 +15,7 @@ def migrate_track_fk_to_m2m(apps, schema_editor):
 def generate_real_hashes(apps, schema_editor):
     """Berechnet echte SHA-256-Hashes für bestehende Zertifikate aus den PDF-Dateien.
 
-    Falls eine Datei lokal fehlt (z.B. in der Entwicklungsumgebung), 
+    Falls eine Datei lokal fehlt (z.B. in der Entwicklungsumgebung),
     wird auf einen eindeutigen Dummy-Hash zurückgegriffen.
     """
     Certificate = apps.get_model("portfolio", "Certificate")
@@ -27,7 +27,11 @@ def generate_real_hashes(apps, schema_editor):
                 with cert.pdf_file.open("rb") as f:
                     # Django File objects might not have chunks() in all storage backends,
                     # but they do support read(). For safety with large files:
-                    for chunk in f.chunks() if hasattr(f, "chunks") else iter(lambda: f.read(4096), b""):
+                    for chunk in (
+                        f.chunks()
+                        if hasattr(f, "chunks")
+                        else iter(lambda: f.read(4096), b"")
+                    ):
                         sha256.update(chunk)
                 cert.sha256_hash = sha256.hexdigest()
                 file_hashed = True
@@ -38,7 +42,7 @@ def generate_real_hashes(apps, schema_editor):
             # Fallback für lokale Tests ohne die echte PDF-Datei
             raw = f"legacy-{cert.pk}-{cert.title}-{cert.provider_id}"
             cert.sha256_hash = hashlib.sha256(raw.encode()).hexdigest()
-            
+
         cert.save(update_fields=["sha256_hash"])
 
 

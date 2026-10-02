@@ -168,7 +168,6 @@ class TestCertificateAPI:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 0
 
-
     def test_authenticated_can_create_certificate_with_file(self, auth_client):
         provider = Provider.objects.create(provider="Amazon Web Services")
         url = reverse("certificate-list")

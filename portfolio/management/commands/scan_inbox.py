@@ -97,7 +97,9 @@ class Command(BaseCommand):
                 file_path=str(file_path)[:1024].replace("\x00", ""),
                 extracted_text=(result.extracted_text or "").replace("\x00", ""),
                 guessed_title=(result.guessed_title or "")[:255].replace("\x00", ""),
-                guessed_provider=(result.guessed_provider or "")[:255].replace("\x00", ""),
+                guessed_provider=(result.guessed_provider or "")[:255].replace(
+                    "\x00", ""
+                ),
                 sha256_hash=file_hash,
             )
             run.files_imported += 1
