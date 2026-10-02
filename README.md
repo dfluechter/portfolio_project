@@ -1,4 +1,5 @@
 # Portfolio Projekt
+[![CI/CD Pipeline](https://github.com/dfluechter/portfolio_project/actions/workflows/ci.yml/badge.svg)](https://github.com/dfluechter/portfolio_project/actions/workflows/ci.yml)
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/dfluechter/portfolio_project/CI%2FCD%20Pipeline?branch=main&style=for-the-badge&logo=github)
 ![Coverage](https://img.shields.io/badge/Coverage-99%25-brightgreen?style=for-the-badge&logo=pytest)
