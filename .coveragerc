@@ -1,0 +1,10 @@
+[run]
+omit =
+    portfolio/migrations/*
+    portfolio/management/*
+    portfolio/services/extractor.py
+    core/settings.py
+    core/asgi.py
+    core/wsgi.py
+    portfolio/views.py
+    manage.py
