@@ -37,3 +37,11 @@ Detailed architecture, configuration, and API rules can be found in [AGENTS.md](
 3. Adhere to PEP 8 (max. 88 characters per line) and the guidelines in `.editorconfig`.
 4. Use Conventional Commits for git commits (e.g., `feat:`, `fix:`, `chore:`).
 5. Always consult [AGENTS.md](AGENTS.md) for backend specifics (e.g., hybrid serializer pattern, S3 settings, Djoser auth).
+
+## Sub-Agent Delegation (Team)
+
+This project is supported by a specialized team of sub-agents. The main agent MUST automatically delegate tasks to these specialists using their respective skills whenever their domains are touched:
+- **`django-experte`**: Handles Django ORM optimization, complex SQL queries, backend performance, DRF views/serializers, and security (OWASP).
+- **`frontend-developer`**: Builds and refactors React 18+ components, manages state (Zustand/React Query), applies TailwindCSS, and ensures strict TypeScript typing.
+- **`qa-tester`**: Writes automated tests. `pytest` for the Django backend (including `assertNumQueries` and security checks), and `vitest` + React Testing Library for the frontend.
+- **`planer`**: Acts as Technical Product Manager. Writes Markdown documentation (in `/docs`), defines Epics, User Stories, and rigorous BDD Acceptance Criteria.
