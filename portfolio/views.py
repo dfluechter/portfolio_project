@@ -1,10 +1,8 @@
 import hashlib
 import json
-import os
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.core.files.base import ContentFile
 from django.db.models import Prefetch, ProtectedError
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import redirect, render
@@ -17,7 +15,6 @@ from rest_framework.response import Response
 from .models import (
     Certificate,
     PendingCertificate,
-    PendingCertificateStatus,
     Project,
     Provider,
     Skill,
@@ -33,6 +30,11 @@ from .serializers import (
     SkillSerializer,
     TimelineEntrySerializer,
     TrackSerializer,
+)
+from .services.promotion import (
+    PromotionError,
+    promote_pending_certificate,
+    reject_pending_certificate,
 )
 
 
@@ -184,77 +186,51 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def approve(self, request, pk=None):
         pending = self.get_object()
-        if pending.status != PendingCertificateStatus.PENDING:
-            return Response({"detail": "Bereits verarbeitet."}, status=400)
+        title = request.data.get("title")
+        provider_name = request.data.get("provider")
+        track_ids = request.data.get("track_ids")
 
-        title = request.data.get("title", pending.guessed_title)
-        provider_name = request.data.get("provider", pending.guessed_provider)
-        track_ids = request.data.get("track_ids", [])
+        tracks = None
+        if track_ids is not None:
+            tracks = []
+            for track_id in track_ids:
+                try:
+                    tracks.append(Track.objects.get(pk=track_id))
+                except Track.DoesNotExist:
+                    return Response(
+                        {"detail": f"Track {track_id} nicht gefunden."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
-        if not title or not provider_name:
+        try:
+            cert = promote_pending_certificate(
+                pending=pending,
+                title=title,
+                provider_name=provider_name,
+                tracks=tracks,
+            )
+        except PromotionError as exc:
             return Response(
-                {"detail": "Titel und Anbieter sind erforderlich."}, status=400
+                {"detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        provider, _ = Provider.objects.get_or_create(
-            provider=provider_name, defaults={"aktiv": True}
+        return Response(
+            {
+                "detail": "Erfolgreich freigegeben.",
+                "certificate_id": cert.id,
+            },
+            status=status.HTTP_200_OK,
         )
-
-        tracks = []
-        for track_id in track_ids:
-            try:
-                tracks.append(Track.objects.get(pk=track_id))
-            except Track.DoesNotExist:
-                return Response(
-                    {"detail": f"Track {track_id} nicht gefunden."}, status=400
-                )
-
-        if not os.path.exists(pending.file_path):
-            return Response({"detail": "Datei existiert nicht mehr lokal."}, status=400)
-
-        # SHA-256 berechnen und Duplikat prüfen
-        sha256 = hashlib.sha256()
-        with open(pending.file_path, "rb") as f:
-            file_bytes = f.read()
-            sha256.update(file_bytes)
-        file_hash = sha256.hexdigest()
-
-        if Certificate.objects.filter(sha256_hash=file_hash).exists():
-            return Response(
-                {"detail": "Zertifikat mit identischem Dateiinhalt existiert bereits."},
-                status=400,
-            )
-
-        file_content = ContentFile(file_bytes)
-        ext = os.path.splitext(pending.file_path)[1].lower()
-        content_types = {
-            ".pdf": "application/pdf",
-            ".png": "image/png",
-            ".jpg": "image/jpeg",
-            ".jpeg": "image/jpeg",
-        }
-        file_content.content_type = content_types.get(  # type: ignore[attr-defined]
-            ext, "application/octet-stream"
-        )
-
-        cert = Certificate(
-            title=title,
-            provider=provider,
-            sha256_hash=file_hash,
-            is_published=False,
-        )
-        cert.pdf_file.save(pending.original_file_name, file_content, save=True)
-
-        if tracks:
-            cert.tracks.set(tracks)
-
-        pending.status = PendingCertificateStatus.APPROVED
-        pending.save()
-        return Response({"detail": "Erfolgreich freigegeben."})
 
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
         pending = self.get_object()
-        pending.status = PendingCertificateStatus.REJECTED
-        pending.save()
-        return Response({"detail": "Abgelehnt."})
+        try:
+            reject_pending_certificate(pending)
+        except PromotionError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response({"detail": "Abgelehnt."}, status=status.HTTP_200_OK)

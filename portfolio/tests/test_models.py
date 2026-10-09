@@ -238,6 +238,34 @@ class TestPendingCertificateModel:
                 sha256_hash=hash_val,
             )
 
+    def test_relations_import_run_tracks_and_certificate(self):
+        """Testet Verknüpfung mit ImportRun, Track und Certificate."""
+        run = CertificateImportRun.objects.create(
+            started_at=datetime.datetime(2026, 1, 1, 10, 0, tzinfo=datetime.UTC),
+        )
+        track = Track.objects.create(name="DevOps", slug="devops")
+        provider = Provider.objects.create(provider="AWS")
+        cert = Certificate.objects.create(
+            title="AWS Solutions Architect",
+            provider=provider,
+            sha256_hash="f" * 64,
+        )
+
+        pending = PendingCertificate.objects.create(
+            original_file_name="cert_aws.pdf",
+            file_path="/inbox/cert_aws.pdf",
+            import_run=run,
+            certificate=cert,
+        )
+        pending.suggested_tracks.add(track)
+
+        assert pending.import_run == run
+        assert run.pending_certificates.count() == 1
+        assert pending.suggested_tracks.count() == 1
+        assert track.suggested_pending_certificates.count() == 1
+        assert pending.certificate == cert
+        assert cert.source_pending == pending
+
 
 @pytest.mark.django_db
 class TestCertificateImportRunModel:

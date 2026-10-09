@@ -297,6 +297,28 @@ class PendingCertificate(models.Model):
         blank=True,
         verbose_name="SHA-256 Hash",
     )
+    import_run = models.ForeignKey(
+        "CertificateImportRun",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pending_certificates",
+        verbose_name="Import-Lauf",
+    )
+    suggested_tracks = models.ManyToManyField(
+        Track,
+        blank=True,
+        related_name="suggested_pending_certificates",
+        verbose_name="Vorgeschlagene Tracks",
+    )
+    certificate = models.OneToOneField(
+        Certificate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_pending",
+        verbose_name="Zugeordnetes Zertifikat",
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Eingelesen am")
 
     class Meta:

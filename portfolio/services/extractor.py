@@ -1,6 +1,6 @@
 import hashlib
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytesseract
@@ -22,6 +22,7 @@ class ExtractionResult:
     source_type: str  # 'pdf' | 'image'
     file_size: int
     image_dimensions: str  # 'WxH' or empty
+    guessed_track_slugs: list[str] = field(default_factory=list)
 
 
 def compute_file_hash(file_path: Path) -> str:
@@ -33,16 +34,20 @@ def compute_file_hash(file_path: Path) -> str:
     return sha256_hash.hexdigest()
 
 
-def guess_track(title: str, rules: dict[str, list[str]]) -> str | None:
-    """Ermittelt den Track basierend auf Keywords im Titel."""
-    if not title:
-        return None
-    title_lower = title.lower()
+def guess_tracks(title: str, rules: dict[str, list[str]], text: str = "") -> list[str]:
+    """Ermittelt alle passenden Tracks basierend auf Keywords in Titel und Text."""
+    matches: list[str] = []
+    combined = f"{title} {text}".lower()
     for track_slug, keywords in rules.items():
-        for keyword in keywords:
-            if keyword.lower() in title_lower:
-                return track_slug
-    return None
+        if any(keyword.lower() in combined for keyword in keywords):
+            matches.append(track_slug)
+    return matches
+
+
+def guess_track(title: str, rules: dict[str, list[str]]) -> str | None:
+    """Ermittelt den ersten passenden Track basierend auf Keywords im Titel."""
+    tracks = guess_tracks(title, rules)
+    return tracks[0] if tracks else None
 
 
 def safe_storage_key(provider_slug: str, hash_hex: str, original_name: str) -> str:
@@ -201,7 +206,8 @@ def extract_metadata(
     # Issued date priority: Regex, then metadata
     issued_date = regex_info.get("issued_date") or pdf_meta.get("creation_date", "")
 
-    guessed_track_slug = guess_track(guessed_title, track_rules) or ""
+    guessed_track_slugs = guess_tracks(guessed_title, track_rules, extracted_text)
+    guessed_track_slug = guessed_track_slugs[0] if guessed_track_slugs else ""
 
     return ExtractionResult(
         sha256_hash=sha256_hash,
@@ -215,4 +221,5 @@ def extract_metadata(
         source_type=source_type,
         file_size=file_size,
         image_dimensions=image_dimensions,
+        guessed_track_slugs=guessed_track_slugs,
     )

@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from .models import (
@@ -12,6 +12,7 @@ from .models import (
     Track,
     User,
 )
+from .services.promotion import PromotionError, promote_pending_certificate
 
 
 @admin.register(User)
@@ -127,11 +128,34 @@ class PendingCertificateAdmin(admin.ModelAdmin):
         "guessed_title",
         "guessed_provider",
         "status",
+        "import_run",
         "created_at",
     )
-    list_filter = ("status",)
+    list_filter = ("status", "import_run")
     search_fields = ("original_file_name", "guessed_title", "guessed_provider")
-    readonly_fields = ("created_at", "extracted_text")
+    readonly_fields = ("created_at", "extracted_text", "certificate")
+    filter_horizontal = ("suggested_tracks",)
+    actions = ("promote_selected",)
+
+    @admin.action(description="Ausgewählte Zertifikate freigeben und übertragen")
+    def promote_selected(self, request, queryset):
+        success_count = 0
+        for pending in queryset:
+            try:
+                promote_pending_certificate(pending)
+                success_count += 1
+            except PromotionError as exc:
+                self.message_user(
+                    request,
+                    f"Fehler bei {pending.original_file_name}: {exc}",
+                    level=messages.ERROR,
+                )
+        if success_count:
+            self.message_user(
+                request,
+                f"{success_count} Zertifikat(e) erfolgreich freigegeben und übertragen.",
+                level=messages.SUCCESS,
+            )
 
 
 @admin.register(CertificateImportRun)
