@@ -1,6 +1,9 @@
 import React from 'react';
 import { Briefcase, Calendar, GraduationCap, MapPin, Milestone } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTimeline } from '../hooks/usePortfolio';
+import { usePortfolioSearch } from '../hooks/usePortfolioSearch';
+import { SectionEmptyState } from './SectionEmptyState';
 import type { TimelineEntry } from '../types';
 
 const defaultTimeline: TimelineEntry[] = [
@@ -36,7 +39,19 @@ const defaultTimeline: TimelineEntry[] = [
 
 export const TimelineSection: React.FC = () => {
   const { data: timelineData, isLoading } = useTimeline();
+  const { searchTerm, clearSearch } = usePortfolioSearch();
+
   const entries = timelineData && timelineData.length > 0 ? timelineData : defaultTimeline;
+
+  const filteredEntries = entries.filter((entry) => {
+    if (!searchTerm.trim()) return true;
+    const query = searchTerm.toLowerCase();
+    const matchTitle = entry.title.toLowerCase().includes(query);
+    const matchOrg = entry.organization.toLowerCase().includes(query);
+    const matchDesc = entry.description?.toLowerCase().includes(query);
+    const matchSkill = entry.skill_details?.some((s) => s.name.toLowerCase().includes(query));
+    return matchTitle || matchOrg || matchDesc || matchSkill;
+  });
 
   return (
     <section id="timeline" className="py-20 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/80 transition-colors">
@@ -46,7 +61,7 @@ export const TimelineSection: React.FC = () => {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs font-semibold mb-3">
               <Milestone className="w-3.5 h-3.5" />
-              Erfahrung & Meilensteine
+              Erfahrung & Meilensteine {searchTerm && `(${filteredEntries.length} Treffer)`}
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Beruflicher Werdegang
@@ -64,69 +79,85 @@ export const TimelineSection: React.FC = () => {
               <div key={n} className="h-32 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
             ))}
           </div>
+        ) : filteredEntries.length === 0 ? (
+          <SectionEmptyState
+            sectionName="Werdegang"
+            query={searchTerm}
+            onReset={clearSearch}
+          />
         ) : (
           <div className="relative max-w-3xl mx-auto">
             {/* Vertical Line */}
             <div className="absolute left-4 sm:left-6 top-4 bottom-4 w-0.5 bg-gradient-to-b from-indigo-500 via-violet-500 to-transparent" />
 
             <div className="space-y-8">
-              {entries.map((entry) => {
-                const isEducation = entry.entry_type === 'education';
-                const Icon = isEducation ? GraduationCap : Briefcase;
+              <AnimatePresence>
+                {filteredEntries.map((entry) => {
+                  const isEducation = entry.entry_type === 'education';
+                  const Icon = isEducation ? GraduationCap : Briefcase;
 
-                return (
-                  <div key={entry.id} className="relative flex items-start gap-4 sm:gap-6 group">
-                    {/* Node Dot */}
-                    <div className="relative z-10 flex-shrink-0 w-8 h-8 sm:w-12 sm:h-12 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-
-                    {/* Content Card */}
-                    <div className="flex-1 p-6 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500/40 transition-all">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                        <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md">
-                          {entry.entry_type_display || entry.entry_type}
-                        </span>
-
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>
-                            {new Date(entry.start_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })}
-                            {' — '}
-                            {entry.is_current
-                              ? 'Heute (Laufend)'
-                              : entry.end_date
-                              ? new Date(entry.end_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })
-                              : 'Abgeschlossen'}
-                          </span>
-                        </div>
+                  return (
+                    <motion.div
+                      key={entry.id}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="relative flex items-start gap-4 sm:gap-6 group"
+                    >
+                      {/* Node Dot */}
+                      <div className="relative z-10 flex-shrink-0 w-8 h-8 sm:w-12 sm:h-12 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
                       </div>
 
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
-                        {entry.title}
-                      </h3>
-
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400 mb-4 font-medium">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">
-                          {entry.organization}
-                        </span>
-                        {entry.location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-slate-400" />
-                            {entry.location}
+                      {/* Content Card */}
+                      <div className="flex-1 p-6 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500/40 transition-all">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md">
+                            {entry.entry_type_display || entry.entry_type}
                           </span>
+
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>
+                              {new Date(entry.start_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })}
+                              {' — '}
+                              {entry.is_current
+                                ? 'Heute (Laufend)'
+                                : entry.end_date
+                                ? new Date(entry.end_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })
+                                : 'Abgeschlossen'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                          {entry.title}
+                        </h3>
+
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400 mb-4 font-medium">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {entry.organization}
+                          </span>
+                          {entry.location && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-slate-400" />
+                              {entry.location}
+                            </span>
+                          )}
+                        </div>
+
+                        {entry.description && (
+                          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                            {entry.description}
+                          </p>
                         )}
                       </div>
-
-                      {entry.description && (
-                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                          {entry.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </div>
           </div>
         )}

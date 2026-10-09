@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSkills } from '../hooks/usePortfolio';
 import { getMockSkill } from '../test/factories';
@@ -51,7 +51,7 @@ describe('SkillsSection', () => {
     expect(screen.queryByText('Python 3.13')).not.toBeInTheDocument();
   });
 
-  it('filters skills by category', () => {
+  it('filters skills by category', async () => {
     mockSkillsQuery([
       getMockSkill({ id: 1, name: 'Django', category: 'backend' }),
       getMockSkill({ id: 2, name: 'React', category: 'frontend', category_display: 'Frontend' }),
@@ -61,6 +61,8 @@ describe('SkillsSection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Frontend' }));
 
     expect(screen.getByText('React')).toBeInTheDocument();
-    expect(screen.queryByText('Django')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Django')).not.toBeInTheDocument();
+    });
   });
 });

@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Check, Code, Cpu, Database, Layers, Sparkles, Wrench } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSkills } from '../hooks/usePortfolio';
+import { usePortfolioSearch } from '../hooks/usePortfolioSearch';
+import { SectionEmptyState } from './SectionEmptyState';
 import type { Skill } from '../types';
 
 const defaultSkills: Skill[] = [
@@ -17,6 +20,7 @@ const defaultSkills: Skill[] = [
 
 export const SkillsSection: React.FC = () => {
   const { data: skillsData, isLoading } = useSkills();
+  const { searchTerm, clearSearch } = usePortfolioSearch();
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const skills = skillsData && skillsData.length > 0 ? skillsData : defaultSkills;
@@ -31,8 +35,15 @@ export const SkillsSection: React.FC = () => {
   ];
 
   const filteredSkills = skills.filter((s) => {
-    if (activeCategory === 'all') return true;
-    return s.category === activeCategory;
+    const matchesCategory = activeCategory === 'all' || s.category === activeCategory;
+    if (!matchesCategory) return false;
+    if (!searchTerm.trim()) return true;
+    const query = searchTerm.toLowerCase();
+    return (
+      s.name.toLowerCase().includes(query) ||
+      s.category.toLowerCase().includes(query) ||
+      s.category_display.toLowerCase().includes(query)
+    );
   });
 
   return (
@@ -43,7 +54,7 @@ export const SkillsSection: React.FC = () => {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold mb-3">
               <Sparkles className="w-3.5 h-3.5" />
-              Expertise & Fähigkeiten
+              Expertise & Fähigkeiten {searchTerm && `(${filteredSkills.length} Treffer)`}
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Technologie-Stack
@@ -83,45 +94,58 @@ export const SkillsSection: React.FC = () => {
               <div key={n} className="h-28 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
             ))}
           </div>
+        ) : filteredSkills.length === 0 ? (
+          <SectionEmptyState
+            sectionName="Skills"
+            query={searchTerm}
+            onReset={clearSearch}
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSkills.map((skill) => (
-              <div
-                key={skill.id}
-                className="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-indigo-500/40 transition-all hover:-translate-y-0.5 space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">
-                      {skill.name}
-                    </span>
-                    {skill.is_featured && (
-                      <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
-                        Top Skill
+            <AnimatePresence>
+              {filteredSkills.map((skill) => (
+                <motion.div
+                  key={skill.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.2 }}
+                  className="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-indigo-500/40 transition-all hover:-translate-y-0.5 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 dark:text-white text-sm">
+                        {skill.name}
                       </span>
-                    )}
+                      {skill.is_featured && (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+                          Top Skill
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+                      {skill.proficiency}%
+                    </span>
                   </div>
-                  <span className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                    {skill.proficiency}%
-                  </span>
-                </div>
 
-                {/* Animated Progress Bar */}
-                <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700 ease-out"
-                    style={{ width: `${skill.proficiency}%` }}
-                  />
-                </div>
+                  {/* Animated Progress Bar */}
+                  <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700 ease-out"
+                      style={{ width: `${skill.proficiency}%` }}
+                    />
+                  </div>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-500">
-                  <span>{skill.category_display || skill.category}</span>
-                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                    <Check className="w-3 h-3" /> Produktionsbereit
-                  </span>
-                </div>
-              </div>
-            ))}
+                  <div className="flex items-center justify-between text-[11px] text-slate-500">
+                    <span>{skill.category_display || skill.category}</span>
+                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                      <Check className="w-3 h-3" /> Produktionsbereit
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
