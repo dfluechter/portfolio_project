@@ -164,7 +164,7 @@ class Command(BaseCommand):
                     f"title='{result.guessed_title or '-'}' tracks='{tracks_info}'"
                 )
                 self.stdout.write(
-                    f"  [WOULD IMPORT] {file_path.name} → Titel: {result.guessed_title or '-'} "
+                    f"  [WOULD IMPORT] {file_path.name} -> Titel: {result.guessed_title or '-'} "
                     f"[Tracks: {tracks_info}]"
                 )
                 continue
@@ -192,7 +192,7 @@ class Command(BaseCommand):
 
             run.files_imported += 1
             run.append_log(
-                f"OK    {file_path.name} hash={file_hash[:12]} → Titel: {result.guessed_title or '-'} "
+                f"OK    {file_path.name} hash={file_hash[:12]} -> Titel: {result.guessed_title or '-'} "
                 f"tracks={tracks_info}"
             )
             self.stdout.write(
@@ -214,7 +214,7 @@ class Command(BaseCommand):
         summary = (
             f"DONE  Gefunden: {run.files_found}, "
             f"{'Geplant' if dry_run else 'Importiert'}: {run.files_imported}, "
-            f"Übersprungen: {run.files_skipped}, "
+            f"Uebersprungen: {run.files_skipped}, "
             f"Fehler: {run.files_errored}"
         )
         run.append_log(summary)
