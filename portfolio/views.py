@@ -5,10 +5,11 @@ import os
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
+from django.db.models import Prefetch, ProtectedError
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -106,6 +107,18 @@ class ProviderViewSet(viewsets.ModelViewSet):
     serializer_class = ProviderSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": "Anbieter kann nicht gelöscht werden, "
+                    "solange ihm Zertifikate zugeordnet sind."
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
 
 class CertificateViewSet(viewsets.ModelViewSet):
     serializer_class = CertificateSerializer
@@ -143,7 +156,14 @@ class TimelineEntryViewSet(viewsets.ModelViewSet):
 
 
 class TrackViewSet(viewsets.ModelViewSet):
-    queryset = Track.objects.all().prefetch_related("certificates")
+    queryset = Track.objects.all().prefetch_related(
+        Prefetch(
+            "certificates",
+            queryset=Certificate.objects.select_related("provider").prefetch_related(
+                "tracks"
+            ),
+        )
+    )
     serializer_class = TrackSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
 

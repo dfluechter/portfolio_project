@@ -116,10 +116,11 @@ class TrackSerializer(serializers.ModelSerializer):
 
     def get_certificates(self, obj):
         request = self.context.get("request")
-        qs = obj.certificates.all()
+        certificates = obj.certificates.all()
         if request and not request.user.is_authenticated:
-            qs = qs.filter(is_published=True)
-        return CertificateSerializer(qs, many=True, context=self.context).data
+            # In Python filtern, damit das Prefetch des ViewSets genutzt wird
+            certificates = [c for c in certificates if c.is_published]
+        return CertificateSerializer(certificates, many=True, context=self.context).data
 
 
 class PendingCertificateSerializer(serializers.ModelSerializer):
