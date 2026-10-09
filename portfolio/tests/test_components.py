@@ -158,9 +158,17 @@ class TestTrackSerializerVisibility:
 
         assert [c["title"] for c in data["certificates"]] == ["Ca"]
 
-    def test_without_request_context_all_certificates_are_returned(self):
+    def test_without_request_context_only_published_certificates_are_returned(self):
         track = self._track_with_certificates()
-        assert len(TrackSerializer(track).data["certificates"]) == 2
+        data = TrackSerializer(track).data
+        assert [c["title"] for c in data["certificates"]] == ["Ca"]
+
+    def test_authenticated_request_gets_all_certificates(self):
+        track = self._track_with_certificates()
+        request = APIRequestFactory().get("/")
+        request.user = type("AuthUser", (), {"is_authenticated": True})()
+        data = TrackSerializer(track, context={"request": request}).data
+        assert len(data["certificates"]) == 2
 
 
 class TestFileValidators:
