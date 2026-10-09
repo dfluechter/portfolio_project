@@ -23,7 +23,7 @@ interface SearchResultItem {
 
 export const HeroSearch: React.FC = () => {
   const { searchTerm, setSearchTerm, clearSearch } = usePortfolioSearch();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => Boolean(searchTerm.trim()));
   const [activeIndex, setActiveIndex] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -122,9 +122,7 @@ export const HeroSearch: React.FC = () => {
   if (searchTerm !== prevSearchTerm) {
     setPrevSearchTerm(searchTerm);
     setActiveIndex(0);
-    if (searchTerm.trim().length > 0) {
-      setIsOpen(true);
-    }
+    setIsOpen(searchTerm.trim().length > 0);
   }
 
   const handleSelectItem = (item: SearchResultItem) => {
