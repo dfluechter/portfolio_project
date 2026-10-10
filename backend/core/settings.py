@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent / ".env")
 
 
 # -----------------------------------------------------------------------------
@@ -175,7 +176,9 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [
+    d for d in [BASE_DIR / "static", BASE_DIR.parent / "static"] if d.exists()
+]
 
 
 # -----------------------------------------------------------------------------
