@@ -1,0 +1,2 @@
+# Shell-Skripte müssen auf Linux (Render, GitHub Actions) mit LF-Zeilenenden laufen
+*.sh text eol=lf

@@ -46,13 +46,13 @@ services:
     name: portfolio-backend
     env: python
     rootDir: backend
-    buildCommand: ./build.sh
+    buildCommand: bash build.sh
     startCommand: uv run gunicorn core.wsgi:application
-    healthCheckPath: /health_check/
+    healthCheckPath: /health_check
 ```
 
 ### 2.2 Ausführungskontext von `build.sh`
-Da Render `rootDir: backend` nutzt, muss das Skript [`backend/build.sh`](file:///d:/dev/portfolio_project/backend/build.sh) innerhalb des `backend/`-Ordners liegen:
+Da Render `rootDir: backend` nutzt, liegt das Skript ausschließlich unter [`backend/build.sh`](file:///d:/dev/portfolio_project/backend/build.sh) (kein Duplikat im Root). Es wird über `bash build.sh` aufgerufen, damit kein Executable-Bit nötig ist; `.gitattributes` erzwingt LF-Zeilenenden für `*.sh`:
 
 ```bash
 #!/usr/bin/env bash

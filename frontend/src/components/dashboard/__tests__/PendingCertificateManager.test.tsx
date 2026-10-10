@@ -69,7 +69,7 @@ describe('PendingCertificateManager Component', () => {
 
     renderWithProviders(<PendingCertificateManager onNotify={mockOnNotify} />);
 
-    expect(screen.getByText('Inbox: Zertifikats-Import')).toBeInTheDocument();
+    expect(screen.getByText('Inbox & Zertifikats-Review')).toBeInTheDocument();
     expect(screen.getByText('Django Mastery')).toBeInTheDocument();
     expect(screen.getByText('Coursera')).toBeInTheDocument();
   });
@@ -96,7 +96,7 @@ describe('PendingCertificateManager Component', () => {
     expect(screen.getByText('Docker Deep Dive')).toBeInTheDocument();
     expect(screen.getByText('Kubernetes Hands-on')).toBeInTheDocument();
 
-    const searchInput = screen.getByPlaceholderText('Nach Datei, Titel, Provider suchen...');
+    const searchInput = screen.getByPlaceholderText('Kandidaten durchsuchen...');
     fireEvent.change(searchInput, { target: { value: 'Docker' } });
 
     expect(screen.getByText('Docker Deep Dive')).toBeInTheDocument();
@@ -127,18 +127,18 @@ describe('PendingCertificateManager Component', () => {
     renderWithProviders(<PendingCertificateManager onNotify={mockOnNotify} />);
 
     // Klick auf Review-Button
-    const reviewBtn = screen.getByRole('button', { name: /Freigeben \/ Bearbeiten/i });
+    const reviewBtn = screen.getByRole('button', { name: /Prüfen & Freigeben/i });
     fireEvent.click(reviewBtn);
 
     // Review Panel muss sichtbar sein
-    expect(screen.getByText('Zertifikat prüfen & freigeben')).toBeInTheDocument();
+    expect(screen.getByText(/Zertifikat freigeben:/i)).toBeInTheDocument();
 
     // Track auswählen
-    const trackCheckbox = screen.getByLabelText('Python Backend');
-    fireEvent.click(trackCheckbox);
+    const trackButton = screen.getByRole('button', { name: 'Python Backend' });
+    fireEvent.click(trackButton);
 
-    // Klick auf "Freigeben & Veröffentlichen"
-    const submitBtn = screen.getByRole('button', { name: /Freigeben & Veröffentlichen/i });
+    // Klick auf "Freigeben & Übertragen"
+    const submitBtn = screen.getByRole('button', { name: /Freigeben & Übertragen/i });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
@@ -182,7 +182,7 @@ describe('PendingCertificateManager Component', () => {
     fireEvent.click(rejectBtn);
 
     await waitFor(() => {
-      expect(mockRejectMutateAsync).toHaveBeenCalledWith({ id: 7 });
+      expect(mockRejectMutateAsync).toHaveBeenCalledWith(7);
       expect(mockOnNotify).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'success',

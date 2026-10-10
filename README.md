@@ -138,6 +138,7 @@ portfolio_project/
 │   ├── core/                # Django Projekt-Konfiguration (Settings, URLs, WSGI)
 │   ├── portfolio/           # Portfolio Django-App (Models, Serializers, Views, Tests)
 │   ├── templates/           # Server-rendered Templates (Dashboard, Login)
+│   ├── build.sh             # Render Build-Hook (uv sync, collectstatic, migrate)
 │   ├── manage.py            # Django Management CLI
 │   ├── pyproject.toml       # Python Abhängigkeiten & Tools (uv, ruff, mypy, pytest)
 │   └── pytest.ini           # Pytest Konfiguration
@@ -153,6 +154,5 @@ portfolio_project/
 ├── docs/                    # Technische Dokumentation & ADRs
 │   ├── adrs/                # Architectural Decision Records (ADR-001 bis ADR-004)
 │   └── architecture.md      # Gesamtsystem- und Architektur-Dokumentation
-├── build.sh                 # Deployment Build-Hook (uv sync, collectstatic, migrate)
 └── render.yaml              # Render Deployment-Konfiguration
 ```

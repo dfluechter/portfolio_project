@@ -11,11 +11,25 @@ services:
         value: 3.13.0 
       # Weitere Umgebungsvariablen wie DATABASE_URL, SECRET_KEY usw.
      
-    # Führt das überarbeitete build.sh-Skript aus 
-    buildCommand: ./build.sh 
+    # Führt backend/build.sh aus (relativ zu rootDir: backend).
+    # Aufruf via bash, damit kein Executable-Bit benötigt wird.
+    buildCommand: bash build.sh
     
     # Startet den Gunicorn WSGI Server aus dem backend/-Verzeichnis 
     startCommand: uv run gunicorn core.wsgi:application 
     
     # Optional: Health-Check Endpunkt konfigurieren
     healthCheckPath: /health_check
+
+  - type: static
+    name: portfolio-frontend
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    publishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://portfolio-backend.onrender.com

@@ -22,6 +22,7 @@ test_media/
 
 test_s3.py
 
-#/
+# Temporäre Entwicklungs-Artefakte
+scratch/
 .venv/
 .ruff_cache/

@@ -19,7 +19,7 @@ Django 5.2 + Python 3.13, managed with **uv** (never use `pip` or `poetry`).
 - **Database**: Neon PostgreSQL in production (via `DATABASE_URL`), local SQLite fallback. No explicit `ENVIRONMENT` flag exists.
 - **Media Storage**: Supabase S3-compatible storage (`USE_SUPABASE_S3=True`) / local `FileSystemStorage` (`MEDIA_ROOT=media/`).
 - **Static Files**: WhiteNoise (`CompressedManifestStaticFilesStorage`) in production.
-- **Deployment**: Deployed on Render. `build.sh` is the Render deployment hook (`buildCommand`), running `uv sync --frozen --no-dev`, `collectstatic`, and `migrate`. Environment variables are documented in `render.yaml`.
+- **Deployment**: Deployed on Render (`rootDir: backend`). `backend/build.sh` is the Render deployment hook (`buildCommand: bash build.sh`), running `uv sync --frozen --no-dev`, `collectstatic`, and `migrate`. Environment variables are documented in `render.yaml`.
 - **Auth**: Djoser + DRF + SimpleJWT (`api/auth/`).
 
 ## Commands
