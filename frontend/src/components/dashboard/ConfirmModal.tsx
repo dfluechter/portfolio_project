@@ -40,6 +40,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-modal-title"
+      aria-describedby="confirm-modal-description"
     >
       <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
         <div className="flex items-center gap-3">
@@ -57,7 +58,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </h3>
         </div>
 
-        <p className="text-xs text-slate-400 leading-relaxed">{message}</p>
+        <p id="confirm-modal-description" className="text-xs text-slate-400 leading-relaxed">
+          {message}
+        </p>
 
         <div className="flex items-center justify-end gap-3 pt-2">
           <button

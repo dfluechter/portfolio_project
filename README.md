@@ -11,7 +11,7 @@
 
 Django REST API (Backend) und React SPA (Frontend) für mein persönliches Portfolio. Verwaltet Zertifikate, Projekte, Skills, Timeline und Zertifikatsanbieter über ein geschütztes Dashboard.
 
-> 📚 **Architektur-Details**: Eine tiefere Analyse der Entscheidungen und Infrastruktur findest du unter [`/docs/architekture.md`](docs/architekture.md).
+> 📚 **Architektur-Details**: Eine tiefere Analyse der Entscheidungen und Infrastruktur findest du unter [`/docs/architecture.md`](docs/architecture.md) sowie in den [Architectural Decision Records (ADRs)](docs/adrs/).
 
 ---
 
@@ -46,7 +46,7 @@ Django REST API (Backend) und React SPA (Frontend) für mein persönliches Portf
 
 ## 📦 Voraussetzungen
 
-- Node.js 24.x+ & npm
+- Node.js 22.x+ / 24.x+ & npm
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) installiert
 
@@ -60,6 +60,7 @@ cd portfolio_project
 # ========================
 # BACKEND SETUP
 # ========================
+cd backend
 
 # 2. Abhängigkeiten installieren
 uv sync
@@ -78,11 +79,11 @@ uv run python manage.py createsuperuser
 uv run python manage.py runserver
 
 # ========================
-# FRONTEND SETUP
+# FRONTEND SETUP (in neuem Terminal)
 # ========================
+cd ../frontend
 
 # 7. Frontend initialisieren
-cd frontend
 npm install
 
 # 8. Frontend-Dev-Server starten
@@ -91,7 +92,7 @@ npm run dev
 
 * **React Frontend**: http://localhost:3000/
 * **Django Backend / API**: http://localhost:8000/
-* **Django Admin**: http://localhost:8000/admin/
+* **Django Admin / Dashboard**: http://localhost:8000/dashboard/
 * **API Swagger Docs**: http://localhost:8000/api/docs/
 
 ## 🔒 Auth- & Sicherheitskonfiguration
@@ -104,7 +105,7 @@ npm run dev
 
 ## 💻 Befehle
 
-### Backend (im Root-Verzeichnis)
+### Backend (im Verzeichnis `backend/`)
 ```bash
 uv run pytest --cov=portfolio        # Tests & Coverage Report
 uv run ruff check .                  # Linter
@@ -113,7 +114,7 @@ uv run mypy .                        # Statische Typüberprüfung
 uv run python manage.py collectstatic --noinput
 ```
 
-### Frontend (im `frontend/`-Verzeichnis)
+### Frontend (im Verzeichnis `frontend/`)
 ```bash
 npm run dev                          # Vite Dev-Server
 npm run build                        # TypeScript + Vite Build
@@ -133,25 +134,25 @@ Sowohl Backend als auch Frontend werden kontinuierlich via GitHub Actions getest
 ```
 portfolio_project/
 ├── .github/workflows/       # CI-Pipelines für Frontend & Backend (Neon Branch Testing)
-├── frontend/                # React SPA (Vite)
+├── backend/                 # Django 5.2 Backend & API
+│   ├── core/                # Django Projekt-Konfiguration (Settings, URLs, WSGI)
+│   ├── portfolio/           # Portfolio Django-App (Models, Serializers, Views, Tests)
+│   ├── templates/           # Server-rendered Templates (Dashboard, Login)
+│   ├── manage.py            # Django Management CLI
+│   ├── pyproject.toml       # Python Abhängigkeiten & Tools (uv, ruff, mypy, pytest)
+│   └── pytest.ini           # Pytest Konfiguration
+├── frontend/                # React 19 SPA (Vite + TypeScript + Tailwind CSS v4)
 │   ├── src/
-│   │   ├── components/      # React Komponenten (UI, ErrorBoundary & Dashboard)
+│   │   ├── components/      # UI-Komponenten, Modale, ErrorBoundary & Dashboard
 │   │   ├── context/         # React Context (AuthContext mit JWT Sync)
 │   │   ├── hooks/           # Custom Hooks (usePortfolio mit TanStack Query)
 │   │   ├── pages/           # Pages (Home, Login, Dashboard)
 │   │   └── App.tsx          # React Router Setup
-│   ├── package.json         # Node Abhängigkeiten
+│   ├── package.json         # Node Abhängigkeiten & Scripts
 │   └── vite.config.ts       # Vite & Vitest Konfiguration
-├── core/
-│   ├── settings.py          # Django Haupt-Settings (inkl. E-Mail & Security)
-│   ├── settings_test.py     # Django Test-Settings
-│   └── urls.py              # API Routing & Swagger UI
-├── portfolio/
-│   ├── models.py            # Custom User, Certificate, Provider, Project, Skill, Timeline
-│   ├── serializers.py       # DRF-Serialisierer (Hybrid Pattern)
-│   ├── views.py             # ViewSets
-│   └── tests/               # Pytest Suite (CRUD, Models, Auth, Protections)
-├── build.sh                 # Render Build-Hook (uv sync, collectstatic, migrate)
-├── render.yaml              # Render Deployment-Konfiguration
-└── pyproject.toml           # Python Abhängigkeiten & Tools
+├── docs/                    # Technische Dokumentation & ADRs
+│   ├── adrs/                # Architectural Decision Records (ADR-001 bis ADR-004)
+│   └── architecture.md      # Gesamtsystem- und Architektur-Dokumentation
+├── build.sh                 # Deployment Build-Hook (uv sync, collectstatic, migrate)
+└── render.yaml              # Render Deployment-Konfiguration
 ```

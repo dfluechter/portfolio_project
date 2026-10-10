@@ -274,6 +274,21 @@ class TestScanInboxCommand:
         call_command("scan_inbox", "--inbox", str(tmp_path), "--recursive")
         assert PendingCertificate.objects.count() == 1
 
+    def test_scan_inbox_skips_zero_byte_files(self, tmp_path):
+        """0-Byte / In-Flight Dateien werden übersprungen."""
+        from django.core.management import call_command
+
+        empty_file = tmp_path / "Empty_Cert.pdf"
+        empty_file.write_bytes(b"")
+
+        call_command("scan_inbox", "--inbox", str(tmp_path))
+        assert PendingCertificate.objects.count() == 0
+
+        run = CertificateImportRun.objects.first()
+        assert run is not None
+        assert run.files_skipped == 1
+        assert "0 Bytes / unvollständig" in run.log
+
 
 @pytest.mark.django_db
 class TestPendingCertificatePromotion:
@@ -391,6 +406,52 @@ class TestPendingCertificatePromotion:
         reject_pending_certificate(pending)
         pending.refresh_from_db()
         assert pending.status == PendingCertificateStatus.REJECTED
+
+    def test_promote_pending_certificate_clean_compensation(self, tmp_path, monkeypatch):
+        """Bei DB-Fehler nach Storage-Upload wird die Datei aus dem Storage gelöscht."""
+        from portfolio.services.promotion import (
+            PromotionError,
+            promote_pending_certificate,
+        )
+
+        file = tmp_path / "cert_compensate.pdf"
+        file.write_bytes(b"%PDF-1.4 compensation binary")
+
+        pending = PendingCertificate.objects.create(
+            original_file_name="cert_compensate.pdf",
+            file_path=str(file),
+            guessed_title="Compensate Cert",
+            guessed_provider="Provider A",
+        )
+
+        deleted_files: list[str] = []
+
+        # Mock storage.delete to record calls
+        from django.core.files.storage import default_storage
+
+        original_delete = default_storage.delete
+
+        def mock_delete(name):
+            deleted_files.append(name)
+            return original_delete(name)
+
+        monkeypatch.setattr(default_storage, "delete", mock_delete)
+
+        # Mock Certificate.save to fail simulating DB timeout / integrity crash
+        def failing_save(self, *args, **kwargs):
+            raise RuntimeError("Database connection lost during promotion")
+
+        monkeypatch.setattr(Certificate, "save", failing_save)
+
+        with pytest.raises(PromotionError, match="Datenbanktransaktion für Zertifikat fehlgeschlagen"):
+            promote_pending_certificate(pending)
+
+        # Verify that compensation storage delete was called
+        assert len(deleted_files) == 1
+        assert "cert_compensate" in deleted_files[0]
+        # Verify Certificate not created in DB
+        assert Certificate.objects.filter(title="Compensate Cert").count() == 0
+
 
 
 @pytest.mark.django_db

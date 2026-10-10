@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -17,6 +18,23 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-dev-secret-key")
 
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
+
+_is_testing_or_typechecking = (
+    bool(os.getenv("PYTEST_CURRENT_TEST"))
+    or "mypy" in sys.modules
+    or any("pytest" in arg or "mypy" in arg for arg in sys.argv)
+)
+
+if (
+    not DEBUG
+    and not _is_testing_or_typechecking
+    and (not SECRET_KEY or SECRET_KEY == "unsafe-dev-secret-key")
+):
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        "SECRET_KEY must be configured with a secure value in production."
+    )
 
 
 ALLOWED_HOSTS = [

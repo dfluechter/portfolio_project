@@ -1,8 +1,12 @@
+import logging
 import os
 from pathlib import Path
 
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.utils.text import slugify
+
+logger = logging.getLogger(__name__)
 
 from portfolio.models import (
     Certificate,
@@ -121,15 +125,43 @@ def promote_pending_certificate(
     )
 
     safe_name = storage_key.split("/")[-1]
-    cert.pdf_file.save(safe_name, file_content, save=True)
 
-    if final_tracks:
-        cert.tracks.set(final_tracks)
+    # 1. Storage-Upload zuerst (Dateikopie nach Supabase Storage)
+    try:
+        cert.pdf_file.save(safe_name, file_content, save=False)
+    except Exception as exc:
+        raise PromotionError(f"Upload der Dateikopie zu Storage fehlgeschlagen: {exc}") from exc
 
-    # Pending-Datensatz aktualisieren
-    pending.certificate = cert
-    pending.status = PendingCertificateStatus.APPROVED
-    pending.save(update_fields=["certificate", "status"])
+    saved_storage_name = cert.pdf_file.name
+
+    # 2. Atomare Datenbanktransaktion nach Neon (PostgreSQL)
+    try:
+        with transaction.atomic():
+            cert.save()
+            if final_tracks:
+                cert.tracks.set(final_tracks)
+
+            # Pending-Datensatz aktualisieren
+            pending.certificate = cert
+            pending.status = PendingCertificateStatus.APPROVED
+            pending.save(update_fields=["certificate", "status"])
+    except Exception as db_exc:
+        # 3. Clean Compensation: Falls DB-Schreiben fehlschlägt, Datei aus Storage löschen
+        try:
+            cert.pdf_file.storage.delete(saved_storage_name)
+            logger.info(
+                "Kompensationslöschung in Storage erfolgreich für: %s",
+                saved_storage_name,
+            )
+        except Exception as delete_exc:  # noqa: BLE001
+            logger.warning(
+                "Kompensationslöschung in Storage fehlgeschlagen für %s: %s",
+                saved_storage_name,
+                delete_exc,
+            )
+        raise PromotionError(
+            f"Datenbanktransaktion für Zertifikat fehlgeschlagen: {db_exc}"
+        ) from db_exc
 
     return cert
 

@@ -7,9 +7,17 @@ from portfolio.models import Provider
 
 
 class Command(BaseCommand):
-    help = "Scannt das lokale OneDrive-Verzeichnis und legt Zertifikatsanbieter in der Datenbank an."
+    help = (
+        "[DEPRECATED] Scannt lokale Ordner und legt Zertifikatsanbieter an. "
+        "Bitte stattdessen 'scan_inbox' oder 'sync_certificates' nutzen."
+    )
 
     def handle(self, *args, **kwargs):
+        self.stdout.write(
+            self.style.WARNING(
+                "HINWEIS: 'scan_certificates' ist veraltet. Bitte nutze 'scan_inbox' oder 'sync_certificates'."
+            )
+        )
         cert_path_env = os.getenv("CERTIFICATES_PATH")
 
         if not cert_path_env:

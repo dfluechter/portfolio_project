@@ -21,12 +21,14 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+interface FailedQueueItem {
+  resolve: (token: string | null) => void;
+  reject: (reason?: unknown) => void;
+}
+
 // Response Interceptor: Automatischer Token-Refresh bei 401
 let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
+let failedQueue: FailedQueueItem[] = [];
 
 const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue.forEach((prom) => {
@@ -50,11 +52,11 @@ apiClient.interceptors.response.use(
       }
 
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
+        return new Promise<string | null>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
-            if (originalRequest.headers) {
+            if (originalRequest.headers && token) {
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
             return apiClient(originalRequest);

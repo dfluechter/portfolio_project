@@ -75,3 +75,31 @@ export interface Certificate {
   sha256_hash?: string;
   is_published?: boolean;
 }
+
+export type PendingCertificateStatus = 'pending' | 'approved' | 'rejected';
+
+export interface PendingCertificate {
+  id: number;
+  original_file_name: string;
+  extracted_text?: string;
+  guessed_title: string;
+  guessed_provider: string;
+  status: PendingCertificateStatus;
+  created_at: string;
+}
+
+export type ImportRunStatus = 'running' | 'success' | 'partial' | 'failed';
+
+export interface CertificateImportRun {
+  id: number;
+  started_at: string;
+  finished_at?: string | null;
+  files_found: number;
+  files_imported: number;
+  files_skipped: number;
+  files_errored: number;
+  status: ImportRunStatus;
+  status_display?: string;
+  log?: string;
+  inbox_path: string;
+}

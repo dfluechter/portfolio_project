@@ -83,3 +83,24 @@ export const getMockCertificate = (
   is_published: true,
   ...overrides,
 });
+
+export const getMockPendingCertificate = (
+  overrides?: Partial<PendingCertificate>
+): PendingCertificate => ({
+  id: 1,
+  original_file_name: 'django_course.pdf',
+  file_hash: 'abc123hash',
+  s3_key: 'inbox/django_course.pdf',
+  file_size: 1024,
+  guessed_title: 'Django Profikurs',
+  guessed_provider: 'Udemy',
+  status: 'pending',
+  status_display: 'Ausstehend',
+  ocr_status: 'completed',
+  ocr_status_display: 'Abgeschlossen',
+  rejection_reason: null,
+  promoted_certificate: null,
+  ocr_extracted_text: '',
+  created_at: '2024-01-01T00:00:00Z',
+  ...overrides,
+});

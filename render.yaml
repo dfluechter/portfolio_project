@@ -5,11 +5,11 @@ services:
     # Setzt das Arbeitsverzeichnis für Render auf den neuen Backend-Ordner
     rootDir: backend 
    
-    # Python-Version und Build-Befehle9
+    # Python-Version und Build-Befehle
     envVars: 
-      - key: PYTHON\_VERSION 
+      - key: PYTHON_VERSION 
         value: 3.13.0 
-      # Weitere Umgebungsvariablen wie DATABASE\_URL, SECRET\_KEY usw.
+      # Weitere Umgebungsvariablen wie DATABASE_URL, SECRET_KEY usw.
      
     # Führt das überarbeitete build.sh-Skript aus 
     buildCommand: ./build.sh 
@@ -18,4 +18,4 @@ services:
     startCommand: uv run gunicorn core.wsgi:application 
     
     # Optional: Health-Check Endpunkt konfigurieren
-    healthCheckPath: /health\_check
+    healthCheckPath: /health_check

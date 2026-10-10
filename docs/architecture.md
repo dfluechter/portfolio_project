@@ -1,12 +1,12 @@
 # System- und Architektur-Dokumentation
 
-Diese Dokumentation beschreibt die Architektur, den Datenfluss, sämtliche API-Endpunkte sowie das Authentifizierungs- und Sicherheitskonzept des Portfolios.
+Diese Dokumentation beschreibt die Architektur, den Datenfluss, sämtliche API-Endpunkte sowie das Authentifizierungs- und Sicherheitskonzept des Portfolios. Weiterführende Dokumente: [Frontend-Architektur](frontend.md), [Product Backlog & Stories](backlog.md) sowie die [Architectural Decision Records (ADRs)](adrs/).
 
 ---
 
 ## 1. Systemübersicht & Komponenten
 
-Das Projekt ist als **Monorepo** organisiert und besteht aus einem **Django REST Framework (DRF)** Backend und einem **React TypeScript (Vite)** Frontend.
+Das Projekt ist als **Monorepo** organisiert und besteht aus einem **Django REST Framework (DRF)** Backend (im Verzeichnis `backend/`) und einem **React TypeScript (Vite)** Frontend (im Verzeichnis `frontend/`).
 
 ```mermaid
 graph TB
@@ -20,16 +20,16 @@ graph TB
         WhiteNoise["WhiteNoise (Static Assets)"]
     end
 
-    subgraph Backend["Django 5.2 Application"]
-        CoreUrls["URL Routing (core/urls.py)"]
+    subgraph Backend["Django 5.2 Application (backend/)"]
+        CoreUrls["URL Routing (backend/core/urls.py)"]
         AuthModule["Auth & Security (Djoser + SimpleJWT + Sessions)"]
-        ViewSets["DRF ViewSets (portfolio/views.py)"]
+        ViewSets["DRF ViewSets (backend/portfolio/views.py)"]
         DashboardView["Server-Rendered Views (Dashboard & Login)"]
-        Models["Django ORM Models (portfolio/models.py)"]
+        Models["Django ORM Models (backend/portfolio/models.py)"]
     end
 
-    subgraph Frontend["React Frontend (SPA)"]
-        ReactApp["React / Vite App"]
+    subgraph Frontend["React Frontend (SPA) (frontend/)"]
+        ReactApp["React 19 / Vite App"]
         ApiClient["Axios API-Client (JWT & Interceptors)"]
     end
 
@@ -63,7 +63,7 @@ graph TB
 |---|---|---|
 | **Backend-Framework** | Python 3.13 / Django 5.2 / DRF | REST-API, Geschäftslogik und Admin-Dashboard |
 | **Paketmanagement** | `uv` (Astral) | Schnelle und reproduzierbare Abhängigkeitsverwaltung |
-| **Frontend** | React 18 / TypeScript / Vite / Tailwind CSS | Öffentliche Portfolio-Webseite & SPA-Dashboard |
+| **Frontend** | React 19 / TypeScript / Vite / Tailwind CSS v4 | Öffentliche Portfolio-Webseite & SPA-Dashboard |
 | **Primärdatenbank** | Neon Serverless PostgreSQL (Prod) / SQLite (Dev) | Speicherung aller relationalen Entitäten |
 | **Dateispeicher (Media)** | Supabase Storage (S3-kompatible Boto3-Anbindung) | Zertifikatsdokumente (`.pdf`, `.png`, `.jpg`) |
 | **Statische Dateien** | WhiteNoise (`CompressedManifestStaticFilesStorage`) | Auslieferung von CSS/JS direkt über Django |
@@ -161,7 +161,7 @@ Zertifikatsdateien werden nicht im lokalen Dateisystem des Containers abgelegt, 
 Die Wahl der Datenbank erfolgt implizit über das Vorhandensein der Umgebungsvariable `DATABASE_URL`:
 - **Produktion**: Ist `DATABASE_URL` gesetzt, verbindet sich Django mit der **Neon PostgreSQL** Datenbank (`conn_max_age=600`, `ssl_require=True`).
 - **Lokale Entwicklung**: Fehlt `DATABASE_URL`, greift Django automatisch auf die lokale Datei `db.sqlite3` zurück.
-- **Test-Suite**: Tests nutzen `core.settings_test` via `pytest.ini` und laufen isoliert in einer temporären SQLite-In-Memory/Dateidatenbank.
+- **Test-Suite**: Tests nutzen `core.settings_test` via `backend/pytest.ini` und laufen isoliert in einer temporären SQLite-In-Memory/Dateidatenbank.
 
 ---
 
@@ -169,7 +169,7 @@ Die Wahl der Datenbank erfolgt implizit über das Vorhandensein der Umgebungsvar
 
 ### 3.1 REST-API (`/api/`)
 
-Registriert über den `DefaultRouter` in [core/urls.py](file:///d:/dev/portfolio_project/core/urls.py). Alle ViewSets verwenden die Berechtigungsklasse `IsAuthenticatedOrReadOnly`.
+Registriert über den `DefaultRouter` in [backend/core/urls.py](file:///d:/dev/portfolio_project/backend/core/urls.py). Alle ViewSets verwenden die Berechtigungsklasse `IsAuthenticatedOrReadOnly`.
 
 | Endpunkt | HTTP-Methoden | Berechtigung | Beschreibung |
 |---|---|---|---|
@@ -198,7 +198,7 @@ Um dem Frontend maximale Effizienz beim Lesen und Einfachheit beim Schreiben zu 
 
 ### 3.3 Auth-API (`/api/auth/` via Djoser & SimpleJWT)
 
-Eingebunden in [core/urls.py](file:///d:/dev/portfolio_project/core/urls.py) über `djoser.urls` und `djoser.urls.jwt`.
+Eingebunden in [backend/core/urls.py](file:///d:/dev/portfolio_project/backend/core/urls.py) über `djoser.urls` und `djoser.urls.jwt`.
 
 | Endpunkt | HTTP-Methode | Berechtigung | Beschreibung |
 |---|---|---|---|
@@ -274,11 +274,11 @@ Das Portfolio-Projekt nutzt eine bewusste **Dual-Auth-Architektur**, um zwei ver
 ### 4.2 Sicherheitsentscheidungen & Systemhärtung
 
 #### 1. Vollständige Deaktivierung des Standard-Django-Admins (`/admin/`)
-- Das Standard-Admin-Interface `/admin/` wurde aus [core/urls.py](file:///d:/dev/portfolio_project/core/urls.py) entfernt.
+- Das Standard-Admin-Interface `/admin/` wurde aus [backend/core/urls.py](file:///d:/dev/portfolio_project/backend/core/urls.py) entfernt.
 - **Begründung**: Reduzierung der Angriffsfläche gegen automatisierte Bots und Brute-Force-Attacken auf Standard-Django-Login-Pfade. Sämtliche Administration erfolgt über das maßgeschneiderte Dashboard bzw. die REST-API.
 
 #### 2. Custom User Model mit E-Mail-Zwang
-- Definition in [portfolio/models.py](file:///d:/dev/portfolio_project/portfolio/models.py) als `portfolio.User`.
+- Definition in [backend/portfolio/models.py](file:///d:/dev/portfolio_project/backend/portfolio/models.py) als `portfolio.User`.
 - `LOGIN_FIELD = "email"`, kein `username`-Feld vorhanden.
 - **Begründung**: Moderne, verwechslungsfreie Identifizierung. Passwörter werden standardmäßig mit PBKDF2-SHA256 gehasht (in Tests mit schnellem MD5-Hasher für maximale Geschwindigkeit).
 
@@ -300,13 +300,28 @@ Das Portfolio-Projekt nutzt eine bewusste **Dual-Auth-Architektur**, um zwei ver
 
 ---
 
-## 5. Wartung & Entwicklungsrichtlinien
+## 5. Architectural Decision Records (ADRs)
+
+Wichtige architektonische Weichenstellungen sind formell in dedizierten ADRs dokumentiert:
+
+| ADR | Titel | Status | Kernthema |
+|---|---|---|---|
+| [ADR-001](adrs/001-monorepo.md) | **Monorepo vs. Polyrepo** | Accepted | Gemeinsame Versionskontrolle für Backend und Frontend zur Vermeidung von Drift. |
+| [ADR-002](adrs/002-neon-db.md) | **Wahl der Datenbank (Neon PostgreSQL)** | Accepted | Serverless PostgreSQL mit Branching für isolierte CI-Test-Pipelines. |
+| [ADR-003](adrs/003-dual-auth-strategie.md) | **Dual-Auth-Strategie** | Accepted | Headless JWT für React SPA und HttpOnly Cookies für das Django Dashboard. |
+| [ADR-004](adrs/004-state-management-frontend.md) | **State Management im Frontend** | Accepted | TanStack Query für Server-State und React Context für Auth/UI-State. |
+
+---
+
+## 6. Wartung & Entwicklungsrichtlinien
 
 Für Code-Änderungen an Modellen, APIs oder der Konfiguration gelten die verbindlichen Vorgaben aus [AGENTS.md](file:///d:/dev/portfolio_project/AGENTS.md) und [GEMINI.md](file:///d:/dev/portfolio_project/GEMINI.md):
 
 - **Modell-Änderungen**: Stets Migrationen erzeugen (`uv run python manage.py makemigrations`) und committete Migrationen niemals nachträglich modifizieren.
-- **Qualitätssicherung**: Vor jedem Merge müssen alle Prüfungen bestehen:
+- **Qualitätssicherung**: Vor jedem Merge müssen alle Prüfungen im Ordner `backend/` bestehen:
   ```bash
+  cd backend
+
   # Test-Suite mit Coverage-Check (>= 95%)
   uv run pytest --cov=portfolio --cov-fail-under=95
 

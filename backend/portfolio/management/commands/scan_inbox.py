@@ -114,6 +114,17 @@ class Command(BaseCommand):
                 run.append_log(f"REJECT {file_path.name} (Sicherheitsprüfung Pfad)")
                 continue
 
+            # In-Flight Check: Leere oder noch im Schreibprozess befindliche Dateien überspringen
+            try:
+                if file_path.stat().st_size == 0:
+                    run.files_skipped += 1
+                    run.append_log(f"SKIP  {file_path.name} (0 Bytes / unvollständig)")
+                    continue
+            except OSError as exc:
+                run.files_errored += 1
+                run.append_log(f"ERROR {file_path.name}: Dateizugriff - {exc}")
+                continue
+
             # SHA-256 Hash berechnen (strikter Read-Only-Zugriff)
             try:
                 file_hash = compute_file_hash(file_path)

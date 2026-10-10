@@ -10,9 +10,17 @@ from portfolio.models import Certificate, Provider
 
 
 class Command(BaseCommand):
-    help = "Importiert Zertifikate aus lokalen Ordnern und lädt sie zu Supabase hoch."
+    help = (
+        "[DEPRECATED] Importiert Zertifikate aus lokalen Ordnern. "
+        "Bitte stattdessen 'scan_inbox' oder 'sync_certificates' nutzen."
+    )
 
     def handle(self, *args, **kwargs):
+        self.stdout.write(
+            self.style.WARNING(
+                "HINWEIS: 'import_certificates' ist veraltet. Bitte nutze 'scan_inbox' oder 'sync_certificates'."
+            )
+        )
         cert_path_env = os.getenv("CERTIFICATES_PATH")
 
         if not cert_path_env:

@@ -236,9 +236,7 @@ class Command(BaseCommand):
                     p.save(update_fields=["status"])
             elif is_course_material_or_noise(fn, title):
                 rejected_material_count += 1
-                self.stdout.write(
-                    self.style.NOTICE(f"  [REJECT MATERIAL] {fn}")
-                )
+                self.stdout.write(self.style.NOTICE(f"  [REJECT MATERIAL] {fn}"))
                 if not dry_run:
                     p.status = PendingCertificateStatus.REJECTED
                     p.save(update_fields=["status"])
@@ -300,9 +298,7 @@ class Command(BaseCommand):
 
                 if not dry_run:
                     p.guessed_title = new_title[:255] if new_title else ""
-                    p.guessed_provider = (
-                        new_provider[:255] if new_provider else ""
-                    )
+                    p.guessed_provider = new_provider[:255] if new_provider else ""
                     p.extracted_text = (result.extracted_text or "")[:100000]
                     p.save(
                         update_fields=[

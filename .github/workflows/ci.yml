@@ -14,6 +14,12 @@ jobs:
   backend-lint-test:
     name: 🐍 Backend Lint & Test
     runs-on: ubuntu-latest
+    
+    # WICHTIG: Legt das Standard-Arbeitsverzeichnis für alle Schritte fest 
+    defaults: 
+      run: 
+        working-directory: backend
+        
     steps:
       - uses: actions/checkout@v4
 
@@ -40,9 +46,13 @@ jobs:
         with:
           enable-cache: true
           version: "latest"
+          cache-dependency-glob: "backend/uv.lock"
 
       - name: Set up Python 3.13
-        run: uv python install 3.13.14
+        uses: actions/setup-python@v5
+        with:
+          # Liest die Python-Version direkt aus der pyproject.toml im Backend 
+          python-version-file: "backend/pyproject.toml"
 
       - name: Install dependencies
         run: uv sync --all-groups
@@ -101,6 +111,9 @@ jobs:
     name: 📦 Verify Backend Build
     needs: [backend-lint-test]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
@@ -109,9 +122,12 @@ jobs:
         with:
           enable-cache: true
           version: "latest"
+          cache-dependency-glob: "backend/uv.lock"
 
       - name: Set up Python 3.13
-        run: uv python install 3.13.14
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "backend/pyproject.toml"
 
       - name: Install production dependencies
         run: uv sync --frozen --no-dev

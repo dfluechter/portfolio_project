@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Award,
   ExternalLink,
@@ -43,6 +43,13 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
 
   // Confirm Modal State
   const [certToDelete, setCertToDelete] = useState<{ id: number; title: string } | null>(null);
+
+  // Synchronisiere initialen Provider, sobald Daten verfügbar sind
+  useEffect(() => {
+    if (providers.length > 0 && !selectedProviderId) {
+      setSelectedProviderId(String(providers[0].id));
+    }
+  }, [providers, selectedProviderId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,7 +157,7 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
             </label>
             <select
               id="cert-provider"
-              value={selectedProviderId || (providers[0] ? String(providers[0].id) : '')}
+              value={selectedProviderId}
               onChange={(e) => setSelectedProviderId(e.target.value)}
               disabled={loadingProviders}
               className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50"
@@ -173,7 +180,7 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
               multiple
               value={selectedTracks}
               onChange={(e) => {
-                const options = Array.from(e.target.selectedOptions, option => option.value);
+                const options = Array.from(e.target.selectedOptions, (option) => option.value);
                 setSelectedTracks(options);
               }}
               disabled={loadingTracks}

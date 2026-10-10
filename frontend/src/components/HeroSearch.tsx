@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Award,
   Briefcase,
@@ -23,6 +23,8 @@ interface SearchResultItem {
 
 export const HeroSearch: React.FC = () => {
   const { searchTerm, setSearchTerm, clearSearch } = usePortfolioSearch();
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+
   const [isOpen, setIsOpen] = useState(() => Boolean(searchTerm.trim()));
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -34,9 +36,9 @@ export const HeroSearch: React.FC = () => {
   const { data: certificates = [] } = useCertificates();
   const { data: timeline = [] } = useTimeline();
 
-  // Gefilterte Ergebnisse über alle Datensätze hinweg
+  // Gefilterte Ergebnisse über alle Datensätze hinweg (priorisiert deferred query)
   const results = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
+    const query = deferredSearchTerm.trim().toLowerCase();
     if (!query) return [];
 
     const items: SearchResultItem[] = [];
@@ -104,7 +106,7 @@ export const HeroSearch: React.FC = () => {
     });
 
     return items;
-  }, [searchTerm, projects, skills, certificates, timeline]);
+  }, [deferredSearchTerm, projects, skills, certificates, timeline]);
 
   // Schließen bei Klick außerhalb
   useEffect(() => {

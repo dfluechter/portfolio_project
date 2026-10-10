@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useCertificates, useProjects } from '../hooks/usePortfolio';
-import { Award, FolderGit2, LayoutDashboard, LogOut } from 'lucide-react';
+import { useCertificates, usePendingCertificates, useProjects } from '../hooks/usePortfolio';
+import { Award, FolderGit2, Inbox, LayoutDashboard, LogOut } from 'lucide-react';
 import { CertificateManager } from '../components/dashboard/CertificateManager';
+import { PendingCertificateManager } from '../components/dashboard/PendingCertificateManager';
 import { ProjectManager } from '../components/dashboard/ProjectManager';
 
 export const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<'certificates' | 'projects'>('certificates');
+  const [activeTab, setActiveTab] = useState<'certificates' | 'projects' | 'inbox'>('certificates');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const { data: certificates = [] } = useCertificates();
   const { data: projects = [] } = useProjects();
+  const { data: pendingList = [] } = usePendingCertificates();
+  const pendingCount = pendingList.filter((p) => p.status === 'pending').length;
 
   // Redirect if not logged in
   useEffect(() => {
@@ -93,11 +96,11 @@ export const DashboardPage: React.FC = () => {
         )}
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-4 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('certificates')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
               activeTab === 'certificates'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                 : 'bg-slate-900 text-slate-400 hover:text-white'
@@ -109,7 +112,7 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('projects')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
               activeTab === 'projects'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                 : 'bg-slate-900 text-slate-400 hover:text-white'
@@ -118,14 +121,29 @@ export const DashboardPage: React.FC = () => {
             <FolderGit2 className="w-4 h-4" />
             Projekte ({projects.length})
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('inbox')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+              activeTab === 'inbox'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                : 'bg-slate-900 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Inbox className="w-4 h-4" />
+            Inbox / Review
+            {pendingCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                {pendingCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* TAB CONTENT */}
-        {activeTab === 'certificates' ? (
-          <CertificateManager onNotify={setStatusMessage} />
-        ) : (
-          <ProjectManager onNotify={setStatusMessage} />
-        )}
+        {activeTab === 'certificates' && <CertificateManager onNotify={setStatusMessage} />}
+        {activeTab === 'projects' && <ProjectManager onNotify={setStatusMessage} />}
+        {activeTab === 'inbox' && <PendingCertificateManager onNotify={setStatusMessage} />}
       </main>
     </div>
   );

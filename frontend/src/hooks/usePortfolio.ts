@@ -9,6 +9,7 @@ export const portfolioKeys = {
   providers: () => [...portfolioKeys.all, 'providers'] as const,
   tracks: () => [...portfolioKeys.all, 'tracks'] as const,
   timeline: () => [...portfolioKeys.all, 'timeline'] as const,
+  pendingCertificates: () => [...portfolioKeys.all, 'pendingCertificates'] as const,
 };
 
 // ── QUERIES ──
@@ -42,6 +43,14 @@ export const useCertificates = () => {
     queryKey: portfolioKeys.certificates(),
     queryFn: portfolioService.getCertificates,
     staleTime: 1000 * 60 * 5,
+  });
+};
+
+export const usePendingCertificates = () => {
+  return useQuery({
+    queryKey: portfolioKeys.pendingCertificates(),
+    queryFn: portfolioService.getPendingCertificates,
+    staleTime: 1000 * 60 * 1, // 1 Minute Cache
   });
 };
 
@@ -99,6 +108,34 @@ export const useDeleteCertificate = () => {
     mutationFn: (id: number) => portfolioService.deleteCertificate(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: portfolioKeys.certificates() });
+    },
+  });
+};
+
+export const useApprovePendingCertificate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload?: { title?: string; provider?: string; track_ids?: number[] };
+    }) => portfolioService.approvePendingCertificate(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.pendingCertificates() });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.certificates() });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.providers() });
+    },
+  });
+};
+
+export const useRejectPendingCertificate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => portfolioService.rejectPendingCertificate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.pendingCertificates() });
     },
   });
 };

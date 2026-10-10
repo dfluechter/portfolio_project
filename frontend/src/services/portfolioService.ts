@@ -1,5 +1,13 @@
 import { apiClient } from '../api/client';
-import type { Certificate, Project, Provider, Skill, TimelineEntry } from '../types';
+import type {
+  Certificate,
+  PendingCertificate,
+  Project,
+  Provider,
+  Skill,
+  TimelineEntry,
+  Track,
+} from '../types';
 
 export const portfolioService = {
   // Projekte abrufen
@@ -40,6 +48,32 @@ export const portfolioService = {
     await apiClient.delete(`/api/certificates/${id}/`);
   },
 
+  // Ausstehende Zertifikate (Inbox / Review) abrufen (Admin)
+  async getPendingCertificates(): Promise<PendingCertificate[]> {
+    const { data } = await apiClient.get<PendingCertificate[]>('/api/pending-certificates/');
+    return data;
+  },
+
+  // Ausstehendes Zertifikat freigeben und übertragen (Admin)
+  async approvePendingCertificate(
+    id: number,
+    payload?: { title?: string; provider?: string; track_ids?: number[] },
+  ): Promise<{ detail: string; certificate_id?: number }> {
+    const { data } = await apiClient.post<{ detail: string; certificate_id?: number }>(
+      `/api/pending-certificates/${id}/approve/`,
+      payload || {},
+    );
+    return data;
+  },
+
+  // Ausstehendes Zertifikat ablehnen (Admin)
+  async rejectPendingCertificate(id: number): Promise<{ detail: string }> {
+    const { data } = await apiClient.post<{ detail: string }>(
+      `/api/pending-certificates/${id}/reject/`,
+    );
+    return data;
+  },
+
   // Anbieter abrufen
   async getProviders(): Promise<Provider[]> {
     const { data } = await apiClient.get<Provider[]>('/api/providers/');
@@ -47,8 +81,8 @@ export const portfolioService = {
   },
 
   // Tracks abrufen
-  async getTracks(): Promise<import('../types').Track[]> {
-    const { data } = await apiClient.get<import('../types').Track[]>('/api/tracks/');
+  async getTracks(): Promise<Track[]> {
+    const { data } = await apiClient.get<Track[]>('/api/tracks/');
     return data;
   },
 
