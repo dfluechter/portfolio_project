@@ -482,3 +482,200 @@ class TestPromotionWorkflowAPIAndAdmin:
         assert pending.status == PendingCertificateStatus.APPROVED
         assert pending.certificate is not None
         assert pending.certificate.title == "Admin Cert"
+
+
+class TestExtractorServiceAndOCR:
+    """Umfassende Tests für die erweiterte Metadaten- und OCR-Pipeline."""
+
+    def test_parse_date_string_various_formats(self):
+        from portfolio.services.extractor import parse_date_string
+
+        assert parse_date_string("2024-05-15") == "2024-05-15"
+        assert parse_date_string("15.05.2024") == "2024-05-15"
+        assert parse_date_string("01.01.2023") == "2023-01-01"
+        assert parse_date_string("May 15, 2024") == "2024-05-15"
+        assert parse_date_string("15 May 2024") == "2024-05-15"
+        assert parse_date_string("October 9, 2026") == "2026-10-09"
+        assert parse_date_string("09. Oktober 2026") == "2026-10-09"
+        assert parse_date_string("May 2024") == "2024-05-01"
+        assert parse_date_string("05/15/2024") == "2024-05-15"
+        assert parse_date_string("invalid string") is None
+        assert parse_date_string("") is None
+
+    def test_extract_issued_date_context_keywords(self):
+        from portfolio.services.extractor import extract_issued_date
+
+        text_with_context = (
+            "Certificate of Completion\n"
+            "Awarded to John Doe\n"
+            "Issue Date: October 9, 2026\n"
+            "Some other text 2020-01-01"
+        )
+        assert extract_issued_date(text_with_context) == "2026-10-09"
+
+        text_german = "Ausgestellt am: 15.03.2025 in Berlin"
+        assert extract_issued_date(text_german) == "2025-03-15"
+
+        text_no_context = "Hier steht nur ein Datum: 2024-11-20 im Text"
+        assert extract_issued_date(text_no_context) == "2024-11-20"
+
+        assert extract_issued_date("") == ""
+
+    def test_guess_provider_filename_and_text(self):
+        from portfolio.services.extractor import guess_provider
+
+        # Filename matching
+        assert guess_provider("", "Coursera_Deep_Learning.pdf") == "Coursera"
+        assert guess_provider("", "cert-Udemy-React.pdf") == "Udemy"
+        assert guess_provider("", "AWS_Certified_Architect.pdf") == "AWS"
+
+        # Explicit phrase in text
+        text_phrase = "This program was offered by edX in partnership with Harvard"
+        assert guess_provider(text_phrase, "cert.pdf") in ["edX", "Harvard"]
+
+        # Known provider in text
+        text_body = "The recipient completed the deeplearning.ai neural networks course"
+        assert guess_provider(text_body, "cert.pdf") == "DeepLearning.AI"
+
+        # Custom known providers parameter
+        custom_providers = ["CustomAcademy", "SpecialOrg"]
+        assert (
+            guess_provider(
+                "Issued by CustomAcademy for achievements",
+                "cert.pdf",
+                known_providers=custom_providers,
+            )
+            == "CustomAcademy"
+        )
+
+    def test_guess_title_regex_and_fallback(self):
+        from portfolio.services.extractor import guess_title
+
+        text = (
+            "Certificate of Completion\n"
+            "This is to certify that John has successfully completed the course "
+            "Advanced Django and DRF Architecture\n"
+            "Date: 2026-10-09"
+        )
+        title = guess_title(text, "file.pdf", {})
+        assert (
+            "Advanced Django and DRF Architecture" in title
+            or "Certificate of Completion" in title
+        )
+
+        # Fallback to cleaned filename
+        title_from_fn = guess_title(
+            "", "Udemy_React_and_TypeScript_Mastery.pdf", {}, provider="Udemy"
+        )
+        assert "React and TypeScript Mastery" in title_from_fn
+
+    def test_extract_credential_id(self):
+        from portfolio.services.extractor import extract_credential_id
+
+        text = "Credential ID: UC-998877665544\nDate: 2025-01-01"
+        assert extract_credential_id(text) == "UC-998877665544"
+
+        verify_url = (
+            "Verify authenticity at: https://verify.example.com/cert/ABC-XYZ-123"
+        )
+        assert extract_credential_id(verify_url) == "ABC-XYZ-123"
+
+        assert extract_credential_id("No id present here") == ""
+
+    def test_extract_from_image_success_and_tesseract_error(
+        self, tmp_path, monkeypatch
+    ):
+        import pytesseract
+        from PIL import Image
+
+        from portfolio.services.extractor import _extract_from_image
+
+        # Create dummy image
+        img_path = tmp_path / "test_img.png"
+        img = Image.new("RGB", (100, 100), color="white")
+        img.save(img_path)
+
+        # Mock pytesseract success
+        monkeypatch.setattr(
+            pytesseract, "image_to_string", lambda x: "Extracted Image Text"
+        )
+        _meta, text, dims, ocr_pending = _extract_from_image(img_path, enable_ocr=True)
+        assert text == "Extracted Image Text"
+        assert dims == "100x100"
+        assert not ocr_pending
+
+        # Mock pytesseract TesseractNotFoundError (graceful degradation)
+        def raise_tesseract_error(x):
+            raise pytesseract.TesseractNotFoundError()
+
+        monkeypatch.setattr(pytesseract, "image_to_string", raise_tesseract_error)
+        _meta, text, dims, ocr_pending = _extract_from_image(img_path, enable_ocr=True)
+        assert text == ""
+        assert ocr_pending is True
+
+    def test_extract_from_pdf_embedded_images_ocr(self, tmp_path, monkeypatch):
+        import pytesseract
+        from PIL import Image
+
+        from portfolio.services.extractor import _extract_from_pdf
+
+        # Create dummy PDF without textlayer
+        pdf_path = tmp_path / "scanned_doc.pdf"
+        pdf_path.write_bytes(b"%PDF-1.4 dummy content")
+
+        # Mock PdfReader to simulate an image on page 0
+        class DummyImageFile:
+            def __init__(self):
+                self.data = b"dummy_img_bytes"
+
+        class DummyPage:
+            def __init__(self):
+                self.images = [DummyImageFile()]
+
+            def extract_text(self):
+                return ""
+
+        class DummyReader:
+            def __init__(self):
+                self.metadata = None
+                self.pages = [DummyPage()]
+
+        import portfolio.services.extractor as extractor_module
+
+        monkeypatch.setattr(extractor_module, "PdfReader", lambda f: DummyReader())
+        monkeypatch.setattr(Image, "open", lambda f: Image.new("RGB", (10, 10)))
+        monkeypatch.setattr(
+            pytesseract, "image_to_string", lambda img: "Scanned Certificate OCR Text"
+        )
+
+        _meta, text, ocr_pending = _extract_from_pdf(pdf_path, enable_ocr=True)
+        assert "Scanned Certificate OCR Text" in text
+        assert ocr_pending is False
+
+    def test_extract_metadata_full_integration(self, tmp_path, monkeypatch):
+        from portfolio.models import TRACK_RULES
+        from portfolio.services.extractor import extract_metadata
+
+        file_path = tmp_path / "Coursera_Machine_Learning.pdf"
+        file_path.write_bytes(b"%PDF-1.4 header")
+
+        class DummyReader:
+            def __init__(self):
+                self.metadata = None
+                self.pages = []
+
+        import portfolio.services.extractor as extractor_module
+
+        monkeypatch.setattr(extractor_module, "PdfReader", lambda f: DummyReader())
+
+        res = extract_metadata(
+            file_path,
+            tmp_path,
+            TRACK_RULES,
+            enable_ocr=False,
+            known_providers=["Coursera"],
+        )
+        assert res is not None
+        assert res.guessed_provider == "Coursera"
+        assert res.source_type == "pdf"
+        assert res.file_size > 0

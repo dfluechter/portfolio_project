@@ -1,0 +1,476 @@
+{
+  "total": 111,
+  "private_docs_count": 11,
+  "course_material_count": 28,
+  "unclear_noise_count": 2,
+  "valid_certificates_count": 70,
+  "private_docs": [
+    "[9] 20250519_135804_Bewilligungsbescheid.pdf (Titel: memStream_8472996100000595716557931207957248)",
+    "[10] 20260219_092134_NACHWEIS.pdf (Titel: Fluechter_Dominik_383A028427_SGB II Vordruck zum Nachweis von Eigenbemuehungen)",
+    "[11] 20260304_140724_Bewilligung_Teilnahme.pdf (Titel: Fluechter_Dominik_383A028427_MAG MAT AVGS Bewilligung Teilnahme SGB II_Original)",
+    "[12] 20260407_211924_Schreiben.pdf (Titel: memStream_2097902300000071975888411207957184)",
+    "[13] 20260410_082329_Bewilligungsbescheid (1).pdf (Titel: memStream_5275805000000528108020820671086272)",
+    "[18] 25c05e5e-d4d2-42e9-859a-389e57463b4b.pdf (Titel: Kontoauszug    3/2025 vom 01.10.2025 zu Konto  430668061                        )",
+    "[51] epieos_20260719T003140Z_dominik.fluechter@googlemail.com.pdf (Titel: )",
+    "[55] Familienpass.pdf (Titel: Familienpass)",
+    "[79] Karriere-Profil von Dominik Flüchter.png (Titel: )",
+    "[87] pdf-download-bioage-data.pdf (Titel: )",
+    "[88] pdf-download-psychologie-tools-data.pdf (Titel: Barmer_44_Psycho-Tools_Buch.indb)"
+  ],
+  "course_material": [
+    "[8] 20250129-EB-Ultimate_Data_Streaming_Guide.pdf",
+    "[17] 2302.11382v1.pdf",
+    "[21] A-Practical-Guide-to-AI-Agents-updated.pdf",
+    "[22] ACE_Workbook_v2.0.10.pdf",
+    "[23] agentic-ai-wp-lhind.pdf",
+    "[26] AppDeveloper_Glossary.pdf",
+    "[27] BestBodyGuideVol5_20241106_d988501392e14c66a7f856aaaef33e19.pdf",
+    "[28] C-SECWAI-B-m3-l1-de-file-10.de.pdf",
+    "[29] C-SECWAI-B-m3-l2-de-file-11.de.pdf",
+    "[31] CB_Iodine.pdf",
+    "[36] chapter1.pdf",
+    "[42] custom-template-tags.pdf",
+    "[44] DAS GEHEIMNIS VON SHILAJIT by MICHAEL ROSENFELD.pdf",
+    "[47] EB-Ultimate_Data_Streaming_Guide.pdf",
+    "[48] eBook-AISecurityBestPractices.pdf",
+    "[49] ebook-the-practical-guide-to-ai-agents-dec25.pdf",
+    "[58] Glossary of Terms.pdf",
+    "[59] Glossary_IntroArtificialIntelligence.pdf",
+    "[64] handout_resilienz_modul4.pdf",
+    "[65] hp-business-website-canvas.pdf",
+    "[67] HubSpot_eBook_ChatGPT_Playbook.pdf",
+    "[83] ML+Cheat+Sheet_2.pdf",
+    "[84] module5.pdf_de-DE_f2ae1732-ace2-4a3f-9145-6c18ea9b93c9.pdf",
+    "[89] presentation.pdf",
+    "[90] READING 1 2.pdf",
+    "[91] READING 2 2.pdf",
+    "[92] Reading_1_.pdf",
+    "[93] Reading_2_.pdf"
+  ],
+  "unclear_noise": [
+    "[57] fqSc2Ao8lxaxcm8gqVLOgwY34nIJm+ZmVn9uNxwlT24=.png",
+    "[66] hPzXfFUOGLfYHXPk0rpxwchXxAE7BMfCuTDF7UTUx6Y=.png"
+  ],
+  "valid_certificates": [
+    {
+      "id": 1,
+      "filename": "test_cert.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 2,
+      "filename": "aws_certified_developer.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 3,
+      "filename": "azure_fundamentals.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 4,
+      "filename": "073d6ba97788.pdf",
+      "title": "Meister in ChatGPT",
+      "provider": "-"
+    },
+    {
+      "id": 5,
+      "filename": "07f439ea999128ec57c5ebeb82f3f39f.pdf",
+      "title": "-",
+      "provider": "care"
+    },
+    {
+      "id": 6,
+      "filename": "1766309689695-aiedited-20260806232020.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 7,
+      "filename": "1766309689695.jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 14,
+      "filename": "20260427_101035.jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 15,
+      "filename": "20260427_104749.jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 16,
+      "filename": "20260427_104921.jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 19,
+      "filename": "3.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 20,
+      "filename": "9Dmi8m6bWFsnAHa6ov5_krg6i_2mYNSKZgWgpAlpHIY=.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 24,
+      "filename": "AI Fundamentals for Business Professionals.pdf",
+      "title": "6146628b-632d-4f6a-b56e-28db843352f7_art_1-31",
+      "provider": "-"
+    },
+    {
+      "id": 25,
+      "filename": "ai-agents-cheat-sheet.pdf",
+      "title": "-",
+      "provider": "reasoning"
+    },
+    {
+      "id": 30,
+      "filename": "C1h4wKVXWlL.pdf",
+      "title": "EarFun TW700-说明书-V2-20250915",
+      "provider": "-"
+    },
+    {
+      "id": 32,
+      "filename": "cde33f43_image_0(1).jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 33,
+      "filename": "cde33f43_image_0.jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 34,
+      "filename": "certificate (1).pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 35,
+      "filename": "certificate.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 37,
+      "filename": "CHECK-U_Ergebnisse_20260521.pdf",
+      "title": "Check-U Gesamtergebnis",
+      "provider": "-"
+    },
+    {
+      "id": 38,
+      "filename": "CHECK-U_Teilnehmerzertifikat_20260521.pdf",
+      "title": "Check-U Zertifikat",
+      "provider": "-"
+    },
+    {
+      "id": 39,
+      "filename": "claude-api-in-python-1.pdf",
+      "title": "-",
+      "provider": "Anthropic"
+    },
+    {
+      "id": 40,
+      "filename": "create-your-first-gemini-enterprise-application.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 41,
+      "filename": "crop_1766309723541.jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 43,
+      "filename": "D14bTm6n0JL.pdf",
+      "title": "-",
+      "provider": "the filter"
+    },
+    {
+      "id": 45,
+      "filename": "Dominik Flüchter - Make life easier with automation Course.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 46,
+      "filename": "e0ee5415-83c3-4941-8826-e9386fdfb50c.pdf",
+      "title": "This is to certify that",
+      "provider": "demonstrating"
+    },
+    {
+      "id": 50,
+      "filename": "Enterprise Design Thinking Framework.pdf",
+      "title": "-",
+      "provider": "keeping your user in mind"
+    },
+    {
+      "id": 52,
+      "filename": "EthicalHackingwithKaliLinux_Badge20260206-31-vur813.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 53,
+      "filename": "Ethics_Age_of_Generative_AI.pdf",
+      "title": "-",
+      "provider": "a human and not AI"
+    },
+    {
+      "id": 54,
+      "filename": "f0e44d434ebc1961e265fd506f4e1d21-8e92690a-3a8d-44a6-a849-77ff12da943c.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 56,
+      "filename": "FB_IMG_1762313538018.jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 60,
+      "filename": "gomining-academy-certificate-fe39538e-4b51-47ab-bd6a-5a7723ef912e.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 61,
+      "filename": "GQ_20250612_4af49368b1734de3bffdfd9fb1c5d603.pdf",
+      "title": "GQ2503.pdf",
+      "provider": "Vertrieb"
+    },
+    {
+      "id": 62,
+      "filename": "gymondo-prevention (1).pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 63,
+      "filename": "gymondo-prevention.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 68,
+      "filename": "IBMDesign20260621-32-yqast2.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 69,
+      "filename": "IHTS-Internet-Security-Print.pdf",
+      "title": "Authorities",
+      "provider": "who you think it is from and has not been"
+    },
+    {
+      "id": 70,
+      "filename": "IHTS-Internet-Technology-Print.pdf",
+      "title": "IHTS-Internet-Technology-Print",
+      "provider": "a single message to travel over different"
+    },
+    {
+      "id": 71,
+      "filename": "img_1_1775090177082.jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 72,
+      "filename": "img_1_1775091399130.jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 73,
+      "filename": "introduction-to-sql-with-ai-1.pdf",
+      "title": "-",
+      "provider": "the"
+    },
+    {
+      "id": 74,
+      "filename": "IONOS-DE-DE-PDF-PRGU.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 75,
+      "filename": "IONOS-DE-DE-PDF-RACO_SSWP.pdf",
+      "title": "-",
+      "provider": "VMware sowie S3"
+    },
+    {
+      "id": 76,
+      "filename": "J9alQeeuSEPE_eEEh9m7rQrLr_v2rj7N7QwQ_Zlh2A4=.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 77,
+      "filename": "JavaScript Intermediate_certificate.jpg",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 78,
+      "filename": "joining-data-in-sql-updated-0425.pdf",
+      "title": "-",
+      "provider": "UNION ALL"
+    },
+    {
+      "id": 80,
+      "filename": "logo_df_1.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 81,
+      "filename": "logo_df_2.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 82,
+      "filename": "logo_df_3.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 85,
+      "filename": "NoSQL_BigData_andSparkFoundationsSpecialization_Badge20260408-32-koo8pn.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 86,
+      "filename": "openclaw-workflows-1.pdf",
+      "title": "-",
+      "provider": "scheduled briefings and automation to local model integration and multi"
+    },
+    {
+      "id": 94,
+      "filename": "s+t8Rq51dpmm1NuT8AaCfU+_U3fyfFr+j97mkOMADSw=.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 95,
+      "filename": "security-for-professionals-and-devops-professionals.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 96,
+      "filename": "SecurityInsider_20241220_502e2240a8f140bca30b94d355538ef9.pdf",
+      "title": "-",
+      "provider": "representation"
+    },
+    {
+      "id": 97,
+      "filename": "select-topics-in-python--natural-language-processing-nlp-basic-workflow-analyzing-text--taggers-and-n-grams.pdf",
+      "title": "-",
+      "provider": "the"
+    },
+    {
+      "id": 98,
+      "filename": "select-topics-in-python--natural-language-processing-nlp-basic-workflow-getting-started--corpora--lexicons--and-tokens.pdf",
+      "title": "-",
+      "provider": "the"
+    },
+    {
+      "id": 99,
+      "filename": "select-topics-in-python--natural-language-processing-nlp-basic-workflow-pre-processing-text--stop-words--tagging--stemming--and-lemmatization.pdf",
+      "title": "-",
+      "provider": "text"
+    },
+    {
+      "id": 100,
+      "filename": "Study_plan_Preparing_for_ACE_Section_1_v2.0.10.pdf",
+      "title": "Study_plan_Preparing_for_ACE_Section_1_v2.0.10",
+      "provider": "-"
+    },
+    {
+      "id": 101,
+      "filename": "new_test.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 102,
+      "filename": "T-DUETSDL-B-m1-l4-de-file-2.de.pdf",
+      "title": "gemini-whats-next_DE",
+      "provider": "-"
+    },
+    {
+      "id": 103,
+      "filename": "Transformation Challenge2026_Tagebuch.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 104,
+      "filename": "Trustworthy AI is crucial for business video transcript_EN.pdf",
+      "title": "-",
+      "provider": "industry"
+    },
+    {
+      "id": 105,
+      "filename": "UM-3TK0A-008-GER.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 106,
+      "filename": "WhatIsADataModel.pdf",
+      "title": "Course 2 Module 2 Lesson 1 Big Data Modeling - Jeff Edits (2)",
+      "provider": "the collection so that each"
+    },
+    {
+      "id": 107,
+      "filename": "What_Is_Generative_AI.pdf",
+      "title": "-",
+      "provider": "AI"
+    },
+    {
+      "id": 108,
+      "filename": "whitepaper-6-schritte-zur-it-dokumentation-der-i-doit-pro-praxisleitfaden-i-doit.pdf",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 109,
+      "filename": "Wichtige_Kundeninformation_zu_Konto_0430668061.PDF",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 110,
+      "filename": "YkNnN6dY6rP24Z7ELbPjs1jwob2iSJnyV5Rm_mswRW4=.png",
+      "title": "-",
+      "provider": "-"
+    },
+    {
+      "id": 111,
+      "filename": "zero-trust-data-security-for-dummies.pdf",
+      "title": "Zero Trust Data Security For Dummies®, Rubrik Special Edition",
+      "provider": "Lawrence Miller"
+    }
+  ]
+}

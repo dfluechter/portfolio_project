@@ -11,6 +11,7 @@ from portfolio.models import (
     CertificateImportRun,
     ImportRunStatus,
     PendingCertificate,
+    Provider,
     Track,
 )
 from portfolio.services.extractor import (
@@ -86,6 +87,8 @@ class Command(BaseCommand):
             f"START Scan in {inbox_path.name} mode={mode_label} recursive={recursive}"
         )
 
+        known_db_providers = list(Provider.objects.values_list("provider", flat=True))
+
         # Dateien sammeln (strikt read-only, keine Symlinks)
         file_iterator = inbox_path.rglob("*") if recursive else inbox_path.iterdir()
         files_to_process: list[Path] = []
@@ -132,7 +135,13 @@ class Command(BaseCommand):
 
             # Metadaten-Extraktion
             try:
-                result = extract_metadata(file_path, inbox_path, TRACK_RULES)
+                result = extract_metadata(
+                    file_path,
+                    inbox_path,
+                    TRACK_RULES,
+                    enable_ocr=True,
+                    known_providers=known_db_providers,
+                )
             except Exception as exc:  # noqa: BLE001
                 run.files_errored += 1
                 run.append_log(f"ERROR {file_path.name}: Extraktion - {exc}")
@@ -191,14 +200,15 @@ class Command(BaseCommand):
                 pending.suggested_tracks.add(track_obj)
 
             run.files_imported += 1
+            ocr_flag = " (OCR ausstehend)" if result.ocr_pending else ""
             run.append_log(
                 f"OK    {file_path.name} hash={file_hash[:12]} -> Titel: {result.guessed_title or '-'} "
-                f"tracks={tracks_info}"
+                f"provider={result.guessed_provider or '-'} date={result.issued_date or '-'} tracks={tracks_info}{ocr_flag}"
             )
             self.stdout.write(
                 self.style.SUCCESS(
                     f"  -> Gespeichert als Pending: {file_path.name} "
-                    f"(Titel: {result.guessed_title or '-'}, Tracks: {tracks_info})"
+                    f"(Titel: {result.guessed_title or '-'}, Provider: {result.guessed_provider or '-'}, Tracks: {tracks_info}{ocr_flag})"
                 )
             )
 
