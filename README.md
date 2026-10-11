@@ -154,5 +154,6 @@ portfolio_project/
 ├── docs/                    # Technische Dokumentation & ADRs
 │   ├── adrs/                # Architectural Decision Records (ADR-001 bis ADR-004)
 │   └── architecture.md      # Gesamtsystem- und Architektur-Dokumentation
+├── build.sh                 # Root Fallback-Build-Hook (delegiert an backend/build.sh)
 └── render.yaml              # Render Deployment-Konfiguration
 ```

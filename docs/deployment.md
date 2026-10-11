@@ -52,7 +52,7 @@ services:
 ```
 
 ### 2.2 Ausführungskontext von `build.sh`
-Da Render `rootDir: backend` nutzt, liegt das Skript ausschließlich unter [`backend/build.sh`](file:///d:/dev/portfolio_project/backend/build.sh) (kein Duplikat im Root). Es wird über `bash build.sh` aufgerufen, damit kein Executable-Bit nötig ist; `.gitattributes` erzwingt LF-Zeilenenden für `*.sh`:
+Das primäre Build-Skript liegt unter [`backend/build.sh`](file:///d:/dev/portfolio_project/backend/build.sh). Zusätzlich existiert im Projekt-Root ein resilientes Fallback-Skript [`build.sh`](file:///d:/dev/portfolio_project/build.sh), falls der Service im Render Dashboard ohne konfiguriertes `rootDir` (d. h. im Repository-Root) gestartet wird. Es wechselt automatisch in `backend/` und führt das Backend-Build-Skript aus:
 
 ```bash
 #!/usr/bin/env bash
