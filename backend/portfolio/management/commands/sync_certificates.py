@@ -157,7 +157,7 @@ class Command(BaseCommand):
             # Log-Ausgabe (ohne absolute Pfade!)
             self.stdout.write(
                 f"  {'WOULD' if dry_run else 'IMPORT'}: "
-                f"{file_path.name} → {provider_name}"
+                f"{file_path.name} -> {provider_name}"
                 f"{f' [Track: {track_slug}]' if track_slug else ''}"
             )
             run.append_log(
