@@ -130,7 +130,9 @@ def promote_pending_certificate(
     try:
         cert.pdf_file.save(safe_name, file_content, save=False)
     except Exception as exc:
-        raise PromotionError(f"Upload der Dateikopie zu Storage fehlgeschlagen: {exc}") from exc
+        raise PromotionError(
+            f"Upload der Dateikopie zu Storage fehlgeschlagen: {exc}"
+        ) from exc
 
     saved_storage_name = cert.pdf_file.name
 
@@ -148,11 +150,12 @@ def promote_pending_certificate(
     except Exception as db_exc:
         # 3. Clean Compensation: Falls DB-Schreiben fehlschlägt, Datei aus Storage löschen
         try:
-            cert.pdf_file.storage.delete(saved_storage_name)
-            logger.info(
-                "Kompensationslöschung in Storage erfolgreich für: %s",
-                saved_storage_name,
-            )
+            if saved_storage_name:
+                cert.pdf_file.storage.delete(saved_storage_name)
+                logger.info(
+                    "Kompensationslöschung in Storage erfolgreich für: %s",
+                    saved_storage_name,
+                )
         except Exception as delete_exc:  # noqa: BLE001
             logger.warning(
                 "Kompensationslöschung in Storage fehlgeschlagen für %s: %s",

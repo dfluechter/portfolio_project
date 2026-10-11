@@ -407,7 +407,9 @@ class TestPendingCertificatePromotion:
         pending.refresh_from_db()
         assert pending.status == PendingCertificateStatus.REJECTED
 
-    def test_promote_pending_certificate_clean_compensation(self, tmp_path, monkeypatch):
+    def test_promote_pending_certificate_clean_compensation(
+        self, tmp_path, monkeypatch
+    ):
         """Bei DB-Fehler nach Storage-Upload wird die Datei aus dem Storage gelöscht."""
         from portfolio.services.promotion import (
             PromotionError,
@@ -443,7 +445,9 @@ class TestPendingCertificatePromotion:
 
         monkeypatch.setattr(Certificate, "save", failing_save)
 
-        with pytest.raises(PromotionError, match="Datenbanktransaktion für Zertifikat fehlgeschlagen"):
+        with pytest.raises(
+            PromotionError, match="Datenbanktransaktion für Zertifikat fehlgeschlagen"
+        ):
             promote_pending_certificate(pending)
 
         # Verify that compensation storage delete was called
@@ -451,7 +455,6 @@ class TestPendingCertificatePromotion:
         assert "cert_compensate" in deleted_files[0]
         # Verify Certificate not created in DB
         assert Certificate.objects.filter(title="Compensate Cert").count() == 0
-
 
 
 @pytest.mark.django_db

@@ -38,11 +38,11 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 `render.yaml` definiert `rootDir: backend` und `buildCommand: ./build.sh`. Das Skript `build.sh` liegt jedoch im Wurzelverzeichnis. Ebenso fehlt im GitHub Actions Workflow `.github/workflows/ci.yml` beim Job `backend-build` die Direktive `defaults: run: working-directory: backend`.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [ ] **Szenario 1 (Render Build-Hook):**
+- [x] **Szenario 1 (Render Build-Hook):**
   - **Given** ein Deployment auf Render mit `rootDir: backend` wird getriggert
   - **When** der Build-Befehl ausgeführt wird
   - **Then** ist `build.sh` entweder im Ordner `backend/` verfügbar oder `render.yaml` referenziert das Skript zuverlässig, sodass kein `file not found`-Fehler auftritt.
-- [ ] **Szenario 2 (GitHub Actions `backend-build`):**
+- [x] **Szenario 2 (GitHub Actions `backend-build`):**
   - **Given** ein Commit wird auf `main` gepusht oder ein PR geöffnet
   - **When** der Job `backend-build` in `.github/workflows/ci.yml` startet
   - **Then** ist das Working Directory auf `backend` gesetzt und die Befehle `uv sync --frozen --no-dev`, `python manage.py check` sowie `python manage.py collectstatic --noinput` laufen erfolgreich im Python-3.13-Kontext durch.
@@ -75,9 +75,9 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 > **damit** das Projekt übersichtlich und frei von versehentlich committeten Verzeichnissen bleibt.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [ ] Der versehentlich angelegte Ordner `#` im Root-Verzeichnis ist entfernt.
+- [x] Der versehentlich angelegte Ordner `#` im Root-Verzeichnis ist entfernt.
 - [x] Das Bild `Architektur_und_Datenstruktur_Portfolio_Backend.png` und `portfolio_architecture.html` sind in `docs/assets/` überführt und dort in der Dokumentation eingebunden.
-- [ ] Die `.gitignore` schließt temporäre Ordner wie `scratch/` und Test-Skripte wie `test_s3.py` aus oder diese werden bereinigt.
+- [x] Die `.gitignore` schließt temporäre Ordner wie `scratch/` und Test-Skripte wie `test_s3.py` aus oder diese werden bereinigt.
 
 ---
 

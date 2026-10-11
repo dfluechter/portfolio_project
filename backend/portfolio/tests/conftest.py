@@ -49,9 +49,13 @@ from django.conf import settings
 
 @pytest.fixture(autouse=True)
 def cleanup_test_media():
-    """Bereinigt Test-Media-Dateien nach jedem Test."""
-    yield
+    """Bereinigt Test-Media-Dateien vor und nach jedem Test."""
     media_root = settings.MEDIA_ROOT
+    if media_root and "test_media" in str(media_root):
+        import pathlib
+
+        pathlib.Path(media_root).mkdir(parents=True, exist_ok=True)
+    yield
     if (
         media_root
         and hasattr(media_root, "exists")
