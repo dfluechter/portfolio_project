@@ -37,7 +37,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: ${{ github.head_ref || format('ci-{0}', github.sha) }}
+          branch_name: 'ci-testing'
           username: neondb_owner
           database: neondb
 
