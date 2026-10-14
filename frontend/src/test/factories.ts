@@ -79,8 +79,12 @@ export const getMockCertificate = (
   title: 'Django Grundlagen',
   provider: 1,
   provider_details: getMockProvider(),
+  credential_url: '',
+  credential_id: '',
+  issued_date: '2024-01-01',
   pdf_file: 'https://example.com/certificate.pdf',
   uploaded_at: '2024-01-01T00:00:00Z',
+  tracks: [],
   is_published: true,
   ...overrides,
 });

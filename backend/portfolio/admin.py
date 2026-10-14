@@ -107,9 +107,16 @@ class CertificateAdmin(admin.ModelAdmin):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("title", "created_at", "github_url", "live_url")
+    list_display = (
+        "title",
+        "is_published",
+        "is_featured",
+        "created_at",
+        "github_url",
+        "live_url",
+    )
     search_fields = ("title", "description")
-    list_filter = ("created_at",)
+    list_filter = ("is_published", "is_featured", "created_at")
     readonly_fields = ("created_at",)
     filter_horizontal = ("skills",)
 

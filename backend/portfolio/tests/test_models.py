@@ -385,3 +385,78 @@ class TestUserModel:
                 password="password123",
                 is_superuser=False,
             )
+
+
+@pytest.mark.django_db
+class TestSchemaConstraintsAndIndexes:
+    """Testet die neuen Datenbank-Constraints und Indizes."""
+
+    def test_skill_proficiency_check_constraint_min(self):
+        from django.db import IntegrityError
+
+        with pytest.raises(IntegrityError):
+            Skill.objects.create(name="InvalidZero", proficiency=0)
+
+    def test_skill_proficiency_check_constraint_max(self):
+        from django.db import IntegrityError
+
+        with pytest.raises(IntegrityError):
+            Skill.objects.create(name="InvalidOver100", proficiency=101)
+
+    def test_timeline_entry_date_range_check_constraint(self):
+        from django.db import IntegrityError
+
+        with pytest.raises(IntegrityError):
+            TimelineEntry.objects.create(
+                title="Bad Date",
+                organization="Bad Org",
+                start_date=datetime.date(2024, 1, 1),
+                end_date=datetime.date(2023, 1, 1),
+            )
+
+    def test_timeline_entry_clean_validation(self):
+        entry = TimelineEntry(
+            title="Bad Clean",
+            organization="Bad Org",
+            start_date=datetime.date(2024, 1, 1),
+            end_date=datetime.date(2023, 1, 1),
+        )
+        with pytest.raises(ValidationError):
+            entry.full_clean()
+
+    def test_timeline_entry_clean_current_with_end_date(self):
+        entry = TimelineEntry(
+            title="Bad Current",
+            organization="Bad Org",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2024, 1, 1),
+            is_current=True,
+        )
+        with pytest.raises(ValidationError):
+            entry.full_clean()
+
+    def test_import_run_finished_after_started_constraint(self):
+        from django.db import IntegrityError
+
+        now = datetime.datetime.now(datetime.UTC)
+        past = now - datetime.timedelta(hours=1)
+        with pytest.raises(IntegrityError):
+            CertificateImportRun.objects.create(
+                started_at=now,
+                finished_at=past,
+            )
+
+    def test_project_default_fields(self):
+        proj = Project.objects.create(title="P1", description="D1")
+        assert proj.is_published is True
+        assert proj.is_featured is False
+
+    def test_composite_indexes_exist(self):
+        cert_indexes = [idx.name for idx in Certificate._meta.indexes]
+        assert "cert_pub_upload_idx" in cert_indexes
+
+        pending_indexes = [idx.name for idx in PendingCertificate._meta.indexes]
+        assert "pending_cert_status_idx" in pending_indexes
+
+        project_indexes = [idx.name for idx in Project._meta.indexes]
+        assert "proj_pub_created_idx" in project_indexes

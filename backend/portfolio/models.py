@@ -119,6 +119,12 @@ class Skill(models.Model):
         verbose_name = "Skill"
         verbose_name_plural = "Skills"
         ordering = ("category", "-proficiency", "name")
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(proficiency__gte=1, proficiency__lte=100),
+                name="skill_proficiency_range_1_to_100",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_category_display()}, {self.proficiency}%)"
@@ -179,6 +185,24 @@ class TimelineEntry(models.Model):
         verbose_name = "Werdegangs-Eintrag"
         verbose_name_plural = "Werdegang (Timeline)"
         ordering = ("-start_date",)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_date__isnull=True)
+                | models.Q(start_date__lte=models.F("end_date")),
+                name="timeline_valid_date_range",
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        if self.end_date and self.start_date and self.start_date > self.end_date:
+            raise ValidationError(
+                {"end_date": "Das Enddatum darf nicht vor dem Startdatum liegen."}
+            )
+        if self.is_current and self.end_date:
+            raise ValidationError(
+                {"end_date": "Eine laufende Position darf kein Enddatum haben."}
+            )
 
     def __str__(self) -> str:
         return f"{self.title} @ {self.organization}"
@@ -246,6 +270,12 @@ class Certificate(models.Model):
     credential_id = models.CharField(
         max_length=255, blank=True, verbose_name="Credential-ID"
     )
+    credential_url = models.URLField(
+        max_length=512,
+        blank=True,
+        null=True,
+        verbose_name="Zertifikats-Link / Verifizierungs-URL",
+    )
     issued_date = models.DateField(
         null=True, blank=True, verbose_name="Ausstellungsdatum"
     )
@@ -258,6 +288,12 @@ class Certificate(models.Model):
         verbose_name = "Zertifikat"
         verbose_name_plural = "Zertifikate"
         ordering = ("-uploaded_at",)
+        indexes = [
+            models.Index(
+                fields=["is_published", "-uploaded_at"],
+                name="cert_pub_upload_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.title} ({self.provider.provider})"
@@ -325,6 +361,12 @@ class PendingCertificate(models.Model):
         verbose_name = "Ausstehendes Zertifikat (Inbox)"
         verbose_name_plural = "Ausstehende Zertifikate (Inbox)"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(
+                fields=["status", "-created_at"],
+                name="pending_cert_status_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"[{self.get_status_display()}] {self.original_file_name}"
@@ -376,6 +418,13 @@ class CertificateImportRun(models.Model):
         verbose_name = "Import-Lauf"
         verbose_name_plural = "Import-Läufe"
         ordering = ("-started_at",)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(finished_at__isnull=True)
+                | models.Q(finished_at__gte=models.F("started_at")),
+                name="import_run_finished_after_started",
+            ),
+        ]
 
     def __str__(self) -> str:
         return (
@@ -409,12 +458,22 @@ class Project(models.Model):
         blank=True, null=True, verbose_name="GitHub Repository URL"
     )
     live_url = models.URLField(blank=True, null=True, verbose_name="Live Demo URL")
+    is_published = models.BooleanField(default=True, verbose_name="Veröffentlicht")
+    is_featured = models.BooleanField(
+        default=False, verbose_name="Hervorgehoben / Top-Projekt"
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Erstellt am")
 
     class Meta:
         verbose_name = "Projekt"
         verbose_name_plural = "Projekte"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(
+                fields=["is_published", "-created_at"],
+                name="proj_pub_created_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.title

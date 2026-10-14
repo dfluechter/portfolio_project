@@ -94,3 +94,36 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
   - Die Render Web Service Konfiguration (`render.yaml`).
   - Benötigte Secrets (`NEON_PROJECT_ID`, `NEON_API_KEY`, `RENDER_DEPLOY_HOOK_URL`, `DATABASE_URL`, `SECRET_KEY`).
   - Rollback- und Troubleshooting-Maßnahmen.
+
+---
+
+### Epic 5: Zertifikats-Review & Dashboard-Skalierung (P1 - Hoch)
+
+#### User Story 5.1: Server-Side Pagination & Review-Filter für Certificates API
+> **Als** Administrator  
+> **möchte ich**, dass der Endpunkt `/api/certificates/` paginiert ist und Filter nach `is_published` sowie unvollständigen Daten unterstützt,  
+> **damit** das Dashboard auch bei hunderten Zertifikaten reaktionsschnell bleibt und ich unfertige Einträge gezielt prüfen kann.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] `/api/certificates/` unterstützt `page` und `page_size=20` (DRF `PageNumberPagination`).
+- [x] Filter-Parameter:
+  - `is_published=true|false`
+  - `incomplete=true` (filtert auf fehlendes `issued_date` oder generierte/unvollständige Titel)
+  - `track` und `provider` (optional kombinierbar)
+  - `search` über Titel, Provider und Credential-ID.
+- [x] Unauthentifizierte Anfragen erhalten weiterhin nur veröffentlichte Zertifikate (`is_published=True`).
+- [x] Abwärtskompatibilität für Full-List-Abrufe via `?no_page=true` oder `?all=true`.
+
+#### User Story 5.2: Review-Drawer & On-Demand Metadata Extraction im Frontend
+> **Als** Administrator  
+> **möchte ich** im Dashboard ein Review-Modal bzw. einen Detail-Drawer mit Dokumentenvorschau und manueller OCR-Analyse,  
+> **damit** ich Zertifikate visuell kontrollieren, Metadaten nachschärfen und gezielt veröffentlichen kann.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] `CertificateManager` bindet Server-Pagination mit Seitennavigation und Filterleiste ein.
+- [x] Klick auf ein Zertifikat öffnet ein Review-Modal mit:
+  - Dokumenten-Vorschau (PDF/Bild direkt aus S3).
+  - Editierbare Felder für Titel, Provider, Ausstellungsdatum (`issued_date`) und Tracks.
+  - Button „Metadaten per OCR analysieren“ (zweistufig: PDF-Text-Extraktion -> Gemini Vision Fallback).
+  - Aktion „Speichern & Veröffentlichen“ (`is_published=true`).
+

@@ -54,6 +54,9 @@ class CertificateSerializer(serializers.ModelSerializer):
             "uploaded_at",
             "sha256_hash",
             "is_published",
+            "credential_id",
+            "credential_url",
+            "issued_date",
         )
         read_only_fields = ("sha256_hash", "is_published", "uploaded_at")
 
@@ -75,6 +78,8 @@ class ProjectSerializer(serializers.ModelSerializer):
             "skill_details",
             "github_url",
             "live_url",
+            "is_published",
+            "is_featured",
             "created_at",
         )
 
@@ -105,6 +110,23 @@ class TimelineEntrySerializer(serializers.ModelSerializer):
             "skill_details",
             "created_at",
         )
+
+    def validate(self, attrs):
+        start_date = attrs.get("start_date", getattr(self.instance, "start_date", None))
+        end_date = attrs.get("end_date", getattr(self.instance, "end_date", None))
+        is_current = attrs.get(
+            "is_current", getattr(self.instance, "is_current", False)
+        )
+
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError(
+                {"end_date": "Das Enddatum darf nicht vor dem Startdatum liegen."}
+            )
+        if is_current and end_date:
+            raise serializers.ValidationError(
+                {"end_date": "Eine laufende Position darf kein Enddatum haben."}
+            )
+        return attrs
 
 
 class TrackSerializer(serializers.ModelSerializer):

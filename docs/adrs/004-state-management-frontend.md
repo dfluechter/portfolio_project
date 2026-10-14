@@ -1,3 +1,5 @@
+
+
 # ADR-004: State Management im Frontend
 
 **Status:** Accepted  

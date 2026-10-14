@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Award, CheckCircle2, ExternalLink, Layers, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCertificates, useTracks } from '../hooks/usePortfolio';
+import { usePublishedCertificates as useCertificates, useTracks } from '../hooks/usePortfolio';
 import { usePortfolioSearch } from '../hooks/usePortfolioSearch';
 import { SectionEmptyState } from './SectionEmptyState';
 import type { Certificate } from '../types';
 
 export const CertificatesSection: React.FC = () => {
-  const { data: certificates = [], isLoading } = useCertificates();
+  const { data: rawCertificates, isLoading } = useCertificates();
+  const certificates = Array.isArray(rawCertificates) ? rawCertificates : [];
   const { data: tracks = [] } = useTracks();
+
   const { searchTerm, setSearchTerm, clearSearch } = usePortfolioSearch();
   const [selectedIssuer, setSelectedIssuer] = useState<string>('all');
   const [selectedTrackId, setSelectedTrackId] = useState<string>('all');
@@ -202,18 +204,26 @@ export const CertificatesSection: React.FC = () => {
                           {issuerName}
                         </span>
                         <span className="text-[11px] text-slate-500 font-medium">
-                          {new Date(cert.uploaded_at).toLocaleDateString('de-DE')}
+                          {cert.issued_date
+                            ? new Date(cert.issued_date).toLocaleDateString('de-DE')
+                            : new Date(cert.uploaded_at).toLocaleDateString('de-DE')}
                         </span>
                       </div>
 
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors line-clamp-2">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors line-clamp-2">
                         {cert.title}
                       </h3>
+
+                      {cert.credential_id && (
+                        <p className="text-[11px] text-slate-500 font-mono mb-3">
+                          ID: {cert.credential_id}
+                        </p>
+                      )}
 
                       {/* Zugeordnete Track-Badges */}
                       {cert.tracks && cert.tracks.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-4">
-                          {cert.tracks.map((trackId) => {
+                          {cert.tracks.map((trackId: number) => {
                             const trackObj = trackMap.get(trackId);
                             if (!trackObj) return null;
                             const isSelected = selectedTrackId === String(trackId);
@@ -239,25 +249,39 @@ export const CertificatesSection: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Verifiziert
                       </div>
 
-                      {cert.pdf_file ? (
-                        <a
-                          href={cert.pdf_file}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors"
-                        >
-                          Dokument ansehen
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      ) : (
-                        <span className="text-xs text-slate-400 font-medium">Im Admin hinterlegt</span>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {cert.credential_url && (
+                          <a
+                            href={cert.credential_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
+                            title="Online verifizieren"
+                          >
+                            Online prüfen
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {cert.pdf_file ? (
+                          <a
+                            href={cert.pdf_file}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors"
+                          >
+                            PDF
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-medium">Im Admin hinterlegt</span>
+                        )}
+                      </div>
                     </div>
                   </motion.div>
                 );

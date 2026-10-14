@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useCertificates, useProjects, useSkills, useTimeline } from '../hooks/usePortfolio';
+import { usePublishedCertificates, useProjects, useSkills, useTimeline } from '../hooks/usePortfolio';
 import { getMockCertificate, getMockProject, getMockSkill, getMockTimelineEntry } from '../test/factories';
 import { renderWithProviders } from '../test/testUtils';
 import { HeroSearch } from './HeroSearch';
@@ -8,7 +8,7 @@ import { HeroSearch } from './HeroSearch';
 vi.mock('../hooks/usePortfolio', () => ({
   useProjects: vi.fn(),
   useSkills: vi.fn(),
-  useCertificates: vi.fn(),
+  usePublishedCertificates: vi.fn(),
   useTimeline: vi.fn(),
 }));
 
@@ -17,7 +17,7 @@ describe('HeroSearch Component', () => {
     vi.clearAllMocks();
     vi.mocked(useProjects).mockReturnValue({ data: [getMockProject({ id: 1, title: 'Django CRM' })] } as any);
     vi.mocked(useSkills).mockReturnValue({ data: [getMockSkill({ id: 1, name: 'Python' })] } as any);
-    vi.mocked(useCertificates).mockReturnValue({ data: [getMockCertificate({ id: 1, title: 'AWS Cloud Practitioner' })] } as any);
+    vi.mocked(usePublishedCertificates).mockReturnValue({ data: [getMockCertificate({ id: 1, title: 'AWS Cloud Practitioner' })] } as any);
     vi.mocked(useTimeline).mockReturnValue({ data: [getMockTimelineEntry({ id: 1, title: 'Senior Architect' })] } as any);
   });
 

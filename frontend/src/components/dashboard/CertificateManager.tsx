@@ -1,111 +1,96 @@
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
+  AlertCircle,
   Award,
+  Building2,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
-  Plus,
+  EyeOff,
+  Globe,
+  Loader2,
+  Pencil,
   Search,
   Trash2,
-  Upload,
 } from 'lucide-react';
 import {
-  useCertificates,
-  useCreateCertificate,
-  useCreateProvider,
+  useCertificatesPaginated,
   useDeleteCertificate,
   useProviders,
-  useTracks,
+  usePublishCertificate,
+  useUnpublishCertificate,
 } from '../../hooks/usePortfolio';
 import { ConfirmModal } from './ConfirmModal';
+import { CertificateEditModal } from './CertificateEditModal';
+import type { Certificate } from '../../types';
 
 interface CertificateManagerProps {
   onNotify: (msg: { type: 'success' | 'error'; text: string }) => void;
 }
 
 export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify }) => {
-  const { data: certificates = [], isLoading: loadingCerts } = useCertificates();
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'unpublished' | 'incomplete'>('all');
+  const [selectedIssuer, setSelectedIssuer] = useState<string>('all');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // 300ms Debounce für die serverseitige Suche
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const { data: providers = [], isLoading: loadingProviders } = useProviders();
-  const { data: tracks = [], isLoading: loadingTracks } = useTracks();
 
-  const createCertMutation = useCreateCertificate();
+  // Query-Parameter für serverseitige Filter & Paginierung
+  const queryParams = {
+    page,
+    page_size: pageSize,
+    is_published:
+      filterStatus === 'published'
+        ? true
+        : filterStatus === 'unpublished'
+        ? false
+        : undefined,
+    incomplete: filterStatus === 'incomplete' ? true : undefined,
+    provider: selectedIssuer !== 'all' ? selectedIssuer : undefined,
+    search: debouncedSearch || undefined,
+  };
+
+  const {
+    data: paginatedData,
+    isLoading: loadingCerts,
+    isPlaceholderData,
+  } = useCertificatesPaginated(queryParams);
+
+  const certificates = paginatedData?.results ?? [];
+  const totalCount = paginatedData?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
   const deleteCertMutation = useDeleteCertificate();
-  const createProviderMutation = useCreateProvider();
+  const publishMutation = usePublishCertificate();
+  const unpublishMutation = useUnpublishCertificate();
 
-  // Form State
-  const [certTitle, setCertTitle] = useState('');
-  const [selectedProviderId, setSelectedProviderId] = useState<string>('');
-  const [newProviderName, setNewProviderName] = useState<string>('');
-  const [certFile, setCertFile] = useState<File | null>(null);
-  const [selectedTracks, setSelectedTracks] = useState<string[]>([]);
-
-  // Filter State
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Confirm Modal State
+  const [pendingActionId, setPendingActionId] = useState<number | null>(null);
+  const [certToEdit, setCertToEdit] = useState<Certificate | null>(null);
   const [certToDelete, setCertToDelete] = useState<{ id: number; title: string } | null>(null);
 
-  // Synchronisiere initialen Provider, sobald Daten verfügbar sind
-  useEffect(() => {
-    if (providers.length > 0 && !selectedProviderId) {
-      setSelectedProviderId(String(providers[0].id));
-    }
-  }, [providers, selectedProviderId]);
+  const handleStatusFilterChange = (
+    status: 'all' | 'published' | 'unpublished' | 'incomplete'
+  ) => {
+    setFilterStatus(status);
+    setPage(1);
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!certFile) {
-      onNotify({ type: 'error', text: 'Bitte wähle eine PDF-, PNG- oder JPG-Datei aus.' });
-      return;
-    }
-
-    try {
-      let providerIdToUse = selectedProviderId;
-
-      if (!providerIdToUse && providers.length > 0) {
-        providerIdToUse = String(providers[0].id);
-      }
-
-      if (selectedProviderId === 'new') {
-        if (!newProviderName.trim()) {
-          onNotify({ type: 'error', text: 'Bitte gib einen Namen für den neuen Anbieter ein.' });
-          return;
-        }
-        const newProv = await createProviderMutation.mutateAsync(newProviderName.trim());
-        providerIdToUse = String(newProv.id);
-      }
-
-      if (!providerIdToUse) {
-        onNotify({ type: 'error', text: 'Bitte wähle einen Anbieter aus.' });
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('title', certTitle);
-      formData.append('provider', providerIdToUse);
-      selectedTracks.forEach((trackId) => formData.append('tracks', trackId));
-      formData.append('pdf_file', certFile);
-
-      await createCertMutation.mutateAsync(formData);
-      onNotify({ type: 'success', text: 'Zertifikat erfolgreich hochgeladen!' });
-
-      setCertTitle('');
-      setNewProviderName('');
-      setCertFile(null);
-      setSelectedTracks([]);
-      setSelectedProviderId(providers.length > 0 ? String(providers[0].id) : '');
-    } catch (err: unknown) {
-      let msg = 'Fehler beim Hochladen des Zertifikats.';
-      if (axios.isAxiosError(err)) {
-        msg = err.response?.data?.detail ||
-              err.response?.data?.pdf_file?.[0] ||
-              err.response?.data?.provider?.[0] ||
-              msg;
-      } else if (err instanceof Error) {
-        msg = err.message;
-      }
-      onNotify({ type: 'error', text: msg });
-    }
+  const handleIssuerChange = (issuer: string) => {
+    setSelectedIssuer(issuer);
+    setPage(1);
   };
 
   const handleDeleteConfirm = async () => {
@@ -120,178 +105,227 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
     }
   };
 
-  const filteredCertificates = certificates.filter((c) => {
-    const term = searchTerm.toLowerCase();
-    const providerName = c.provider_details?.provider?.toLowerCase() || '';
-    return c.title.toLowerCase().includes(term) || providerName.includes(term);
-  });
+  const handleTogglePublish = async (cert: Certificate) => {
+    setPendingActionId(cert.id);
+    try {
+      if (cert.is_published) {
+        await unpublishMutation.mutateAsync(cert.id);
+        onNotify({ type: 'success', text: `Zertifikat "${cert.title}" auf Entwurf gesetzt.` });
+      } else {
+        await publishMutation.mutateAsync(cert.id);
+        onNotify({
+          type: 'success',
+          text: `Zertifikat "${cert.title}" erfolgreich veröffentlicht und im S3-Speicher abgelegt!`,
+        });
+      }
+    } catch {
+      onNotify({ type: 'error', text: 'Fehler beim Ändern des Veröffentlichungsstatus.' });
+    } finally {
+      setPendingActionId(null);
+    }
+  };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Upload Certificate Form */}
-      <div className="lg:col-span-1 bg-slate-900/50 border border-slate-800 p-6 rounded-2xl h-fit space-y-4">
-        <div className="flex items-center gap-2 text-white font-bold text-base">
-          <Upload className="w-5 h-5 text-indigo-400" />
-          Neues Zertifikat hochladen
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="w-full space-y-6">
+      {/* Kopfbereich & Filter */}
+      <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <label htmlFor="cert-title" className="block text-xs font-semibold text-slate-400 mb-1">
-              Titel des Zertifikats
-            </label>
-            <input
-              id="cert-title"
-              type="text"
-              required
-              value={certTitle}
-              onChange={(e) => setCertTitle(e.target.value)}
-              placeholder="z. B. Meta Full-Stack Certificate"
-              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            />
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Award className="w-5 h-5 text-violet-400" />
+              Zertifikate verwalten ({totalCount})
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Prüfe und veröffentliche Zertifikate im Review-Drawer mit Dokumentenvorschau & KI-OCR.
+            </p>
           </div>
 
-          <div>
-            <label htmlFor="cert-provider" className="block text-xs font-semibold text-slate-400 mb-1">
-              Zertifikatsanbieter
+          {/* Suchleiste */}
+          <div className="relative w-full md:w-72">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Titel, Aussteller, ID suchen..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Filter-Leiste: Status-Tabs & Aussteller-Dropdown */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
+          {/* Status Filter Tabs */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleStatusFilterChange('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                filterStatus === 'all'
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                  : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              Alle
+            </button>
+            <button
+              type="button"
+              onClick={() => handleStatusFilterChange('published')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                filterStatus === 'published'
+                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                  : 'bg-slate-900 text-emerald-400 hover:text-emerald-300 hover:bg-slate-800'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Veröffentlicht
+            </button>
+            <button
+              type="button"
+              onClick={() => handleStatusFilterChange('unpublished')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                filterStatus === 'unpublished'
+                  ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/30'
+                  : 'bg-slate-900 text-amber-400 hover:text-amber-300 hover:bg-slate-800'
+              }`}
+            >
+              <EyeOff className="w-3.5 h-3.5" />
+              Entwürfe
+            </button>
+            <button
+              type="button"
+              onClick={() => handleStatusFilterChange('incomplete')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                filterStatus === 'incomplete'
+                  ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/30'
+                  : 'bg-slate-900 text-rose-400 hover:text-rose-300 hover:bg-slate-800'
+              }`}
+            >
+              <AlertCircle className="w-3.5 h-3.5" />
+              Unvollständig (Prüfbedarf)
+            </button>
+          </div>
+
+          {/* Aussteller Filter Dropdown */}
+          <div className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+            <label htmlFor="issuer-filter" className="sr-only">
+              Aussteller filtern
             </label>
             <select
-              id="cert-provider"
-              value={selectedProviderId}
-              onChange={(e) => setSelectedProviderId(e.target.value)}
-              disabled={loadingProviders}
-              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50"
+              id="issuer-filter"
+              value={selectedIssuer}
+              onChange={(e) => handleIssuerChange(e.target.value)}
+              disabled={loadingProviders && providers.length === 0}
+              className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer min-w-[200px]"
             >
+              <option value="all">Alle Aussteller</option>
               {providers.map((p) => (
-                <option key={p.id} value={p.id}>
+                <option key={p.id} value={String(p.id)}>
                   {p.provider}
                 </option>
               ))}
-              <option value="new">+ Neuen Anbieter erstellen...</option>
             </select>
-          </div>
-
-          <div>
-            <label htmlFor="cert-tracks" className="block text-xs font-semibold text-slate-400 mb-1">
-              Zugeordnete Tracks (optional)
-            </label>
-            <select
-              id="cert-tracks"
-              multiple
-              value={selectedTracks}
-              onChange={(e) => {
-                const options = Array.from(e.target.selectedOptions, (option) => option.value);
-                setSelectedTracks(options);
-              }}
-              disabled={loadingTracks}
-              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50 min-h-[80px]"
-            >
-              {tracks.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-            <p className="text-[10px] text-slate-500 mt-1">Mit Strg/Cmd mehrere auswählen</p>
-          </div>
-
-          {selectedProviderId === 'new' && (
-            <div className="animate-in fade-in duration-200">
-              <label htmlFor="new-provider-name" className="block text-xs font-semibold text-indigo-400 mb-1">
-                Name des neuen Anbieters
-              </label>
-              <input
-                id="new-provider-name"
-                type="text"
-                required
-                value={newProviderName}
-                onChange={(e) => setNewProviderName(e.target.value)}
-                placeholder="z. B. AWS, Coursera, IBM"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-indigo-500/50 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              />
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="cert-file" className="block text-xs font-semibold text-slate-400 mb-1">
-              Datei (PDF, PNG, JPG ≤ 5 MB)
-            </label>
-            <input
-              id="cert-file"
-              type="file"
-              required
-              accept=".pdf,.png,.jpg,.jpeg"
-              onChange={(e) => setCertFile(e.target.files?.[0] || null)}
-              className="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600/20 file:text-indigo-300 hover:file:bg-indigo-600/30 cursor-pointer"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={createCertMutation.isPending || createProviderMutation.isPending}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {createCertMutation.isPending ? (
-              <>
-                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Wird hochgeladen...</span>
-              </>
-            ) : (
-              <>
-                <Plus className="w-3.5 h-3.5" />
-                <span>Zertifikat hochladen</span>
-              </>
-            )}
-          </button>
-        </form>
-      </div>
-
-      {/* Existing Certificates List */}
-      <div className="lg:col-span-2 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Award className="w-4 h-4 text-violet-400" />
-            Vorhandene Zertifikate ({certificates.length})
-          </h2>
-
-          <div className="relative w-full sm:w-60">
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Suchen..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-            />
           </div>
         </div>
+      </div>
 
-        {loadingCerts ? (
-          <div className="p-8 text-center text-slate-500 text-xs">Lade Zertifikate...</div>
-        ) : filteredCertificates.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-slate-900/30 border border-slate-800 text-center text-slate-500 text-xs">
-            {searchTerm ? 'Keine Zertifikate für diesen Suchbegriff gefunden.' : 'Noch keine Zertifikate vorhanden.'}
+      {/* Zertifikatsliste */}
+      <div className="space-y-3">
+        {loadingCerts && !isPlaceholderData ? (
+          <div className="p-12 text-center text-slate-500 text-xs flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+            <span>Lade Zertifikate...</span>
+          </div>
+        ) : certificates.length === 0 ? (
+          <div className="p-12 rounded-2xl bg-slate-900/30 border border-slate-800 text-center text-slate-500 text-xs space-y-2">
+            <Award className="w-8 h-8 mx-auto text-slate-600 mb-2" />
+            <p className="font-semibold text-slate-400">Keine Zertifikate gefunden</p>
+            <p className="text-[11px]">
+              {searchInput || selectedIssuer !== 'all' || filterStatus !== 'all'
+                ? 'Versuche die Filter oder den Suchbegriff zurückzusetzen.'
+                : 'Es sind aktuell keine Zertifikate vorhanden.'}
+            </p>
           </div>
         ) : (
-          <div className="space-y-3 max-h-[650px] overflow-y-auto pr-1">
-            {filteredCertificates.map((cert) => {
+          <div className="space-y-3">
+            {certificates.map((cert) => {
               const providerName = cert.provider_details?.provider || 'Anbieter';
+              const isActionPending = pendingActionId === cert.id;
+              const isIncomplete = !cert.issued_date || cert.title.startsWith('cert_') || cert.title.includes('certificate');
+
               return (
                 <div
                   key={cert.id}
-                  className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 flex items-center justify-between gap-4 hover:border-slate-700 transition-colors"
+                  onClick={() => setCertToEdit(cert)}
+                  className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-700 transition-colors cursor-pointer group"
                 >
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-md border border-violet-500/20">
-                      {providerName}
-                    </span>
-                    <h3 className="font-bold text-white text-sm mt-1">{cert.title}</h3>
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-md border border-violet-500/20">
+                        {providerName}
+                      </span>
+                      {cert.is_published ? (
+                        <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Veröffentlicht (S3)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 flex items-center gap-1">
+                          <EyeOff className="w-3 h-3" /> Entwurf
+                        </span>
+                      )}
+                      {isIncomplete && (
+                        <span className="text-[10px] font-semibold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> Unvollständig
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-bold text-white text-sm mt-1 truncate group-hover:text-indigo-300 transition-colors" title={cert.title}>
+                      {cert.title}
+                    </h3>
                     <p className="text-[11px] text-slate-500">
-                      Hochgeladen am {new Date(cert.uploaded_at).toLocaleDateString('de-DE')}
+                      {cert.issued_date
+                        ? `Ausgestellt am ${new Date(cert.issued_date).toLocaleDateString('de-DE')}`
+                        : `Erfasst am ${new Date(cert.uploaded_at).toLocaleDateString('de-DE')}`}
+                      {cert.credential_id && ` · ID: ${cert.credential_id}`}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div
+                    className="flex items-center gap-2 shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Veröffentlichen / Zurückziehen Button */}
+                    <button
+                      type="button"
+                      disabled={isActionPending}
+                      onClick={() => handleTogglePublish(cert)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 ${
+                        cert.is_published
+                          ? 'bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300'
+                          : 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30'
+                      }`}
+                      title={
+                        cert.is_published
+                          ? 'Auf Entwurf zurücksetzen'
+                          : 'Veröffentlichen (in S3 ablegen)'
+                      }
+                    >
+                      {isActionPending ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : cert.is_published ? (
+                        <>
+                          <EyeOff className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Entwurf</span>
+                        </>
+                      ) : (
+                        <>
+                          <Globe className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Veröffentlichen</span>
+                        </>
+                      )}
+                    </button>
+
                     {cert.pdf_file && (
                       <a
                         href={cert.pdf_file}
@@ -304,6 +338,27 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
+                    {cert.credential_url && (
+                      <a
+                        href={cert.credential_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 text-emerald-400 hover:text-emerald-300 rounded-lg hover:bg-slate-800 transition-colors"
+                        title={`Online-Verifizierung öffnen (${cert.credential_url})`}
+                        aria-label={`Online-Verifizierung für ${cert.title} öffnen`}
+                      >
+                        <Globe className="w-4 h-4" />
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setCertToEdit(cert)}
+                      className="p-2 text-slate-400 hover:text-indigo-300 transition-colors rounded-lg hover:bg-slate-800"
+                      title="Review-Modal öffnen"
+                      aria-label={`Zertifikat ${cert.title} überprüfen`}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => setCertToDelete({ id: cert.id, title: cert.title })}
@@ -321,6 +376,41 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
         )}
       </div>
 
+      {/* Paginierungs-Footer */}
+      {totalCount > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-xs text-slate-400">
+          <div>
+            Zeige <span className="text-white font-semibold">{Math.min((page - 1) * pageSize + 1, totalCount)}</span> bis{' '}
+            <span className="text-white font-semibold">{Math.min(page * pageSize, totalCount)}</span> von{' '}
+            <span className="text-white font-semibold">{totalCount}</span> Zertifikaten
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1 || loadingCerts}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Vorherige
+            </button>
+            <span className="px-2 text-slate-300 font-medium">
+              Seite {page} von {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= totalPages || loadingCerts}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+            >
+              Nächste
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Confirmation Modal */}
       <ConfirmModal
         isOpen={!!certToDelete}
@@ -329,6 +419,14 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
         confirmText="Löschen"
         onConfirm={handleDeleteConfirm}
         onCancel={() => setCertToDelete(null)}
+      />
+
+      {/* Review & Edit Modal */}
+      <CertificateEditModal
+        key={certToEdit?.id ?? 'none'}
+        certificate={certToEdit}
+        onClose={() => setCertToEdit(null)}
+        onNotify={onNotify}
       />
     </div>
   );

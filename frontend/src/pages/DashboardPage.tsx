@@ -14,10 +14,14 @@ export const DashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'certificates' | 'projects' | 'inbox'>('certificates');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const { data: certificates = [] } = useCertificates();
-  const { data: projects = [] } = useProjects();
-  const { data: pendingList = [] } = usePendingCertificates();
+  const { data: rawCertificates = [] } = useCertificates();
+  const certificates = Array.isArray(rawCertificates) ? rawCertificates : [];
+  const { data: rawProjects = [] } = useProjects();
+  const projects = Array.isArray(rawProjects) ? rawProjects : [];
+  const { data: rawPendingList = [] } = usePendingCertificates();
+  const pendingList = Array.isArray(rawPendingList) ? rawPendingList : [];
   const pendingCount = pendingList.filter((p) => p.status === 'pending').length;
+
 
   // Redirect if not logged in
   useEffect(() => {

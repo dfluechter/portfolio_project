@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { portfolioService } from '../services/portfolioService';
+import type { Certificate } from '../types';
 
 export const portfolioKeys = {
   all: ['portfolio'] as const,
@@ -40,9 +41,39 @@ export const useProjects = () => {
 
 export const useCertificates = () => {
   return useQuery({
-    queryKey: portfolioKeys.certificates(),
-    queryFn: portfolioService.getCertificates,
+    queryKey: [...portfolioKeys.certificates(), 'all'] as const,
+    queryFn: () => portfolioService.getCertificates(),
     staleTime: 1000 * 60 * 5,
+  });
+};
+
+// Öffentliche Startseite: ausschließlich veröffentlichte Zertifikate –
+// auch wenn im Browser ein Admin-Token vorhanden ist.
+export const usePublishedCertificates = () => {
+  return useQuery({
+    queryKey: [...portfolioKeys.certificates(), 'published'] as const,
+    queryFn: async () => {
+      const certs = await portfolioService.getCertificates({ is_published: true });
+      return certs.filter((c) => c.is_published);
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+export const useCertificatesPaginated = (params?: {
+  page?: number;
+  page_size?: number;
+  is_published?: boolean;
+  incomplete?: boolean;
+  track?: string | number;
+  provider?: string | number;
+  search?: string;
+}) => {
+  return useQuery({
+    queryKey: [...portfolioKeys.certificates(), 'paginated', params] as const,
+    queryFn: () => portfolioService.getCertificatesPaginated(params),
+    placeholderData: (previousData) => previousData,
+    staleTime: 1000 * 60 * 2,
   });
 };
 
@@ -111,6 +142,45 @@ export const useDeleteCertificate = () => {
     },
   });
 };
+
+export const useUpdateCertificate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<Certificate> }) =>
+      portfolioService.updateCertificate(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.certificates() });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.tracks() });
+    },
+  });
+};
+
+export const usePublishCertificate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => portfolioService.publishCertificate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.certificates() });
+    },
+  });
+};
+
+export const useUnpublishCertificate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => portfolioService.unpublishCertificate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.certificates() });
+    },
+  });
+};
+
+export const useExtractCertificateMetadata = () => {
+  return useMutation({
+    mutationFn: (id: number) => portfolioService.extractCertificateMetadata(id),
+  });
+};
+
 
 export const useApprovePendingCertificate = () => {
   const queryClient = useQueryClient();

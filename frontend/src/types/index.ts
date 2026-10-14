@@ -45,6 +45,8 @@ export interface Project {
   skill_details?: Skill[];
   github_url?: string | null;
   live_url?: string | null;
+  is_published?: boolean;
+  is_featured?: boolean;
   created_at: string;
 }
 
@@ -74,6 +76,22 @@ export interface Certificate {
   uploaded_at: string;
   sha256_hash?: string;
   is_published?: boolean;
+  credential_id?: string;
+  credential_url?: string | null;
+  issued_date?: string | null;
+}
+
+export interface ExtractedCertificateMetadata {
+  guessed_title: string;
+  guessed_provider: string;
+  matched_provider?: { id: number; provider: string } | null;
+  credential_id: string;
+  issued_date: string;
+  guessed_track_slugs: string[];
+  matched_track_ids: number[];
+  extracted_text_preview: string;
+  ocr_pending: boolean;
+  source_type: string;
 }
 
 export type PendingCertificateStatus = 'pending' | 'approved' | 'rejected';
@@ -103,3 +121,13 @@ export interface CertificateImportRun {
   log?: string;
   inbox_path: string;
 }
+
+export interface PaginatedResponse<T> {
+  count: number;
+  total_pages: number;
+  current_page: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+

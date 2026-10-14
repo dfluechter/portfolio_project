@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCertificates, useProjects, useSkills, useTimeline } from '../hooks/usePortfolio';
+import { usePublishedCertificates, useProjects, useSkills, useTimeline } from '../hooks/usePortfolio';
 import { usePortfolioSearch } from '../hooks/usePortfolioSearch';
 
 interface SearchResultItem {
@@ -33,8 +33,9 @@ export const HeroSearch: React.FC = () => {
 
   const { data: projects = [] } = useProjects();
   const { data: skills = [] } = useSkills();
-  const { data: certificates = [] } = useCertificates();
+  const { data: certificates = [] } = usePublishedCertificates();
   const { data: timeline = [] } = useTimeline();
+
 
   // Gefilterte Ergebnisse über alle Datensätze hinweg (priorisiert deferred query)
   const results = useMemo(() => {
