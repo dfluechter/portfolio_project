@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  CloudUpload,
   ExternalLink,
   EyeOff,
   Globe,
@@ -23,6 +24,7 @@ import {
 } from '../../hooks/usePortfolio';
 import { ConfirmModal } from './ConfirmModal';
 import { CertificateEditModal } from './CertificateEditModal';
+import { UploadCertificateModal } from './UploadCertificateModal';
 import type { Certificate } from '../../types';
 
 interface CertificateManagerProps {
@@ -80,6 +82,7 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
   const [pendingActionId, setPendingActionId] = useState<number | null>(null);
   const [certToEdit, setCertToEdit] = useState<Certificate | null>(null);
   const [certToDelete, setCertToDelete] = useState<{ id: number; title: string } | null>(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   const handleStatusFilterChange = (
     status: 'all' | 'published' | 'unpublished' | 'incomplete'
@@ -140,16 +143,28 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
             </p>
           </div>
 
-          {/* Suchleiste */}
-          <div className="relative w-full md:w-72">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Titel, Aussteller, ID suchen..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
-            />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            {/* Suchleiste */}
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Titel, Aussteller, ID suchen..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+
+            {/* Direct-to-Storage Upload Button */}
+            <button
+              type="button"
+              onClick={() => setIsUploadModalOpen(true)}
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm shadow-indigo-600/30 shrink-0"
+            >
+              <CloudUpload className="w-4 h-4" />
+              <span>Zertifikat hochladen</span>
+            </button>
           </div>
         </div>
 
@@ -426,6 +441,13 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
         key={certToEdit?.id ?? 'none'}
         certificate={certToEdit}
         onClose={() => setCertToEdit(null)}
+        onNotify={onNotify}
+      />
+
+      {/* Direct-to-Storage Upload Modal */}
+      <UploadCertificateModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
         onNotify={onNotify}
       />
     </div>

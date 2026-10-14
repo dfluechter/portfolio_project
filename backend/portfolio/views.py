@@ -1,15 +1,12 @@
 import hashlib
-import json
 import logging
 import tempfile
 from pathlib import Path
 
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
 from django.db.models import Prefetch, ProtectedError, Q
-from django.http import HttpResponseNotAllowed, JsonResponse
-from django.shortcuts import redirect, render
-from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from django.shortcuts import redirect
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
@@ -46,59 +43,33 @@ from .services.promotion import (
     promote_pending_certificate,
     reject_pending_certificate,
 )
-from .services.storage import ensure_certificate_in_storage
+from .services.storage import (
+    ensure_certificate_in_storage,
+    generate_presigned_upload,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def login_view(request):
-    if request.method not in ["GET", "POST"]:
-        return HttpResponseNotAllowed(["GET", "POST"])
-
-    # Falls der User bereits angemeldet ist, leiten wir direkt auf das Dashboard weiter
-    if request.user.is_authenticated:
-        return redirect("/dashboard/")
-
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            email = data.get("email")
-            password = data.get("password")
-        except json.JSONDecodeError:
-            return JsonResponse({"detail": "Ungültiges JSON-Format."}, status=400)
-
-        if not email or not password:
-            return JsonResponse(
-                {"detail": "E-Mail und Passwort müssen ausgefüllt sein."}, status=400
-            )
-
-        user = authenticate(request, username=email, password=password)
-        if user is not None:
-            login(request, user)
-            return JsonResponse({"success": True})
-        else:
-            return JsonResponse(
-                {"detail": "E-Mail-Adresse oder Passwort ungültig."}, status=400
-            )
-
-    return render(request, "login.html")
-
-
-@login_required(login_url="/")
-def dashboard_view(request):
+def api_root_view(request):
     """
-    Rendert die Portfolio-Verwaltungsseite (Dashboard).
+    Einstiegspunkt für das Headless-Backend:
+    Leitet Browser auf Swagger-UI weiter oder liefert JSON-Metadaten.
     """
-    return render(request, "dashboard.html")
+    accept_header = request.headers.get("Accept", "")
+    if "text/html" in accept_header:
+        return redirect("/api/docs/")
 
-
-@require_POST
-def logout_view(request):
-    """
-    Meldet den Benutzer ab und leitet auf die Login-Seite weiter.
-    """
-    logout(request)
-    return redirect("/")
+    return JsonResponse(
+        {
+            "name": "Portfolio API",
+            "version": "1.0.0",
+            "status": "online",
+            "docs_url": "/api/docs/",
+            "schema_url": "/api/schema/",
+            "health_url": "/health_check",
+        }
+    )
 
 
 def health_check_view(request):
@@ -210,19 +181,40 @@ class CertificateViewSet(viewsets.ModelViewSet):
         return qs.distinct()
 
     def perform_create(self, serializer):
-        """Berechnet SHA-256 aus der hochgeladenen Datei vor dem Speichern und erzwingt Entwurfsstatus."""
+        """Berechnet SHA-256 aus der hochgeladenen Datei oder übernimmt den Storage-Key bei Direct-S3-Uploads."""
         pdf_file = self.request.FILES.get("pdf_file")
+        storage_key = self.request.data.get("storage_key")
+
         if pdf_file:
             sha256 = hashlib.sha256()
             for chunk in pdf_file.chunks():
                 sha256.update(chunk)
             pdf_file.seek(0)  # Datei-Cursor zurücksetzen für Storage
-            serializer.save(sha256_hash=sha256.hexdigest(), is_published=False)
+            serializer.save(
+                sha256_hash=sha256.hexdigest(),
+                storage_key=storage_key or "",
+                is_published=False,
+            )
+        elif storage_key:
+            client_hash = self.request.data.get("sha256_hash")
+            sha256_val = client_hash or hashlib.sha256(storage_key.encode()).hexdigest()
+            serializer.save(
+                pdf_file=storage_key,
+                storage_key=storage_key,
+                sha256_hash=sha256_val,
+                is_published=False,
+            )
         else:
             serializer.save(is_published=False)
 
     def perform_update(self, serializer):
-        """Erlaubt autorisierten Nutzern das Ändern des Veröffentlichungsstatus bei Updates."""
+        """Erlaubt autorisierten Nutzern das Ändern des Veröffentlichungsstatus und der Datei bei Updates."""
+        update_kwargs = {}
+        storage_key = self.request.data.get("storage_key")
+        if storage_key and not self.request.FILES.get("pdf_file"):
+            update_kwargs["pdf_file"] = storage_key
+            update_kwargs["storage_key"] = storage_key
+
         if "is_published" in self.request.data:
             is_pub = self.request.data.get("is_published")
             if isinstance(is_pub, str):
@@ -231,9 +223,65 @@ class CertificateViewSet(viewsets.ModelViewSet):
             instance = serializer.instance
             if is_pub_bool and (instance is None or not instance.is_published):
                 ensure_certificate_in_storage(instance or serializer.instance)
-            serializer.save(is_published=is_pub_bool)
-        else:
-            serializer.save()
+            update_kwargs["is_published"] = is_pub_bool
+
+        serializer.save(**update_kwargs)
+
+    @extend_schema(
+        summary="Erzeugt eine signierte S3-Upload-URL für den direkten Upload zu Supabase S3",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string", "example": "mein-zertifikat.pdf"},
+                    "content_type": {"type": "string", "example": "application/pdf"},
+                },
+                "required": ["filename"],
+            }
+        },
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string"},
+                    "storage_key": {"type": "string"},
+                    "method": {"type": "string", "example": "PUT"},
+                    "headers": {"type": "object"},
+                },
+            },
+            400: {"type": "object", "properties": {"detail": {"type": "string"}}},
+        },
+    )
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[IsAuthenticated],
+        url_path="presigned_upload",
+    )
+    def presigned_upload(self, request):
+        """Erzeugt eine signierte S3-Upload-URL für Direct-to-Storage Uploads zu Supabase S3."""
+        filename = request.data.get("filename")
+        if not filename or not isinstance(filename, str):
+            return Response(
+                {"detail": "Der Parameter 'filename' ist erforderlich."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        content_type = request.data.get("content_type")
+        try:
+            data = generate_presigned_upload(filename, content_type)
+            return Response(data, status=status.HTTP_200_OK)
+        except ValueError as err:
+            return Response(
+                {"detail": str(err)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Fehler bei der Generierung der Presigned-Upload-URL: %s", exc)
+            return Response(
+                {"detail": "S3-Presigned-URL konnte nicht erzeugt werden."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def publish(self, request, pk=None):

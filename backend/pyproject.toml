@@ -23,6 +23,7 @@ dependencies = [
     "gunicorn>=26.1.0",
     "pypdf>=6.19.0",
     "pytesseract>=0.3.13",
+    "google-genai",
 ]
 
 # Konfiguration für Mypy (löst deine Fehler-Meldungen)

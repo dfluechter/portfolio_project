@@ -3,7 +3,7 @@
 ## Wichtige Schutzregeln
 
 ### 1. Strikt geschützter Quellordner für Zertifikate
-- **Pfad:** `C:\Users\domin\OneDrive\Documents\Zertifikate (Beruf)` (sowie `CERTIFICATES_PATH` in `.env`)
+- **Pfad:** `CERTIFICATES_PATH` in `.env`
 - **Regel:** Dieser Ordner ist **STRIKT READ-ONLY**.
 - **Verbotene Aktionen:**
   - Niemals Dateien ändern, überschreiben, umbenennen oder verschieben.

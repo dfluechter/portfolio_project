@@ -8,6 +8,8 @@ from .models import (
     Skill,
     TimelineEntry,
     Track,
+    validate_file_extension,
+    validate_file_size,
 )
 
 
@@ -41,6 +43,12 @@ class CertificateSerializer(serializers.ModelSerializer):
     tracks = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Track.objects.all(), required=False
     )
+    pdf_file = serializers.FileField(
+        required=False,
+        allow_null=True,
+        validators=[validate_file_extension, validate_file_size],
+    )
+    storage_key = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Certificate
@@ -51,6 +59,7 @@ class CertificateSerializer(serializers.ModelSerializer):
             "provider_details",
             "tracks",
             "pdf_file",
+            "storage_key",
             "uploaded_at",
             "sha256_hash",
             "is_published",
@@ -59,6 +68,23 @@ class CertificateSerializer(serializers.ModelSerializer):
             "issued_date",
         )
         read_only_fields = ("sha256_hash", "is_published", "uploaded_at")
+
+    def validate(self, attrs):
+        pdf_file = attrs.get("pdf_file") or (
+            getattr(self.instance, "pdf_file", None) if self.instance else None
+        )
+        storage_key = attrs.get("storage_key") or (
+            getattr(self.instance, "storage_key", None) if self.instance else None
+        )
+        if not pdf_file and not storage_key:
+            raise serializers.ValidationError(
+                {
+                    "pdf_file": (
+                        "Entweder pdf_file oder storage_key muss angegeben werden."
+                    )
+                }
+            )
+        return attrs
 
 
 class ProjectSerializer(serializers.ModelSerializer):

@@ -1,7 +1,12 @@
 import logging
 import os
+import uuid
 from pathlib import Path
+from typing import Any
 
+import boto3
+from botocore.config import Config
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.utils.text import slugify
@@ -137,3 +142,74 @@ def ensure_certificate_in_storage(cert: Certificate) -> bool:
             exc,
         )
         raise
+
+
+def get_s3_client():
+    """Erzeugt einen boto3 S3-Client mit den konfigurierten Supabase-S3-Parametern."""
+    endpoint_url = os.getenv("AWS_S3_ENDPOINT_URL")
+    access_key = os.getenv("AWS_ACCESS_KEY_ID")
+    secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+    region_name = os.getenv("AWS_S3_REGION_NAME", "eu-central-1")
+
+    return boto3.client(
+        "s3",
+        endpoint_url=endpoint_url,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        region_name=region_name,
+        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+    )
+
+
+def generate_presigned_upload(
+    filename: str, content_type: str | None = None
+) -> dict[str, Any]:
+    """Erzeugt eine signierte S3-Upload-URL (PUT) für Direct-to-Storage-Uploads.
+
+    Validiert die Dateiendung und erzeugt einen sicheren storage_key im Upload-Verzeichnis.
+    Im lokalen/Test-Modus (ohne konfiguriertes Supabase S3) wird eine lokalisierte Mock-URL geliefert.
+    """
+    ext = Path(filename).suffix.lower()
+    if ext not in CONTENT_TYPES:
+        allowed = ", ".join(CONTENT_TYPES.keys())
+        raise ValueError(
+            f"Nicht unterstützter Dateityp '{ext}'. Erlaubte Dateitypen: {allowed}."
+        )
+
+    clean_stem = slugify(Path(filename).stem) or "cert"
+    storage_key = f"certificates/uploads/{uuid.uuid4().hex[:12]}_{clean_stem}{ext}"
+    final_content_type = content_type or CONTENT_TYPES[ext]
+    bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "portfolio-media")
+
+    use_s3 = getattr(settings, "USE_SUPABASE_S3", False) or bool(
+        os.getenv("AWS_S3_ENDPOINT_URL")
+    )
+
+    if use_s3:
+        try:
+            s3_client = get_s3_client()
+            url = s3_client.generate_presigned_url(
+                ClientMethod="put_object",
+                Params={
+                    "Bucket": bucket_name,
+                    "Key": storage_key,
+                    "ContentType": final_content_type,
+                },
+                ExpiresIn=3600,
+            )
+        except Exception as exc:
+            logger.error("Fehler beim Erzeugen der Presigned S3-URL: %s", exc)
+            raise
+    else:
+        # Lokaler Fallback / Testumgebung
+        url = f"http://localhost:8000/media/{storage_key}"
+
+    return {
+        "url": url,
+        "storage_key": storage_key,
+        "method": "PUT",
+        "headers": {
+            "Content-Type": final_content_type,
+        },
+    }
+

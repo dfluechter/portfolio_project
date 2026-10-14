@@ -116,16 +116,33 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 
 # -----------------------------------------------------------------------------
-# Database: lokal SQLite, Production Neon via DATABASE_URL
+# Database: lokal SQLite, Production Neon (Pooled vs. Direct Connection)
 # -----------------------------------------------------------------------------
+# Neon empfiehlt für Web-Requests (Gunicorn) die gepoolte Verbindung (DATABASE_URL mit -pooler),
+# für DDL-Migrationen (migrate, makemigrations) jedoch die direkte Verbindung (DIRECT_DATABASE_URL),
+# da PgBouncer vorbereitete Statements und exklusive Transaktionssperren blockieren kann.
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+DIRECT_DATABASE_URL = os.getenv("DIRECT_DATABASE_URL")
 
-if DATABASE_URL:
+# Prüfen, ob aktuell ein Migrationsbefehl ausgeführt wird
+IS_MIGRATION_COMMAND = any(
+    cmd in sys.argv
+    for cmd in ["migrate", "makemigrations", "showmigrations", "sqlmigrate"]
+) or os.getenv("RUNNING_MIGRATION") == "1"
+
+# Bei Migrationen DIRECT_DATABASE_URL priorisieren, falls konfiguriert
+EFFECTIVE_DB_URL = (
+    DIRECT_DATABASE_URL
+    if (IS_MIGRATION_COMMAND and DIRECT_DATABASE_URL)
+    else (DATABASE_URL or DIRECT_DATABASE_URL)
+)
+
+if EFFECTIVE_DB_URL:
     DATABASES = {
-        "default": dj_database_url.config(
-            default="sqlite:///db.sqlite3",  # Fallback, falls DATABASE_URL leer ist
-            conn_max_age=600,
+        "default": dj_database_url.parse(
+            EFFECTIVE_DB_URL,
+            conn_max_age=0 if IS_MIGRATION_COMMAND else 600,
             conn_health_checks=True,
             ssl_require=True,
         )
@@ -134,7 +151,7 @@ else:
     DATABASES = {
         "default": dj_database_url.config(
             default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-            conn_max_age=600,
+            conn_max_age=0 if IS_MIGRATION_COMMAND else 600,
             conn_health_checks=True,
         )
     }

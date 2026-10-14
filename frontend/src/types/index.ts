@@ -73,12 +73,31 @@ export interface Certificate {
   provider_details?: Provider;
   tracks?: number[];
   pdf_file: string;
+  storage_key?: string;
   uploaded_at: string;
   sha256_hash?: string;
   is_published?: boolean;
   credential_id?: string;
   credential_url?: string | null;
   issued_date?: string | null;
+}
+
+export interface PresignedUploadResponse {
+  url: string;
+  storage_key: string;
+  method: string;
+  headers?: Record<string, string>;
+}
+
+export interface CreateCertificatePayload {
+  title: string;
+  provider: number;
+  storage_key: string;
+  tracks?: number[];
+  issued_date?: string | null;
+  credential_id?: string;
+  credential_url?: string | null;
+  sha256_hash?: string;
 }
 
 export interface ExtractedCertificateMetadata {

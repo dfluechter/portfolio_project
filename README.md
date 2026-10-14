@@ -91,9 +91,9 @@ npm run dev
 ```
 
 * **React Frontend**: http://localhost:3000/
-* **Django Backend / API**: http://localhost:8000/
-* **Django Admin / Dashboard**: http://localhost:8000/dashboard/
-* **API Swagger Docs**: http://localhost:8000/api/docs/
+* **React Admin Dashboard**: http://localhost:3000/dashboard
+* **Django Backend API-Docs**: http://localhost:8000/api/docs/
+* **Backend Root & Status**: http://localhost:8000/
 
 ## 🔒 Auth- & Sicherheitskonfiguration
 
@@ -126,7 +126,7 @@ npm run test                         # Vitest
 
 Sowohl Backend als auch Frontend werden kontinuierlich via GitHub Actions getestet (Linting, Type Checks, Pytest/Vitest).
 
-* **Backend Coverage:** **> 99%** (Djoser Auth, JWT, DRF ViewSets, Models, Permissions & Datenbank-Protections)
+* **Backend Coverage:** **$\ge$ 95%** (getestet mit 212 Pytest-Tests: Djoser Auth, JWT, DRF ViewSets, Models, Permissions & Presigned Uploads)
 * **Frontend Tests:** Vitest & React Testing Library (Komponenten, Routing, Modal-A11y, API-Client Interceptors)
 
 ## 📁 Projektstruktur
@@ -134,26 +134,30 @@ Sowohl Backend als auch Frontend werden kontinuierlich via GitHub Actions getest
 ```
 portfolio_project/
 ├── .github/workflows/       # CI-Pipelines für Frontend & Backend (Neon Branch Testing)
-├── backend/                 # Django 5.2 Backend & API
+├── backend/                 # Django 5.2 Headless REST API
 │   ├── core/                # Django Projekt-Konfiguration (Settings, URLs, WSGI)
 │   ├── portfolio/           # Portfolio Django-App (Models, Serializers, Views, Tests)
-│   ├── templates/           # Server-rendered Templates (Dashboard, Login)
 │   ├── build.sh             # Render Build-Hook (uv sync, collectstatic, migrate)
 │   ├── manage.py            # Django Management CLI
 │   ├── pyproject.toml       # Python Abhängigkeiten & Tools (uv, ruff, mypy, pytest)
 │   └── pytest.ini           # Pytest Konfiguration
-├── frontend/                # React 19 SPA (Vite + TypeScript + Tailwind CSS v4)
+├── frontend/                # React 19 SPA (Vite 8 + TypeScript + Tailwind CSS v4)
 │   ├── src/
 │   │   ├── components/      # UI-Komponenten, Modale, ErrorBoundary & Dashboard
-│   │   ├── context/         # React Context (AuthContext mit JWT Sync)
+│   │   ├── context/         # React Context (AuthContext mit JWT Sync, ThemeContext)
 │   │   ├── hooks/           # Custom Hooks (usePortfolio mit TanStack Query)
-│   │   ├── pages/           # Pages (Home, Login, Dashboard)
-│   │   └── App.tsx          # React Router Setup
+│   │   ├── pages/           # Pages (PortfolioPage, LoginPage, DashboardPage via React.lazy)
+│   │   ├── services/        # API- und S3-Storage-Services (portfolioService)
+│   │   └── App.tsx          # React Router Setup mit ColdStartBanner & Suspense
 │   ├── package.json         # Node Abhängigkeiten & Scripts
-│   └── vite.config.ts       # Vite & Vitest Konfiguration
+│   └── vite.config.ts       # Vite, Vitest & Rollup Chunking Konfiguration
 ├── docs/                    # Technische Dokumentation & ADRs
-│   ├── adrs/                # Architectural Decision Records (ADR-001 bis ADR-004)
-│   └── architecture.md      # Gesamtsystem- und Architektur-Dokumentation
+│   ├── adrs/                # Architectural Decision Records (ADR-001 bis ADR-006)
+│   ├── architecture.md      # Gesamtsystem- und Architektur-Dokumentation
+│   ├── deployment.md        # Deployment-Leitfaden, Neon Connections & Render Config
+│   ├── frontend.md          # Frontend-Architektur, State & Testing
+│   ├── glossary.md          # Fachglossar und Terminologie
+│   └── backlog.md           # Agiles Product Backlog & Stories
 ├── build.sh                 # Root Fallback-Build-Hook (delegiert an backend/build.sh)
-└── render.yaml              # Render Deployment-Konfiguration
+└── render.yaml              # Render Deployment-Konfiguration (Web Service + Static Site)
 ```

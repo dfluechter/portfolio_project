@@ -236,7 +236,9 @@ class TestUploadSecurity:
     def test_path_traversal_filename_stays_inside_certificate_dir(
         self, auth_client, provider
     ):
-        upload = SimpleUploadedFile("../../evil.pdf", b"content", "application/pdf")
+        upload = SimpleUploadedFile(
+            "../../evil.pdf", b"%PDF-1.4 valid pdf content", "application/pdf"
+        )
         response = self._upload(auth_client, provider, upload)
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -246,7 +248,9 @@ class TestUploadSecurity:
         assert stored.startswith("certificates/security-provider/")
 
     def test_client_cannot_set_hash_or_publish_flag(self, auth_client, provider):
-        upload = SimpleUploadedFile("ok.pdf", b"content", "application/pdf")
+        upload = SimpleUploadedFile(
+            "ok.pdf", b"%PDF-1.4 valid pdf content", "application/pdf"
+        )
         response = auth_client.post(
             reverse("certificate-list"),
             {
@@ -290,11 +294,14 @@ class TestInjectionHandling:
 
     def test_sql_injection_in_login_is_rejected(self, client):
         response = client.post(
-            reverse("login"),
+            "/api/auth/jwt/create/",
             {"email": "' OR '1'='1", "password": "' OR '1'='1"},
             content_type="application/json",
         )
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code in [
+            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_401_UNAUTHORIZED,
+        ]
 
     def test_api_response_is_json_not_html(self, auth_client):
         auth_client.post(
@@ -307,11 +314,7 @@ class TestInjectionHandling:
 
 
 @pytest.mark.django_db
-class TestSessionViews:
-    def test_dashboard_redirects_anonymous_to_login(self, client):
-        response = client.get(reverse("dashboard"))
-        assert response.status_code == status.HTTP_302_FOUND
-        assert response.url.startswith("/")
-
-    def test_logout_requires_post(self, client):
-        assert client.get(reverse("logout")).status_code == 405
+class TestHeadlessRootSecurity:
+    def test_api_root_accessible_publicly(self, client):
+        response = client.get(reverse("backend-root"))
+        assert response.status_code in [status.HTTP_200_OK, status.HTTP_302_FOUND]

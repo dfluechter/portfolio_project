@@ -226,7 +226,7 @@ class TestCertificateAPI:
         url = reverse("certificate-list")
         dummy_file = SimpleUploadedFile(
             name="cert.pdf",
-            content=b"Sample PDF Certificate Binary Content",
+            content=b"%PDF-1.4 Sample PDF Certificate Binary Content",
             content_type="application/pdf",
         )
         payload = {

@@ -1,7 +1,11 @@
+---
+trigger: always_on
+---
+
 # Schutzregel: Zertifikate-Ordner (Read-Only)
 
 ## Pfadvorgabe & Geltungsbereich
-- **Pfad:** `C:\Users\domin\OneDrive\Documents\Zertifikate (Beruf)` (bzw. die Umgebungsvariable `CERTIFICATES_PATH`)
+- **Pfad:** die Umgebungsvariable `CERTIFICATES_PATH`
 - **Status:** **STRIKT SCHREIBGESCHÜTZT (READ-ONLY)**
 
 ## Zwingende Sicherheitsregeln für alle Agenten, Sub-Agenten und Skripte:

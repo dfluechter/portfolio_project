@@ -172,14 +172,39 @@ class TestTrackSerializerVisibility:
 
 
 class TestFileValidators:
-    @pytest.mark.parametrize("name", ["a.pdf", "a.PNG", "a.jpg", "a.jpeg"])
-    def test_accepts_allowed_extensions(self, name):
-        validate_file_extension(SimpleUploadedFile(name, b"x"))
+    @pytest.mark.parametrize(
+        ("name", "content"),
+        [
+            ("a.pdf", b"%PDF-1.4 header and content"),
+            ("a.PNG", b"\x89PNG\r\n\x1a\nimage content"),
+            ("a.jpg", b"\xff\xd8\xff\xe0jpeg image"),
+            ("a.jpeg", b"\xff\xd8\xff\xe1jpeg image"),
+        ],
+    )
+    def test_accepts_allowed_extensions_with_valid_magic_bytes(self, name, content):
+        validate_file_extension(SimpleUploadedFile(name, content))
 
     @pytest.mark.parametrize("name", ["a.txt", "a.exe", "a", "a.pdf.php"])
     def test_rejects_other_extensions(self, name):
-        with pytest.raises(ValidationError):
-            validate_file_extension(SimpleUploadedFile(name, b"x"))
+        with pytest.raises(ValidationError, match="Ungültiges Format"):
+            validate_file_extension(SimpleUploadedFile(name, b"%PDF-1.4"))
+
+    @pytest.mark.parametrize(
+        ("name", "content"),
+        [
+            ("fake.pdf", b"MZ\x90\x00executable content"),
+            ("script.pdf", b"#!/usr/bin/env bash\necho hacked"),
+            ("fake.png", b"%PDF-1.4 disguised as png"),
+            ("fake.jpg", b"\x89PNG disguised as jpg"),
+        ],
+    )
+    def test_rejects_mime_spoofing_attempts(self, name, content):
+        with pytest.raises(ValidationError, match="MIME-Type-Spoofing"):
+            validate_file_extension(SimpleUploadedFile(name, content))
+
+    def test_rejects_empty_uploaded_files(self):
+        with pytest.raises(ValidationError, match="Datei ist leer"):
+            validate_file_extension(SimpleUploadedFile("empty.pdf", b""))
 
     def test_size_limit_is_exactly_5_mb(self):
         limit = 5 * 1024 * 1024

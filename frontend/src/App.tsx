@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ColdStartBanner } from './components/ColdStartBanner';
 import { PortfolioPage } from './pages/PortfolioPage';
 
 const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
@@ -32,6 +33,7 @@ export function App() {
       <ThemeProvider>
         <BrowserRouter>
           <AuthProvider>
+            <ColdStartBanner />
             <Suspense fallback={<RouteLoadingFallback />}>
               <Routes>
                 <Route path="/" element={<PortfolioPage />} />

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { portfolioService } from '../services/portfolioService';
-import type { Certificate } from '../types';
+import type { Certificate, CreateCertificatePayload } from '../types';
 
 export const portfolioKeys = {
   all: ['portfolio'] as const,
@@ -126,7 +126,34 @@ export const useDeleteProject = () => {
 export const useCreateCertificate = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (formData: FormData) => portfolioService.createCertificate(formData),
+    mutationFn: (payload: FormData | CreateCertificatePayload) =>
+      portfolioService.createCertificate(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.certificates() });
+    },
+  });
+};
+
+export const useDirectCertificateUpload = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      file,
+      payload,
+    }: {
+      file: File;
+      payload: Omit<CreateCertificatePayload, 'storage_key'>;
+    }) => {
+      // 1. Signierte S3 Upload-URL via POST /api/certificates/presigned_upload/ holen
+      const presigned = await portfolioService.getPresignedUploadUrl(file.name, file.type);
+      // 2. Datei direkt in den S3-Storage (Supabase) hochladen
+      await portfolioService.uploadDirectToStorage(presigned.url, file, presigned.headers);
+      // 3. Django-Backend mit dem storage_key informieren
+      return portfolioService.createCertificate({
+        ...payload,
+        storage_key: presigned.storage_key,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: portfolioKeys.certificates() });
     },

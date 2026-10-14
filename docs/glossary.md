@@ -23,8 +23,8 @@ Die Ausstellerorganisation des Zertifikats (z. B. AWS, Coursera, IBM, Microsoft,
 
 ### Track (Themenschwerpunkt / Fachdomäne)
 Eine thematische Gruppierung von Kompetenzen und Zertifikaten (z. B. *Python & Django Backend*, *Data & KI*, *Cloud & DevOps*, *Frontend & React*, *Security & Compliance*).
-* **Beziehung:** n:m zu `Certificate` und `Project`.
-* **Zweck:** Ermöglicht gefilterte Ansichten und themenspezifische Portfoliodarstellung im Frontend.
+* **Beziehung:** n:m zu `Certificate`.
+* **Zweck:** Ermöglicht interaktive Mehrfach-Filterung (OR-Logik) und themenspezifische Qualifikationsdarstellung auf der Startseite und im Admin-Dashboard.
 
 ---
 
@@ -47,3 +47,37 @@ Bedarfsgesteuerte Extraktion von Text- und Metadaten (Titel, Datum, Aussteller, 
 
 ### Clean Compensation (Transaktionale Kompensation)
 Sicherheitsmechanismus beim Upload: Schlägt das Schreiben in die relationale Datenbank nach dem erfolgreichen Hochladen einer Datei in den S3-Storage fehl, wird die Datei im Storage per Kompensationstransaktion gelöscht. Dies verhindert verwaiste Speicherleichen.
+
+---
+
+## 3. Architektur- & Infrastrukturbegriffe
+
+### Pooled Connection (Neon PgBouncer)
+Verbindung zur Neon PostgreSQL-Datenbank über den integrierten PgBouncer Connection Pooler (Port 5432 bzw. `-pooler` im Hostnamen).
+* **Zweck:** Wiederverwendung bestehender Datenbank-Verbindungen für zustandslose HTTP-Requests im Web-Betrieb (Gunicorn/DRF).
+* **Einschränkung:** Ungeeignet für Schema-Migrationen und Session-Locks.
+
+### Direct Connection (Neon Dedicated Endpoint)
+Direkte TCP-Verbindung zur PostgreSQL-Instanz unter Umgehung des PgBouncers.
+* **Zweck:** Ausführung von DDL-Migrationen (`python manage.py migrate`), Transaktions-Locks und Bulk-Operationen während des CI/CD-Builds (`build.sh`).
+
+### Cold-Start Banner
+Benutzer-Feedback im Frontend zur Überbrückung des Render Free-Tier Kaltstarts. Schläft der Web-Dienst nach 15 Minuten Inaktivität ein, blendet die React-SPA bei Verzögerungen > 2s einen dezenten Status-Hinweis ein, bis die API antwortet.
+
+### Hybrid 3-Stufen OCR
+Kaskadierendes Extraktionsverfahren für Zertifikate:
+1. **Stufe 1 (Lokal):** Native PDF-Textschicht (`pypdf`, 0 ms / 0 €).
+2. **Stufe 2 (Lokal):** Lokale Tesseract-OCR (`pytesseract`).
+3. **Stufe 3 (Cloud-Multimodal):** Gemini Flash Vision API (`google-genai`) für hochauflösende Scans, Handschriften oder unvollständige Textextraktionen.
+
+### Magic Bytes (MIME-Type Inspection)
+Überprüfung der ersten Bytes einer Datei im Header zur Feststellung des wahren Dateityps (z. B. `%PDF` für PDF, `\x89PNG` für PNG), um Dateiendungs-Spoofing vor der Verarbeitung serverseitig abzuwehren.
+
+### Presigned URL (S3 Direct-to-Storage Upload)
+Eine temporär signierte URL (z. B. mit 1 Stunde Gültigkeit), die vom Backend über `boto3` für autorisierte Administratoren generiert wird.
+* **Zweck:** Erlaubt dem Browser das direkte Hochladen von Zertifikatsdateien zu Supabase S3 via `HTTP PUT`, ohne dass große Binärdateien den Django-/Gunicorn-Webservice auf Render passieren müssen.
+
+### Storage-Key (Objektschlüssel)
+Der relative Speicherpfad eines Objekts im S3-Storage Bucket (z. B. `certificates/uploads/a1b2c3d4e5f6_meinzertifikat.pdf`).
+* **Verwendung:** Wird dem Frontend bei der Presigned-URL-Generierung übermittelt und anschließend bei der Erstellung des `Certificate`-Datensatzes als Dateireferenz an Django übergeben.
+

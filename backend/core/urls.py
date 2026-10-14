@@ -13,10 +13,8 @@ from portfolio.views import (
     SkillViewSet,
     TimelineEntryViewSet,
     TrackViewSet,
-    dashboard_view,
+    api_root_view,
     health_check_view,
-    login_view,
-    logout_view,
 )
 
 # Registrierung der REST-API-Routen
@@ -32,11 +30,9 @@ router.register(
 )
 
 urlpatterns = [
-    path("", login_view, name="login"),
+    path("", api_root_view, name="backend-root"),
     path("admin/", admin.site.urls),
     path("health_check", health_check_view, name="health_check"),
-    path("dashboard/", dashboard_view, name="dashboard"),
-    path("logout/", logout_view, name="logout"),
     # REST-API Endpunkte
     path("api/", include(router.urls)),
     path("api/auth/", include("djoser.urls")),

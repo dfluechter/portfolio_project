@@ -2,6 +2,7 @@
 
 **Status:** Accepted  
 **Datum:** 2026-10-06  
+**Autor:** Dominik Flüchter  
 
 ## Kontext und Problem
 Für das Django-Backend in Produktion wird eine relationale Datenbank benötigt. Es galt eine kosteneffiziente, skalierbare und gut in den Entwicklungs-Workflow integrierbare PostgreSQL-Lösung zu finden. 

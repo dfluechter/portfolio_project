@@ -12,18 +12,45 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
-
 # ==============================================================================
 # VALIDATOREN (Security & Limits)
 # ==============================================================================
+# Magic-Byte Header Signaturen für erlaubte Dateitypen
+MAGIC_BYTE_SIGNATURES: dict[str, tuple[bytes, ...]] = {
+    ".pdf": (b"%PDF",),
+    ".png": (b"\x89PNG",),
+    ".jpg": (b"\xff\xd8\xff",),
+    ".jpeg": (b"\xff\xd8\xff",),
+}
+
+
 def validate_file_extension(value: Any) -> None:
-    """Prüft, ob die Dateiendung .pdf, .png, oder 'jpg' ist."""
-    ext = os.path.splitext(value.name)[1].lower()
-    valid_extensions = [".pdf", ".png", ".jpg", ".jpeg"]
+    """
+    Prüft sowohl die Dateiendung als auch die echten Header-Magic-Bytes
+    gegen MIME-Type-Spoofing.
+    """
+    name = getattr(value, "name", "") or str(value)
+    ext = os.path.splitext(name)[1].lower()
+    valid_extensions = list(MAGIC_BYTE_SIGNATURES.keys())
+
     if ext not in valid_extensions:
         raise ValidationError(
             f"Ungültiges Format! Erlaubt sind nur: {', '.join(valid_extensions)}"
         )
+
+    # Magic-Byte Prüfung, falls Dateiinhalt lesbar ist
+    if hasattr(value, "read") and hasattr(value, "seek"):
+        header = value.read(16)
+        value.seek(0)
+
+        if not header:
+            raise ValidationError("Die hochgeladene Datei ist leer.")
+
+        expected_signatures = MAGIC_BYTE_SIGNATURES[ext]
+        if not any(header.startswith(sig) for sig in expected_signatures):
+            raise ValidationError(
+                f"MIME-Type-Spoofing erkannt! Der Dateiinhalt passt nicht zur Dateiendung '{ext}'."
+            )
 
 
 def validate_file_size(value: Any) -> None:

@@ -34,9 +34,6 @@ uv run pytest
 # Single test
 uv run pytest portfolio/tests/test_models.py::TestCertificateUploadPath::test_standard_issuer_name
 
-# Manual S3 connection check script (one-off script, not part of pytest suite)
-uv run python test_s3.py
-
 # Lint / Format (Ruff, line-length=88)
 uv run ruff check .
 uv run ruff format .
@@ -59,7 +56,7 @@ bash build.sh
 - **S3 Configuration Quirks**: Supabase requires `AWS_S3_ADDRESSING_STYLE = "path"` and `AWS_S3_SIGNATURE_VERSION = "s3v4"`. `AWS_QUERYSTRING_AUTH = False` makes media URLs public; `AWS_S3_FILE_OVERWRITE = False` prevents silent file overwrites.
 - **Static Files**: WhiteNoise handles static file serving in production; no separate static CDN.
 - **Production Security**: Security settings (`SECURE_SSL_REDIRECT`, HSTS, secure cookies) activate only when `DEBUG=False`. HSTS preload is intentionally disabled.
-- **App Structure**: Single Django app (`portfolio`). Provides REST API ViewSets (`Project`, `Provider`, `Certificate`, `Skill`, `TimelineEntry`) with `IsAuthenticatedOrReadOnly` permissions, plus Session-based Dashboard views (`login_view`, `dashboard_view`).
+- **App Structure**: Single Django app (`portfolio`). Provides REST API ViewSets (`Project`, `Provider`, `Certificate`, `Skill`, `TimelineEntry`, `Track`, `PendingCertificate`) with `IsAuthenticatedOrReadOnly` or `IsAdminUser` permissions. Pure Headless API (Django HTML templates and session dashboard views were completely removed per ADR-006).
 
 ## Settings & Testing Rules
 
@@ -74,7 +71,7 @@ bash build.sh
 
 - `certificate_upload_path()` in `portfolio/models.py` uses `slugify(instance.provider.provider)` for directory names and falls back to `"unsorted"` if slugify returns an empty string (e.g. `"??? ***"` → `"unsorted"`).
 - `Certificate.provider` is a `ForeignKey(Provider, on_delete=models.PROTECT, related_name="certificates")`.
-- File upload validators (`validate_file_extension`, `validate_file_size`: `.pdf`, `.png`, `.jpg` ≤ 5 MB) are applied at model field level, not form level. They fire on `full_clean()`, not on `save()`.
+- File upload validators (`validate_file_extension`, `validate_file_size`: `.pdf`, `.png`, `.jpg`, `.jpeg` ≤ 5 MB) are applied at model field and serializer level. `validate_file_extension` validates header magic bytes (`%PDF`, `\x89PNG`, `\xFF\xD8\xFF`) to prevent file extension spoofing.
 
 ## REST API & Serializers
 
@@ -82,18 +79,22 @@ bash build.sh
 - Serializers follow the **Hybrid-Pattern**: Read requests output nested detail objects (`skill_details`, `provider_details`), while write operations accept PrimaryKey IDs (`skills`, `provider`).
 - Serializer `Meta.fields` must always be declared as a **tuple** (e.g. `fields = ("id", "title")`), not a mutable list, to comply with Ruff rule `RUF012`.
 
-## Management Commands (Local / Non-Portable)
+## Management Commands
 
 - `scan_certificates` — scans local certificates path (configured via `CERTIFICATES_PATH` in `.env`), creates `Provider` objects.
-- `import_certificates` — imports files from the same path with 1.5 s delay per file (Cloudflare rate-limit workaround); skips already-existing entries by `(title, provider)` uniqueness check.
-- Both commands are tied to developer-local environment; do not modify or run for general use.
+- `import_certificates` — imports files from `CERTIFICATES_PATH` with rate-limit workaround; skips already-existing entries by `(title, provider)` uniqueness check.
+- `scan_inbox` — scans incoming files from `CERTIFICATES_INBOX_PATH` into `PendingCertificate` staging records.
+- `clean_inbox` — cleans processed inbox files safely.
+- `sync_certificates` — syncs certificate files to S3/Supabase storage.
+- **Important:** `CERTIFICATES_PATH` is **strictly READ-ONLY** (see Root `AGENTS.md`). Never modify, delete, or move files in that directory.
 
 ## Auth (Djoser + JWT)
 
 Endpoints under `api/auth/` — Djoser endpoints include:
 - `POST api/auth/jwt/create/` — Login → returns `access` + `refresh` token
 - `POST api/auth/jwt/refresh/` — Refresh access token
-- `POST api/auth/users/` — Registration (`USER_CREATE_PASSWORD_RETYPE=True`)
+- `POST api/auth/users/` — Registration (strictly restricted to `IsAdminUser`; public self-registration is disabled)
+- `POST api/auth/users/reset_password/` — Password reset trigger
 
 `LOGIN_FIELD = "email"` → Login runs via E-Mail, not Username.
 Access Token: 60 min, Refresh Token: 7 days. Header: `Authorization: Bearer <token>`.

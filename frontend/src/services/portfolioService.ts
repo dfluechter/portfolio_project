@@ -1,9 +1,12 @@
+import axios from 'axios';
 import { apiClient } from '../api/client';
 import type {
   Certificate,
+  CreateCertificatePayload,
   ExtractedCertificateMetadata,
   PaginatedResponse,
   PendingCertificate,
+  PresignedUploadResponse,
   Project,
   Provider,
   Skill,
@@ -86,11 +89,41 @@ export const portfolioService = {
     };
   },
 
-  // Zertifikat erstellen (Admin)
-  async createCertificate(formData: FormData): Promise<Certificate> {
-    const { data } = await apiClient.post<Certificate>('/api/certificates/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+  // Signierte S3 Upload-URL anfordern (Admin)
+  async getPresignedUploadUrl(
+    filename: string,
+    contentType?: string
+  ): Promise<PresignedUploadResponse> {
+    const { data } = await apiClient.post<PresignedUploadResponse>(
+      '/api/certificates/presigned_upload/',
+      { filename, content_type: contentType }
+    );
+    return data;
+  },
+
+  // Datei direkt zu Supabase S3 hochladen (ohne Django-Auth Header)
+  async uploadDirectToStorage(
+    url: string,
+    file: File,
+    headers?: Record<string, string>
+  ): Promise<void> {
+    await axios.put(url, file, {
+      headers: {
+        'Content-Type': file.type || 'application/pdf',
+        ...headers,
+      },
     });
+  },
+
+  // Zertifikat erstellen (Admin: via FormData oder direktem storage_key)
+  async createCertificate(payload: FormData | CreateCertificatePayload): Promise<Certificate> {
+    if (payload instanceof FormData) {
+      const { data } = await apiClient.post<Certificate>('/api/certificates/', payload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
+    }
+    const { data } = await apiClient.post<Certificate>('/api/certificates/', payload);
     return data;
   },
 

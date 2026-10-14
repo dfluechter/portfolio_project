@@ -5,43 +5,44 @@
 **[CONFIGURATION]**
 - TARGET_LANGUAGE = **German**
 
-**1. Internal Reasoning & Code:**
-- **Reasoning:** English is permitted for internal chain-of-thought to maintain optimal accuracy.
-- **Codebase:** Use standard English for all source code, including variables, classes, and generic comments (Exception: German `verbose_name` / `verbose_name_plural` and DB field comments according to [AGENTS.md](AGENTS.md)).
+**1. Sprache & Gedankengänge (Language Rule):**
+- **Gedankengänge & Erklärungen:** Gemäß [.agents/rules/language.md](../.agents/rules/language.md) und [AGENTS.md](../AGENTS.md) sind alle Antworten, Erklärungen und Gedankengänge ausnahmslos auf Deutsch zu verfassen.
+- **Codebase:** Standard-Englisch für den Quellcode (Variablennamen, Klassen, Methoden, generische Kommentare). Ausnahmen: Deutsche `verbose_name` / `verbose_name_plural` und DB-Feldkommentare in Django-Modellen.
 
 **2. User-Facing Output:**
-- **Primary Rule:** ALL user-facing text MUST be written in the TARGET_LANGUAGE.
-- **Chat:** Communicate exclusively in the TARGET_LANGUAGE.
-- **Artifacts:** Content within documentation and planning files (e.g., `task.md`, `implementation_plan.md`, `walkthrough.md`) MUST be written in the TARGET_LANGUAGE.
+- **Primäre Regel:** Sämtliche an den Benutzer gerichteten Texte MÜSSEN auf Deutsch verfasst sein.
+- **Chat:** Ausschließliche Kommunikation auf Deutsch.
+- **Artefakte:** Inhalte von Dokumentations- und Planungsdateien (`.md`) MÜSSEN auf Deutsch verfasst sein.
 
 **3. Task Metadata:**
-- `TaskName`: MUST be in the TARGET_LANGUAGE.
-- `TaskSummary`: MUST be in the TARGET_LANGUAGE.
+- `TaskName`: MUSS auf Deutsch sein.
+- `TaskSummary`: MUSS auf Deutsch sein.
 
-## Project Context: Portfolio Backend & Dashboard
+## Project Context: Portfolio Backend & Frontend
 
-Detailed architecture, configuration, and API rules can be found in [AGENTS.md](AGENTS.md).
+Detaillierte Systemarchitektur, Konfigurationen und API-Spezifikationen befinden sich in [AGENTS.md](AGENTS.md) und [architecture.md](architecture.md).
 
 ### Tech Stack & Standards
-- Python 3.13, Django 5.2, Django REST Framework
-- Package manager: `uv` (Never use pip directly!)
-- Linter & Formatter: `ruff check .` and `ruff format .`
-- Type checking: `mypy .`
-- Tests: `uv run pytest --cov=portfolio --cov-fail-under=95`
-- Media Storage: S3-compatible Supabase Storage
-- Primary database: SQLite (local), Neon PostgreSQL (production)
+- **Backend:** Python 3.13, Django 5.2, Django REST Framework, Djoser (Headless Token Auth)
+- **Frontend:** React 19, TypeScript 5.8, Vite 6, Tailwind CSS v4, TanStack Query v5, Lucide React
+- **Package Manager:** Backend `uv` (niemals direkt `pip`), Frontend `npm`
+- **Linter & Formatter:** Backend `ruff check .` und `ruff format .`, Frontend `npm run lint`
+- **Type Checking:** Backend `mypy .`, Frontend `npm run build` (`tsc -b`)
+- **Tests:** Backend `uv run pytest --cov=portfolio --cov-fail-under=95` (212 Tests), Frontend `npm run test` (Vitest, 51 Tests)
+- **Media Storage:** S3-kompatibler Supabase Storage (Presigned Uploads & Downloads)
+- **Primary Database:** SQLite (lokal), Neon PostgreSQL (Produktion)
 
 ### Working Rules for Code Changes
-1. Always run makemigrations after model changes (`uv run python manage.py makemigrations`) and inspect the generated migrations.
-2. Immediately add matching pytest fixtures and tests for new views/serializers.
-3. Adhere to PEP 8 (max. 88 characters per line) and the guidelines in `.editorconfig`.
-4. Use Conventional Commits for git commits (e.g., `feat:`, `fix:`, `chore:`).
-5. Always consult [AGENTS.md](AGENTS.md) for backend specifics (e.g., hybrid serializer pattern, S3 settings, Djoser auth).
+1. Nach Modelländerungen immer Migrationen erzeugen (`uv run python manage.py makemigrations`) und prüfen.
+2. Neue Views, Serializer und Komponenten sofort mit passenden Pytest- bzw. Vitest-Tests abdecken.
+3. PEP 8 (max. 88 Zeichen) und `.editorconfig` einhalten.
+4. Conventional Commits für Git-Commits nutzen (z. B. `feat:`, `fix:`, `chore:`).
+5. Immer [AGENTS.md](AGENTS.md) für Backend- und Architekturvorgaben heranziehen.
 
 ## Sub-Agent Delegation (Team)
 
-This project is supported by a specialized team of sub-agents. The main agent MUST automatically delegate tasks to these specialists using their respective skills whenever their domains are touched:
-- **`django-experte`**: Handles Django ORM optimization, complex SQL queries, backend performance, DRF views/serializers, and security (OWASP).
-- **`frontend-developer`**: Builds and refactors React 18+ components, manages state (Zustand/React Query), applies TailwindCSS, and ensures strict TypeScript typing.
-- **`qa-tester`**: Writes automated tests. `pytest` for the Django backend (including `assertNumQueries` and security checks), and `vitest` + React Testing Library for the frontend.
-- **`planer`**: Acts as Technical Product Manager. Writes Markdown documentation (in `/docs`), defines Epics, User Stories, and rigorous BDD Acceptance Criteria.
+Das Projekt wird durch spezialisierte Sub-Agenten unterstützt. Aufgaben sind bedarfsgerecht an die Spezialisten zu delegieren:
+- **`django-experte`**: Django ORM-Optimierung, komplexe SQL-Abfragen, Backend-Performance, DRF Views/Serializer und Security (OWASP).
+- **`frontend-developer`**: React 19 Komponenten, Single-Page Architecture, TanStack Query Server-State-Management, Tailwind CSS v4 Design-System und strikte TypeScript-Typisierung.
+- **`qa-tester`**: Automatisierte Tests (`pytest` für Django Backend inkl. `assertNumQueries`, `vitest` + React Testing Library für Frontend, Test-Coverage).
+- **`planer`**: Technical Product Manager. Pflegt die Dokumentation in `/docs`, definiert Epics, User Stories und präzise BDD-Akzeptanzkriterien.

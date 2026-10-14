@@ -23,6 +23,7 @@ vi.mock('../../../hooks/usePortfolio', () => ({
   useTracks: vi.fn().mockReturnValue({ data: [], isLoading: false }),
   useUpdateCertificate: vi.fn().mockReturnValue({ mutateAsync: vi.fn(), isPending: false }),
   useExtractCertificateMetadata: vi.fn().mockReturnValue({ mutateAsync: vi.fn(), isPending: false }),
+  useDirectCertificateUpload: vi.fn().mockReturnValue({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 describe('CertificateManager Component', () => {

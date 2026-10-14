@@ -1,12 +1,11 @@
-
-
 # ADR-004: State Management im Frontend
 
 **Status:** Accepted  
 **Datum:** 2026-10-06  
+**Autor:** Dominik Flüchter  
 
 ## Kontext und Problem
-Die React 18 Single Page Application (SPA) des Projekts muss asynchrone API-Daten aus dem Django-Backend verwalten, cachen und synchronisieren sowie lokalen, globalen UI-Zustand (wie Authentifizierungsstatus oder Theme) verwalten. Die Wahl des State Managements ist entscheidend für die Performance und Wartbarkeit des Frontends.
+Die React 19 Single Page Application (SPA) des Projekts muss asynchrone API-Daten aus dem Django-Backend verwalten, cachen und synchronisieren sowie lokalen, globalen UI-Zustand (wie Authentifizierungsstatus oder Theme) verwalten. Die Wahl des State Managements ist entscheidend für die Performance und Wartbarkeit des Frontends.
 
 ## Alternativen
 - **Redux / Redux Toolkit:** Sehr mächtig, erfordert aber viel Boilerplate und ist für viele reine Server-State-Probleme zu überdimensioniert.

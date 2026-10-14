@@ -1,334 +1,272 @@
 # System- und Architektur-Dokumentation
 
-Diese Dokumentation beschreibt die Architektur, den Datenfluss, sämtliche API-Endpunkte sowie das Authentifizierungs- und Sicherheitskonzept des Portfolios. Weiterführende Dokumente: [Frontend-Architektur](frontend.md), [Product Backlog & Stories](backlog.md) sowie die [Architectural Decision Records (ADRs)](adrs/).
+Diese Dokumentation beschreibt Architektur, Datenfluss, API-Endpunkte sowie das Authentifizierungs- und Sicherheitskonzept des Portfolios.
+
+Weiterführend: [Frontend-Architektur](frontend.md) · [Deployment & Operations](deployment.md) · [Glossar](glossary.md) · [Backlog](backlog.md) · [ADRs](adrs/)
 
 ---
 
 ## 1. Systemübersicht & Komponenten
 
-Das Projekt ist als **Monorepo** organisiert und besteht aus einem **Django REST Framework (DRF)** Backend (im Verzeichnis `backend/`) und einem **React TypeScript (Vite)** Frontend (im Verzeichnis `frontend/`).
+Das Projekt ist als **Monorepo** organisiert ([ADR-001](adrs/001-monorepo.md)). Django dient seit [ADR-006](adrs/006-resolving-technical-debt-and-security.md) ausschließlich als **Headless-JSON-API**; die gesamte Benutzeroberfläche (öffentliches Portfolio und Admin-Dashboard) ist die React-SPA.
 
 ```mermaid
 graph TB
-    subgraph Clients["Clients & Benutzer"]
-        Visitor["Portfolio-Besucher (Web)"]
-        Admin["Administrator (Dashboard / Management)"]
+    subgraph Clients["Clients"]
+        Visitor["Portfolio-Besucher"]
+        Admin["Administrator"]
     end
 
-    subgraph CDN_Proxy["Edge & Hosting"]
-        Render["Render Web Service (Reverse Proxy / Gunicorn)"]
-        WhiteNoise["WhiteNoise (Static Assets)"]
+    subgraph RenderHosting["Render"]
+        StaticSite["Static Site: React SPA (frontend/)"]
+        WebService["Web Service: Gunicorn + Django (backend/)"]
     end
 
-    subgraph Backend["Django 5.2 Application (backend/)"]
-        CoreUrls["URL Routing (backend/core/urls.py)"]
-        AuthModule["Auth & Security (Djoser + SimpleJWT + Sessions)"]
-        ViewSets["DRF ViewSets (backend/portfolio/views.py)"]
-        DashboardView["Server-Rendered Views (Dashboard & Login)"]
-        Models["Django ORM Models (backend/portfolio/models.py)"]
+    subgraph Backend["Django 5.2 (Headless API)"]
+        CoreUrls["URL Routing (core/urls.py)"]
+        AuthModule["Djoser + SimpleJWT"]
+        ViewSets["DRF ViewSets & Actions"]
+        Services["Services: storage, extractor, promotion"]
+        Models["ORM Models"]
     end
 
-    subgraph Frontend["React Frontend (SPA) (frontend/)"]
-        ReactApp["React 19 / Vite App"]
-        ApiClient["Axios API-Client (JWT & Interceptors)"]
+    subgraph Storage["Persistenz"]
+        NeonDB[("Neon PostgreSQL / SQLite lokal")]
+        SupabaseS3[("Supabase Storage (S3)")]
+        Gemini["Gemini API (OCR Stufe 3, optional)"]
     end
 
-    subgraph Storage["Persistenz & Cloud Storage"]
-        NeonDB[("Neon PostgreSQL (Produktion) / SQLite (Lokal)")]
-        SupabaseS3[("Supabase Storage (S3-kompatibel)")]
-    end
-
-    Visitor -->|HTTP GET| Render
-    Admin -->|Browser / SPA| Render
-    ReactApp --> ApiClient
-    ApiClient -->|REST API Requests| Render
-
-    Render --> WhiteNoise
-    Render --> CoreUrls
-
+    Visitor --> StaticSite
+    Admin --> StaticSite
+    StaticSite -->|"REST + JWT"| WebService
+    StaticSite -->|"Presigned PUT (Direct Upload)"| SupabaseS3
+    WebService --> CoreUrls
     CoreUrls --> AuthModule
     CoreUrls --> ViewSets
-    CoreUrls --> DashboardView
-
+    ViewSets --> Services
     ViewSets --> Models
-    DashboardView --> Models
-
-    Models -->|SQL Queries| NeonDB
-    Models -->|Media Files (Boto3)| SupabaseS3
+    Models --> NeonDB
+    Services --> SupabaseS3
+    Services --> Gemini
 ```
 
 ### Kerntechnologien
 
-| Schicht / Bereich | Technologie / Service | Zweck |
+| Schicht | Technologie | Zweck |
 |---|---|---|
-| **Backend-Framework** | Python 3.13 / Django 5.2 / DRF | REST-API, Geschäftslogik und Admin-Dashboard |
-| **Paketmanagement** | `uv` (Astral) | Schnelle und reproduzierbare Abhängigkeitsverwaltung |
-| **Frontend** | React 19 / TypeScript / Vite / Tailwind CSS v4 | Öffentliche Portfolio-Webseite & SPA-Dashboard |
-| **Primärdatenbank** | Neon Serverless PostgreSQL (Prod) / SQLite (Dev) | Speicherung aller relationalen Entitäten |
-| **Dateispeicher (Media)** | Supabase Storage (S3-kompatible Boto3-Anbindung) | Zertifikatsdokumente (`.pdf`, `.png`, `.jpg`) |
-| **Statische Dateien** | WhiteNoise (`CompressedManifestStaticFilesStorage`) | Auslieferung von CSS/JS direkt über Django |
-| **Hosting & Deployment** | Render | Automatisierter Build via `build.sh` |
+| Backend | Python 3.13 / Django 5.2 / DRF | REST-API und Geschäftslogik |
+| Paketmanagement | `uv` | Reproduzierbare Abhängigkeiten |
+| Frontend | React 19 / TypeScript / Vite / Tailwind CSS v4 | Öffentliche Seite & Admin-Dashboard |
+| Datenbank | Neon Serverless PostgreSQL (Prod) / SQLite (Dev) | Relationale Daten |
+| Media | Supabase Storage (S3-kompatibel, `django-storages` + `boto3`) | Zertifikatsdokumente |
+| Statische Dateien | WhiteNoise | Auslieferung der Django-Static-Files (Swagger-UI, Admin) |
+| OCR | `pypdf`, `pytesseract`, Gemini (optional) | Metadaten-Extraktion |
+| Hosting | Render (Web Service + Static Site) | Deployment, siehe [deployment.md](deployment.md) |
 
 ---
 
-## 2. Datenfluss (Data Flow)
+## 2. Datenfluss
 
-### 2.1 Öffentliche Leseanfragen (Portfolio-Besucher)
+### 2.1 Öffentliche Leseanfragen
 
-Öffentliche Besucher der Webseite greifen lesend auf Portfolio-Inhalte zu (Projekte, Zertifikate, Skills, Timeline). Dieser Flow ist zustandslos und erfordert keinen Login.
+Zustandslos, ohne Login. Unauthentifizierte Anfragen sehen nur veröffentlichte Datensätze (`is_published=True` bei Zertifikaten und Projekten).
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Visitor as Besucher (Browser / React SPA)
-    participant API as Django DRF API (/api/*)
-    participant Perm as Permission-Check (IsAuthenticatedOrReadOnly)
-    participant DB as Neon PostgreSQL / SQLite
-    participant S3 as Supabase S3 Storage
+    actor Visitor as Besucher (React SPA)
+    participant API as Django API (/api/*)
+    participant DB as Neon PostgreSQL
+    participant S3 as Supabase S3
 
-    Visitor->>API: GET /api/projects/, /api/certificates/, etc.
-    API->>Perm: Berechtigung prüfen
-    Note over Perm: SAFE_METHOD (GET) erkannt -> Zugriff gestattet
-    Perm-->>API: AllowAny
-    API->>DB: ORM Query mit select_related / prefetch_related
-    DB-->>API: Relationale Daten
-    API->>API: Serialisierung via Hybrid-Serializer (inkl. Media-URLs)
-    API-->>Visitor: JSON-Response mit detailreichen Objekten
-    Visitor->>S3: GET /media/certificates/... (Bilder / PDFs laden)
-    S3-->>Visitor: Binärdatei / Dokument
+    Visitor->>API: GET /api/certificates/?page=1
+    Note over API: IsAuthenticatedOrReadOnly: GET erlaubt, Queryset auf is_published=True gefiltert
+    API->>DB: Query mit select_related / prefetch_related
+    DB-->>API: Datensätze
+    API-->>Visitor: Paginierte JSON-Response inkl. Media-URLs
+    Visitor->>S3: GET Dokument-URL (PDF/Bild)
+    S3-->>Visitor: Datei
 ```
 
----
-
-### 2.2 Administrativer Schreibzugriff (CRUD-Operationen)
-
-Schreibzugriffe (Erstellen, Aktualisieren, Löschen von Projekten, Zertifikaten, Providern oder Skills) sind strikt geschützt und setzen eine Authentifizierung voraus.
+### 2.2 Administrativer Schreibzugriff
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Admin as Administrator
-    participant Client as React SPA / Axios Interceptor
-    participant API as Django DRF ViewSet
-    participant Auth as JWT / Session Authentication
-    participant Serializer as DRF Serializer (Validation)
+    participant Client as React SPA (Axios)
+    participant API as DRF ViewSet
     participant DB as Neon PostgreSQL
-    participant S3 as Supabase S3 Storage
 
-    Admin->>Client: Formular ausfüllen (z. B. neues Zertifikat)
-    Client->>Client: Access Token aus localStorage laden
-    Client->>API: POST /api/certificates/ (Header: Authorization Bearer)
-    API->>Auth: Bearer-Token bzw. Session prüfen
-    alt Token ungültig / abgelaufen (401)
-        Auth-->>Client: 401 Unauthorized
-        Client->>API: POST /api/auth/jwt/refresh/ (mit Refresh Token)
+    Admin->>Client: Formular absenden
+    Client->>API: POST/PATCH mit Authorization: Bearer <access>
+    alt Access Token abgelaufen (401)
+        Client->>API: POST /api/auth/jwt/refresh/
         API-->>Client: Neuer Access Token
-        Client->>API: Request mit neuem Token wiederholen
+        Client->>API: Request wiederholen
     end
-    Auth-->>API: User identifiziert & authentifiziert
-    API->>Serializer: Validierung (Datentypen, Pflichtfelder, Dateiformat, Größe)
-    Serializer->>DB: Transaktionales Speichern der Datensätze
-    opt Datei-Upload enthalten
-        Serializer->>S3: Speichern der Datei unter certificates/<provider-slug>/
-        S3-->>Serializer: Speicherpfad bestätigt
-    end
-    DB-->>API: Gespeicherter Datensatz
-    API-->>Client: 201 Created (JSON mit neuem Datensatz)
+    API->>API: Serializer-Validierung
+    API->>DB: Speichern
+    API-->>Client: 200/201 JSON
 ```
 
----
+### 2.3 Datei-Upload & Media-Handling
 
-### 2.3 Datei-Upload & Media-Handling (Supabase S3)
+Es gibt drei Wege, wie eine Datei in den Storage gelangt:
 
-Zertifikatsdateien werden nicht im lokalen Dateisystem des Containers abgelegt, sondern persistent in einem S3-kompatiblen Bucket bei Supabase gespeichert.
+| Weg | Auslöser | Ablauf |
+|---|---|---|
+| **A: Multipart-Upload** | `POST /api/certificates/` mit `pdf_file` | Datei läuft durch Django, Validierung im Serializer, Speicherung via `default_storage`. |
+| **B: Direct-to-Storage** | Dashboard „Zertifikat hochladen“ | Browser lädt per Presigned URL direkt nach S3, Django erhält nur den `storage_key` (siehe Diagramm). |
+| **C: Inbox/Import** | Management-Commands, `approve`, `publish` | Datei wird strikt lesend aus `CERTIFICATES_PATH` bzw. Inbox gelesen und in den Storage kopiert. |
 
-1. **Client-Upload**: Multipart-Formularübertragung via `POST /api/certificates/`.
-2. **Validierung auf Model-Ebene**:
-   - `validate_file_extension`: Nur `.pdf`, `.png`, `.jpg` zulässig.
-   - `validate_file_size`: Maximale Dateigröße von 5 MB.
-3. **Dynamische Pfadgenerierung (`certificate_upload_path`)**:
-   - Struktur: `certificates/<slugified-provider>/<filename>`.
-   - Sonderfall-Handling: Liefert `slugify` für den Anbieternamen einen leeren String (z. B. bei reinen Sonderzeichen `"??? ***"`), greift automatisch der Fallback `"unsorted"`.
-4. **S3-Speicherung**:
-   - Supabase erfordert Pfad-basierte Adressierung (`AWS_S3_ADDRESSING_STYLE = "path"`) und Signatur-Version 4 (`AWS_S3_SIGNATURE_VERSION = "s3v4"`).
-   - `AWS_QUERYSTRING_AUTH = False`: Zertifikate erhalten permanente, öffentliche URLs ohne ablaufende Signatur-Tokens.
-   - `AWS_S3_FILE_OVERWRITE = False`: Verhindert versehentliches Überschreiben gleichnamiger Dateien durch automatische Anhängung von Hashes.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Administrator
+    participant SPA as React SPA
+    participant API as Django API
+    participant S3 as Supabase S3
 
----
+    Admin->>SPA: Datei + Metadaten wählen
+    SPA->>API: POST /api/certificates/presigned_upload/ {filename, content_type}
+    API-->>SPA: {url, storage_key, method: PUT, headers}
+    SPA->>S3: PUT url (Datei, ohne JWT-Header)
+    S3-->>SPA: 200 OK
+    SPA->>API: POST /api/certificates/ {title, provider, storage_key, ...}
+    API-->>SPA: 201 Created (is_published=false)
+```
 
-### 2.4 Datenbank-Routing & Umgebungsumschaltung
+> [!WARNING]
+> Weg B führt aktuell **keine** serverseitige Magic-Byte-, Größen- oder Existenzprüfung des hochgeladenen Objekts durch, und der Client darf `sha256_hash` mitsenden. Die Härtung ist als [User Story 10.2](backlog.md#user-story-102-härtung-des-direct-to-storage-uploads) geplant.
 
-Die Wahl der Datenbank erfolgt implizit über das Vorhandensein der Umgebungsvariable `DATABASE_URL`:
-- **Produktion**: Ist `DATABASE_URL` gesetzt, verbindet sich Django mit der **Neon PostgreSQL** Datenbank (`conn_max_age=600`, `ssl_require=True`).
-- **Lokale Entwicklung**: Fehlt `DATABASE_URL`, greift Django automatisch auf die lokale Datei `db.sqlite3` zurück.
-- **Test-Suite**: Tests nutzen `core.settings_test` via `backend/pytest.ini` und laufen isoliert in einer temporären SQLite-In-Memory/Dateidatenbank.
+**Validierung (Wege A und C):**
+- `validate_file_extension`: Endungen `.pdf`, `.png`, `.jpg`, `.jpeg` **und** Prüfung der Magic Bytes (`%PDF`, `\x89PNG`, `\xFF\xD8\xFF`) gegen Endungs-Spoofing.
+- `validate_file_size`: maximal 5 MB.
+
+**Speicherpfade:**
+- Wege A/C: `certificates/<provider-slug>/<sha256[:12]>/<dateiname>`; leerer Slug → `unsorted`.
+- Weg B: `certificates/uploads/<uuid12>_<dateiname-slug><ext>`.
+
+**S3-Konfiguration** (aktiv bei `USE_SUPABASE_S3=True`):
+- Pfad-Adressierung (`addressing_style=path`) und Signatur `s3v4` sind für Supabase Pflicht.
+- `AWS_S3_PUBLIC_BUCKET` steuert die URL-Art: `True` → öffentliche, dauerhafte URLs; `False` → signierte, ablaufende URLs (`querystring_auth`).
+- `file_overwrite=False` verhindert stilles Überschreiben.
+- Für Weg B muss im Bucket eine **CORS-Regel** für die Frontend-Domain hinterlegt sein, siehe [deployment.md](deployment.md#5-supabase-storage-cors-für-direct-uploads).
+
+### 2.4 Datenbank-Routing
+
+- `DATABASE_URL` gesetzt → Neon PostgreSQL; nicht gesetzt → lokale `db.sqlite3`.
+- Migrationen nutzen bevorzugt `DIRECT_DATABASE_URL` (PgBouncer-Bypass), Details siehe [deployment.md §2.3](deployment.md#23-neon-postgresql-trennung-von-pooled--und-direct-connection).
+- Tests laufen mit `core.settings_test` (gesetzt in `backend/pytest.ini`).
 
 ---
 
 ## 3. API-Endpunkte
 
+Die verbindliche, vollständige Spezifikation liefert das OpenAPI-Schema (`drf-spectacular`) unter `/api/docs/` (Swagger-UI) bzw. `/api/schema/`. Die folgenden Tabellen geben einen Überblick.
+
 ### 3.1 REST-API (`/api/`)
 
-Registriert über den `DefaultRouter` in [backend/core/urls.py](file:///d:/dev/portfolio_project/backend/core/urls.py). Alle ViewSets verwenden die Berechtigungsklasse `IsAuthenticatedOrReadOnly`.
+Standard-CRUD (`GET` Liste/Detail, `POST`, `PUT`, `PATCH`, `DELETE`) über den `DefaultRouter`.
 
-| Endpunkt | HTTP-Methoden | Berechtigung | Beschreibung |
+| Ressource | Lesen | Schreiben | Besonderheiten |
 |---|---|---|---|
-| `/api/projects/` | `GET`, `POST` | Read: Öffentlich<br>Write: Auth | Liste aller Portfolio-Projekte abrufen oder neues Projekt anlegen. |
-| `/api/projects/<id>/` | `GET`, `PUT`, `PATCH`, `DELETE` | Read: Öffentlich<br>Write: Auth | Detailansicht, Aktualisierung oder Löschung eines Projekts. |
-| `/api/certificates/` | `GET`, `POST` | Read: Öffentlich<br>Write: Auth | Zertifikate auflisten oder neues Zertifikat (Multipart) hochladen. |
-| `/api/certificates/<id>/` | `GET`, `PUT`, `PATCH`, `DELETE` | Read: Öffentlich<br>Write: Auth | Detailansicht, Aktualisierung oder Löschung eines Zertifikats. |
-| `/api/providers/` | `GET`, `POST` | Read: Öffentlich<br>Write: Auth | Zertifikatsanbieter (z. B. AWS, Coursera, Udemy) auflisten/anlegen. |
-| `/api/providers/<id>/` | `GET`, `PUT`, `PATCH`, `DELETE` | Read: Öffentlich<br>Write: Auth | Detailansicht, Aktualisierung oder Löschung eines Anbieters. |
-| `/api/skills/` | `GET`, `POST` | Read: Öffentlich<br>Write: Auth | Fähigkeiten/Technologien auflisten oder anlegen. |
-| `/api/skills/<id>/` | `GET`, `PUT`, `PATCH`, `DELETE` | Read: Öffentlich<br>Write: Auth | Detailansicht, Aktualisierung oder Löschung eines Skills. |
-| `/api/timeline/` | `GET`, `POST` | Read: Öffentlich<br>Write: Auth | Werdegang- / Timeline-Einträge abrufen oder erstellen. |
-| `/api/timeline/<id>/` | `GET`, `PUT`, `PATCH`, `DELETE` | Read: Öffentlich<br>Write: Auth | Einzelnen Timeline-Eintrag verwalten. |
+| `/api/projects/` | Öffentlich (nur `is_published`) | Auth | – |
+| `/api/providers/` | Öffentlich | Auth | `DELETE` liefert `409`, solange Zertifikate verknüpft sind |
+| `/api/certificates/` | Öffentlich (nur `is_published`) | Auth | Paginierung & Filter, siehe 3.2 |
+| `/api/skills/` | Öffentlich | Auth | – |
+| `/api/timeline/` | Öffentlich | Auth | – |
+| `/api/tracks/` | Öffentlich | Auth | Liefert verknüpfte Zertifikate (öffentlich nur veröffentlichte) |
+| `/api/pending-certificates/` | Nur Staff (`IsAdminUser`) | Nur Staff | Detail enthält `extracted_text`, Liste nicht |
 
----
+**Custom Actions:**
 
-### 3.2 Das Hybrid-Serializer-Pattern
-
-Um dem Frontend maximale Effizienz beim Lesen und Einfachheit beim Schreiben zu bieten, implementieren alle DRF-Serializer das **Hybrid-Pattern**:
-
-- **Leseanfragen (`GET`)**: Enthalten serialisierte, verschachtelte Detailobjekte (`skill_details`, `provider_details`). Dadurch entfallen zusätzliche API-Calls für verknüpfte Ressourcen (z. B. Anbieter-Metadaten oder Skill-Icons).
-- **Schreibanfragen (`POST`, `PUT`, `PATCH`)**: Erwarten flache Primärschlüssel-IDs (`skills: [1, 2]`, `provider: 3`). Dies vereinfacht Formular-Payloads und reduziert Overhead.
-- **Tuple-Deklaration**: Alle `Meta.fields` sind als unveränderliche Tuples deklariert (Ruff-Regel `RUF012`).
-
----
-
-### 3.3 Auth-API (`/api/auth/` via Djoser & SimpleJWT)
-
-Eingebunden in [backend/core/urls.py](file:///d:/dev/portfolio_project/backend/core/urls.py) über `djoser.urls` und `djoser.urls.jwt`.
-
-| Endpunkt | HTTP-Methode | Berechtigung | Beschreibung |
+| Endpunkt | Methode | Berechtigung | Zweck |
 |---|---|---|---|
-| `/api/auth/jwt/create/` | `POST` | `AllowAny` | Login mit `email` & `password`. Gibt `access` (60 Min.) und `refresh` (7 Tage) Token zurück. |
-| `/api/auth/jwt/refresh/` | `POST` | `AllowAny` | Erneuert einen abgelaufenen Access Token mittels Refresh Token. |
-| `/api/auth/jwt/verify/` | `POST` | `AllowAny` | Prüft, ob ein übergebener Token noch gültig ist. |
-| `/api/auth/users/me/` | `GET` | `IsAuthenticated` | Gibt das Benutzerprofil des aktuell eingeloggten Users zurück. |
-| `/api/auth/users/reset_password/` | `POST` | `AllowAny` | Sendet bei Bedarf eine E-Mail zum Zurücksetzen des Passworts. |
-| `/api/auth/users/reset_password_confirm/` | `POST` | `AllowAny` | Bestätigt ein neues Passwort anhand des empfangenen Tokens. |
+| `/api/certificates/presigned_upload/` | `POST` | Auth | Signierte S3-Upload-URL für Direct-to-Storage (Weg B) |
+| `/api/certificates/<id>/publish/` | `POST` | Auth | Stellt Datei im Storage sicher und setzt `is_published=true` |
+| `/api/certificates/<id>/unpublish/` | `POST` | Auth | Setzt `is_published=false` |
+| `/api/certificates/<id>/extract_metadata/` | `POST` | Auth | On-Demand-OCR, liefert Vorschläge (überschreibt nichts) |
+| `/api/pending-certificates/<id>/approve/` | `POST` | Staff | Überführt Inbox-Eintrag in ein `Certificate` |
+| `/api/pending-certificates/<id>/reject/` | `POST` | Staff | Verwirft Inbox-Eintrag |
+
+### 3.2 Paginierung & Filter für `/api/certificates/`
+
+| Parameter | Werte | Wirkung |
+|---|---|---|
+| `page`, `page_size` | Zahl (Standard 20) | Serverseitige Paginierung |
+| `no_page` / `all` | `true` | Unpaginierte Gesamtliste (Abwärtskompatibilität) |
+| `is_published` | `true` / `false` | Nur für authentifizierte Nutzer wirksam |
+| `incomplete` | `true` | Fehlendes `issued_date` oder generierter/unvollständiger Titel |
+| `track` | ID oder Slug | Filter nach Track |
+| `provider` | ID oder Name | Filter nach Anbieter |
+| `search` | Text | Suche in Titel, Anbieter, Credential-ID |
+
+### 3.3 Hybrid-Serializer-Pattern
+
+- **Lesen:** verschachtelte Detailobjekte (`provider_details`, `skill_details`).
+- **Schreiben:** flache Primärschlüssel (`provider: 3`, `skills: [1, 2]`).
+- `Meta.fields` immer als Tupel (Ruff `RUF012`).
+
+### 3.4 Auth-API (`/api/auth/`, Djoser + SimpleJWT)
+
+| Endpunkt | Methode | Berechtigung | Beschreibung |
+|---|---|---|---|
+| `/api/auth/jwt/create/` | `POST` | Öffentlich | Login mit `email` + `password` → `access` (60 Min.) + `refresh` (7 Tage) |
+| `/api/auth/jwt/refresh/` | `POST` | Öffentlich | Neuer Access Token |
+| `/api/auth/jwt/verify/` | `POST` | Öffentlich | Token prüfen |
+| `/api/auth/users/me/` | `GET` | Auth | Eigenes Profil |
+| `/api/auth/users/reset_password/` | `POST` | Öffentlich | Passwort-Reset-Mail |
+| `/api/auth/users/reset_password_confirm/` | `POST` | Öffentlich | Neues Passwort bestätigen |
 
 > [!IMPORTANT]
-> **Gesperrte Endpunkte**: Der Endpunkt `POST /api/auth/users/` (Registrierung) sowie die Endpunkte zur Änderung des Benutzernamens (`username_update`) und Kontolöschung (`user_delete`) sind über Djoser-Berechtigungen strikt auf `IsAdminUser` beschränkt. Eine Selbstregistrierung durch Dritte ist unmöglich.
+> Registrierung (`POST /api/auth/users/`), Username-Änderung und Kontolöschung sind auf `IsAdminUser` beschränkt. Eine Selbstregistrierung ist nicht möglich.
+
+### 3.5 Weitere Routen
+
+| Endpunkt | Beschreibung |
+|---|---|
+| `/` | Browser (`Accept: text/html`) → Redirect auf `/api/docs/`; sonst JSON-Status mit Links zu Docs, Schema und Health-Check |
+| `/health_check` | `{"status": "ok"}` für Render-Health-Checks |
+| `/api/docs/`, `/api/schema/` | Swagger-UI bzw. OpenAPI-3-Schema |
+| `/admin/` | Django-Admin (siehe Hinweis in 4.2) |
 
 ---
 
-### 3.4 Web- und Dashboard-Views
+## 4. Authentifizierung & Sicherheit
 
-Zusätzlich zur JSON-REST-API stellt Django Server-Rendered-Views für das interne Administrations-Dashboard bereit:
+### 4.1 Auth-Konzept
 
-| Endpunkt | Methode | Schutz | Beschreibung |
-|---|---|---|---|
-| `/` | `GET`, `POST` | Öffentlich / `@csrf_exempt` | Login-Seite (`login.html`). Bei bestehender Session erfolgt Redirect auf `/dashboard/`. POST verifiziert Credentials und setzt Session-Cookie. |
-| `/dashboard/` | `GET` | `@login_required(login_url="/")` | Geschütztes Vanilla CSS/JS Portfolio-Dashboard (`dashboard.html`) zur Pflege der Daten. |
-| `/logout/` | `GET` | Authentifiziert | Meldet die Session ab und leitet auf `/` weiter. |
-| `/health_check`, `/health_check/` | `GET` | Öffentlich | Liefert `{"status": "ok"}` für Render-Uptime-Checks und Monitoring. |
+Seit [ADR-006](adrs/006-resolving-technical-debt-and-security.md) gibt es **einen** Auth-Weg für die Anwendung: **JWT** via Djoser + SimpleJWT. Die SPA hält die Tokens im `localStorage` und erneuert den Access Token bei `401` automatisch (Details in [frontend.md §4](frontend.md#4-api-client--jwt-refresh-zyklus-clientts)). Die frühere Session-basierte Dashboard-Variante ([ADR-003](adrs/003-dual-auth-strategie.md)) ist abgelöst.
 
----
+### 4.2 Sicherheitsentscheidungen
 
-### 3.5 API-Dokumentation & OpenAPI-Schema
-
-Die API ist über `drf-spectacular` vollständig nach OpenAPI 3.0 spezifiziert:
-- Schema-Generierung erfolgt automatisch basierend auf Serializern, ViewSets und Typ-Annotationen.
-- Sicherheitsdefinitionen weisen `Bearer` (JWT) als Authentifizierungsmechanismus aus.
-
----
-
-## 4. Authentifizierungs-Entscheidung & Sicherheitskonzept
-
-### 4.1 Dual-Auth-Strategie: Rationale
-
-Das Portfolio-Projekt nutzt eine bewusste **Dual-Auth-Architektur**, um zwei verschiedene Client-Typen optimal und sicher zu bedienen:
-
-```text
-                               ┌────────────────────────────────────────────────────────┐
-                               │                 Dual-Auth-Architektur                  │
-                               └────────────────────────────────────────────────────────┘
-                                              │
-                      ┌───────────────────────┴───────────────────────┐
-                      ▼                                               ▼
-       ┌──────────────────────────────┐                ┌──────────────────────────────┐
-       │   Session-Authentifizierung  │                │      JWT-Authentifizierung   │
-       │   (Django Web Dashboard)     │                │      (React SPA Frontend)    │
-       ├──────────────────────────────┤                ├──────────────────────────────┤
-       │ • Server-Side Rendering      │                │ • Headless REST-API          │
-       │ • HttpOnly Session-Cookie    │                │ • Stateless Bearer Token     │
-       │ • Eingebauter CSRF-Schutz    │                │ • Axios Request/Refresh-Flow │
-       │ • Kein Token-Storage im JS   │                │ • Entkoppeltes Frontend      │
-       └──────────────────────────────┘                └──────────────────────────────┘
-```
-
-1. **Session-Authentifizierung (für das integrierte Django-Dashboard)**:
-   - **Vorteil**: Die Authentifizierung erfolgt über browserverwaltete `sessionid`-Cookies mit `HttpOnly`-Flag. JavaScript hat keinen Zugriff auf das Cookie, was XSS-Token-Diebstahl verhindert.
-   - **Einsatzbereich**: Schnelle administrative Bearbeitungen direkt über das Server-Dashboard (`/dashboard/`).
-
-2. **JWT-Authentifizierung via SimpleJWT & Djoser (für das React SPA Frontend)**:
-   - **Vorteil**: Vollkommen zustandslos (stateless) auf dem Server. Die React-App kann auf einer beliebigen Domain oder CDN gehostet werden und autorisiert Anfragen via `Authorization: Bearer <access_token>`.
-   - **Token-Lifecycle**:
-     - **Access Token (60 Minuten)**: Kurzlebig, autorisiert jede Anfrage.
-     - **Refresh Token (7 Tage)**: Wird im Frontend genutzt, um bei Ablauf des Access Tokens (HTTP 401) transparent im Hintergrund einen neuen Access Token abzurufen (Axios Response Interceptor in `frontend/src/api/client.ts`).
+1. **Django-Admin (`/admin/`)**
+   > [!CAUTION]
+   > Frühere Dokumentation gab an, `/admin/` sei entfernt. Tatsächlich ist die Route in `backend/core/urls.py` **aktiv** (Session-Login). **Offene Entscheidung:** entfernen (kleinere Angriffsfläche) oder bewusst behalten und z. B. auf einen nicht erratbaren Pfad legen. Bis zur Entscheidung gilt der Ist-Zustand.
+2. **Custom User Model mit E-Mail-Login** (`portfolio.User`, `LOGIN_FIELD = "email"`, kein `username`).
+3. **Geschlossene Registrierung:** Nutzer nur via `createsuperuser`.
+4. **Datenverlust-Schutz:** `Certificate.provider` mit `on_delete=PROTECT`; API antwortet mit `409`.
+5. **Upload-Härtung:** Endungs- und Magic-Byte-Prüfung, 5-MB-Limit (Lücke bei Direct-Upload siehe 2.3).
+6. **Read-Only-Quellordner:** `CERTIFICATES_PATH` wird ausschließlich lesend verwendet (siehe [AGENTS.md](../AGENTS.md)).
+7. **Produktionshärtung bei `DEBUG=False`:** `SECURE_SSL_REDIRECT`, HSTS (1 Jahr, inkl. Subdomains, ohne Preload), sichere Cookies.
 
 ---
 
-### 4.2 Sicherheitsentscheidungen & Systemhärtung
+## 5. Architectural Decision Records
 
-#### 1. Vollständige Deaktivierung des Standard-Django-Admins (`/admin/`)
-- Das Standard-Admin-Interface `/admin/` wurde aus [backend/core/urls.py](file:///d:/dev/portfolio_project/backend/core/urls.py) entfernt.
-- **Begründung**: Reduzierung der Angriffsfläche gegen automatisierte Bots und Brute-Force-Attacken auf Standard-Django-Login-Pfade. Sämtliche Administration erfolgt über das maßgeschneiderte Dashboard bzw. die REST-API.
-
-#### 2. Custom User Model mit E-Mail-Zwang
-- Definition in [backend/portfolio/models.py](file:///d:/dev/portfolio_project/backend/portfolio/models.py) als `portfolio.User`.
-- `LOGIN_FIELD = "email"`, kein `username`-Feld vorhanden.
-- **Begründung**: Moderne, verwechslungsfreie Identifizierung. Passwörter werden standardmäßig mit PBKDF2-SHA256 gehasht (in Tests mit schnellem MD5-Hasher für maximale Geschwindigkeit).
-
-#### 3. Strikt geschlossenes Registrierungssystem
-- Neue Benutzer können ausschließlich manuell über die Konsole per `uv run python manage.py createsuperuser` angelegt werden.
-- Djoser-Endpunkte für Registrierung (`user_create`), Username-Updates und Kontolöschung sind auf `IsAdminUser` beschränkt.
-- **Begründung**: Ein persönliches Portfolio benötigt keine öffentliche Benutzerregistrierung.
-
-#### 4. Schutz vor Datenverlust bei Zertifikatsanbietern
-- `Certificate.provider` ist als `ForeignKey(Provider, on_delete=models.PROTECT)` definiert.
-- **Begründung**: Ein Anbieter kann nicht versehentlich gelöscht werden, solange ihm noch Zertifikate zugeordnet sind.
-
-#### 5. Produktionssicherheit (`DEBUG=False`)
-- Sobald `DEBUG=False` aktiv ist, greifen folgende Härtungsmaßnahmen:
-  - `SECURE_SSL_REDIRECT = True`: Erzwungenes HTTPS.
-  - `SECURE_HSTS_SECONDS = 31536000` (1 Jahr) mit `SECURE_HSTS_INCLUDE_SUBDOMAINS = True`.
-  - `SECURE_HSTS_PRELOAD = False` (bewusst deaktiviert gemäß Richtlinien).
-  - Sichere Cookies (`SESSION_COOKIE_SECURE = True`, `CSRF_COOKIE_SECURE = True`).
+| ADR | Titel | Status |
+|---|---|---|
+| [ADR-001](adrs/001-monorepo.md) | Monorepo vs. Polyrepo | Accepted |
+| [ADR-002](adrs/002-neon-db.md) | Neon Serverless PostgreSQL | Accepted |
+| [ADR-003](adrs/003-dual-auth-strategie.md) | Dual-Auth-Strategie | Superseded durch ADR-006 |
+| [ADR-004](adrs/004-state-management-frontend.md) | State Management im Frontend | Accepted |
+| [ADR-005](adrs/005-certificate-lifecycle-and-review.md) | Zertifikats-Lifecycle, Einzel-Review, Pagination | Accepted (OCR-Teil durch ADR-006 abgelöst) |
+| [ADR-006](adrs/006-resolving-technical-debt-and-security.md) | Technische Schulden, Headless, Sicherheit | Accepted |
 
 ---
 
-## 5. Architectural Decision Records (ADRs)
+## 6. Entwicklungsrichtlinien
 
-Wichtige architektonische Weichenstellungen sind formell in dedizierten ADRs dokumentiert:
-
-| ADR | Titel | Status | Kernthema |
-|---|---|---|---|
-| [ADR-001](adrs/001-monorepo.md) | **Monorepo vs. Polyrepo** | Accepted | Gemeinsame Versionskontrolle für Backend und Frontend zur Vermeidung von Drift. |
-| [ADR-002](adrs/002-neon-db.md) | **Wahl der Datenbank (Neon PostgreSQL)** | Accepted | Serverless PostgreSQL mit Branching für isolierte CI-Test-Pipelines. |
-| [ADR-003](adrs/003-dual-auth-strategie.md) | **Dual-Auth-Strategie** | Accepted | Headless JWT für React SPA und HttpOnly Cookies für das Django Dashboard. |
-| [ADR-004](adrs/004-state-management-frontend.md) | **State Management im Frontend** | Accepted | TanStack Query für Server-State und React Context für Auth/UI-State. |
-
----
-
-## 6. Wartung & Entwicklungsrichtlinien
-
-Für Code-Änderungen an Modellen, APIs oder der Konfiguration gelten die verbindlichen Vorgaben aus [AGENTS.md](file:///d:/dev/portfolio_project/AGENTS.md) und [GEMINI.md](file:///d:/dev/portfolio_project/GEMINI.md):
-
-- **Modell-Änderungen**: Stets Migrationen erzeugen (`uv run python manage.py makemigrations`) und committete Migrationen niemals nachträglich modifizieren.
-- **Qualitätssicherung**: Vor jedem Merge müssen alle Prüfungen im Ordner `backend/` bestehen:
-  ```bash
-  cd backend
-
-  # Test-Suite mit Coverage-Check (>= 95%)
-  uv run pytest --cov=portfolio --cov-fail-under=95
-
-  # Linting & Formatierung
-  uv run ruff check .
-  uv run ruff format .
-
-  # Typ-Sicherheit
-  uv run mypy .
-  ```
+Verbindliche Regeln für Agenten und Entwickler stehen in [AGENTS.md](../AGENTS.md) (Root) und den Backend-Konventionen in [docs/AGENTS.md](AGENTS.md). Qualitätskriterien (Coverage ≥ 95 %, Ruff, Mypy, Oxlint, Vitest, Build) sind in der [Definition of Done](backlog.md#definition-of-done-dod) festgelegt.

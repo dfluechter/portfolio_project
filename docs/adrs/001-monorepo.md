@@ -2,9 +2,10 @@
 
 **Status:** Accepted  
 **Datum:** 2026-10-06  
+**Autor:** Dominik Flüchter  
 
 ## Kontext und Problem
-Das Portfolio-Projekt besteht aus zwei Hauptkomponenten: einem Backend (Django 5.2) und einem Frontend (React 18). Es stellte sich die Frage, ob diese Komponenten in separaten Repositories (Polyrepo) oder in einem gemeinsamen Repository (Monorepo) verwaltet werden sollen.
+Das Portfolio-Projekt besteht aus zwei Hauptkomponenten: einem Backend (Django 5.2) und einem Frontend (React 19). Es stellte sich die Frage, ob diese Komponenten in separaten Repositories (Polyrepo) oder in einem gemeinsamen Repository (Monorepo) verwaltet werden sollen.
 
 ## Alternativen
 - **Polyrepo (Frontend und Backend getrennt):** Ermöglicht isolierte Berechtigungen und getrennte Deployment-Pipelines, führt aber zu einer schwereren Synchronisation zwischen API-Änderungen und UI-Anpassungen.

@@ -1,10 +1,15 @@
+import base64
 import datetime
 import hashlib
 import io
+import json
 import logging
+import os
 import re
+import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import pytesseract
 from django.utils.text import slugify
@@ -499,6 +504,106 @@ def _extract_from_image(
     return metadata, extracted_text, dimensions, ocr_pending
 
 
+def extract_via_gemini_vision(
+    file_path: Path,
+    api_key: str | None = None,
+    model: str | None = None,
+) -> dict[str, Any] | None:
+    """
+    Stufe 3 der Metadaten-Extraktion:
+    Analysiert gescannte oder bildbasierte Zertifikate via Google Gemini 1.5/2.5 Flash Vision.
+    Fällt transparent auf None zurück, wenn kein GEMINI_API_KEY konfiguriert ist (Graceful Degradation).
+    """
+    key = api_key or os.getenv("GEMINI_API_KEY")
+    if not key:
+        logger.debug(
+            "Kein GEMINI_API_KEY konfiguriert - überspringe Gemini Vision Stufe 3."
+        )
+        return None
+
+    gemini_model = model or os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent"
+        f"?key={key}"
+    )
+
+    ext = file_path.suffix.lower()
+    if ext == ".pdf":
+        mime_type = "application/pdf"
+    elif ext == ".png":
+        mime_type = "image/png"
+    elif ext in {".jpg", ".jpeg"}:
+        mime_type = "image/jpeg"
+    else:
+        return None
+
+    try:
+        with open(file_path, "rb") as f:
+            file_bytes = f.read()
+        b64_data = base64.b64encode(file_bytes).decode("utf-8")
+
+        prompt = (
+            "Du bist ein Experte für die Analyse von Zertifikaten und Weiterbildungsnachweisen. "
+            "Extrahiere die Metadaten dieses Zertifikats und antworte ausschließlich als valides JSON "
+            "mit den folgenden Feldern:\n"
+            "- title: Der genaue Titel des Zertifikats oder Kurses\n"
+            "- provider: Der Name des Ausstellers oder der Plattform (z. B. AWS, Google Cloud, Coursera, Udemy, etc.)\n"
+            "- credential_id: Identifikationsnummer oder Lizenznummer des Zertifikats (falls vorhanden, sonst leer)\n"
+            "- issued_date: Ausstellungsdatum im ISO-Format YYYY-MM-DD (falls erkennbar, sonst leer)\n"
+            "- extracted_text: Der wichtigste erkannte Text des Dokuments\n"
+            "- tracks: Liste passender technischer Lernpfade aus [backend, frontend, fullstack, cloud-devops, data-ai, security, agile]\n"
+        )
+
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt},
+                        {
+                            "inline_data": {
+                                "mime_type": mime_type,
+                                "data": b64_data,
+                            }
+                        },
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "response_mime_type": "application/json",
+                "temperature": 0.1,
+            },
+        }
+
+        req_data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=req_data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            resp_body = resp.read().decode("utf-8")
+            data = json.loads(resp_body)
+
+        candidates = data.get("candidates", [])
+        if not candidates:
+            return None
+
+        content_parts = candidates[0].get("content", {}).get("parts", [])
+        if not content_parts:
+            return None
+
+        raw_text = content_parts[0].get("text", "").strip()
+        parsed_json: dict[str, Any] = json.loads(raw_text)
+        return parsed_json
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Gemini Vision Extraktion für %s fehlgeschlagen: %s", file_path.name, exc
+        )
+        return None
+
+
 def extract_metadata(
     file_path: Path,
     source_root: Path,
@@ -550,6 +655,53 @@ def extract_metadata(
 
     guessed_track_slugs = guess_tracks(guessed_title, track_rules, extracted_text)
     guessed_track_slug = guessed_track_slugs[0] if guessed_track_slugs else ""
+
+    # Stufe 3: Multimodaler Gemini 1.5 Flash Vision Fallback
+    # Triggert, wenn nach Stufe 1 & 2 der Text fehlt/sehr kurz ist oder Titel/Aussteller fehlen
+    if (
+        ocr_pending
+        or len(extracted_text) < 20
+        or not guessed_title
+        or not guessed_provider
+    ):
+        gemini_data = extract_via_gemini_vision(file_path)
+        if gemini_data and isinstance(gemini_data, dict):
+            logger.info(
+                "Metadaten erfolgreich via Gemini Vision (Stufe 3) für %s extrahiert.",
+                file_path.name,
+            )
+            g_title = str(gemini_data.get("title") or "").strip()
+            if g_title:
+                guessed_title = g_title
+
+            g_provider = str(gemini_data.get("provider") or "").strip()
+            if g_provider:
+                guessed_provider = g_provider
+
+            g_cred = str(gemini_data.get("credential_id") or "").strip()
+            if g_cred and not credential_id:
+                credential_id = g_cred
+
+            g_date = str(gemini_data.get("issued_date") or "").strip()
+            if g_date and not issued_date:
+                parsed_g_date = parse_date_string(g_date)
+                if parsed_g_date:
+                    issued_date = parsed_g_date
+
+            g_text = str(gemini_data.get("extracted_text") or "").strip()
+            if g_text and len(extracted_text) < len(g_text):
+                extracted_text = g_text
+
+            if gemini_data.get("tracks") and isinstance(gemini_data["tracks"], list):
+                for g_track in gemini_data["tracks"]:
+                    g_slug = slugify(str(g_track))
+                    if g_slug and g_slug not in guessed_track_slugs:
+                        guessed_track_slugs.append(g_slug)
+            if not guessed_track_slug and guessed_track_slugs:
+                guessed_track_slug = guessed_track_slugs[0]
+
+            # Gemini Vision hat das Dokument erfolgreich analysiert
+            ocr_pending = False
 
     return ExtractionResult(
         sha256_hash=sha256_hash,

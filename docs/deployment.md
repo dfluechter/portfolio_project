@@ -60,8 +60,30 @@ set -o errexit
 
 uv sync --frozen --no-dev
 uv run python manage.py collectstatic --noinput
-uv run python manage.py migrate --noinput
+
+# Für Schema-Migrationen DIRECT_DATABASE_URL priorisieren (PgBouncer-Bypass)
+if [ -n "$DIRECT_DATABASE_URL" ]; then
+    echo "==> Führe Migrationen mit direkter Neon-Verbindung (DIRECT_DATABASE_URL) aus..."
+    RUNNING_MIGRATION=1 uv run python manage.py migrate --noinput
+else
+    echo "==> Führe Migrationen mit Standard-Verbindung aus..."
+    uv run python manage.py migrate --noinput
+fi
 ```
+
+### 2.3 Neon PostgreSQL: Trennung von Pooled- und Direct-Connection
+Neon Serverless PostgreSQL bietet zwei Verbindungstypen mit spezifischen Anwendungsfällen:
+
+- **Gepoolte Verbindung (`DATABASE_URL`):**
+  - Host enthält `-pooler` (z. B. `ep-xyz-pooler.eu-central-1.aws.neon.tech`).
+  - Nutzt PgBouncer im Transaction-Pooling-Modus.
+  - **Einsatz:** Regulärer Web-Betrieb (Gunicorn-Worker), um Tausende gleichzeitiger Requests effizient abzufedern und Verbindungsressourcen zu schonen.
+- **Direkte Verbindung (`DIRECT_DATABASE_URL`):**
+  - Host ohne `-pooler` (z. B. `ep-xyz.eu-central-1.aws.neon.tech`).
+  - Direkte Verbindung zur Neon-Compute-Instanz.
+  - **Einsatz:** Schema-Migrationen (`python manage.py migrate`), `pg_dump`, `pg_restore` und DDL-Operationen, da PgBouncer Session-Status, Prepared Statements und DDL-Sperren blockieren kann.
+
+In `core/settings.py` prüft Django automatisch, ob ein Migrationsbefehl aktiv ist (`migrate`, `makemigrations`, `RUNNING_MIGRATION=1`), und priorisiert in diesem Fall `DIRECT_DATABASE_URL` mit `conn_max_age=0`.
 
 ---
 
@@ -91,6 +113,41 @@ Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_projec
 | `NEON_PROJECT_ID` | GitHub Actions Secret | ID des Neon-Projekts für ephemere Test-Branches |
 | `NEON_API_KEY` | GitHub Actions Secret | API-Key für Neon Management CLI (`neonctl`) |
 | `RENDER_DEPLOY_HOOK_URL` | GitHub Actions Secret | Webhook-URL zum Starten des Render-Deployments |
-| `DATABASE_URL` | Render Environment | Connection-String zur Neon-Produktionsdatenbank |
+| `DATABASE_URL` | Render Environment | Gepoolter Connection-String (`-pooler`) für Gunicorn |
+| `DIRECT_DATABASE_URL` | Render Environment | Direkter Connection-String (ohne `-pooler`) für Schema-Migrationen |
 | `SECRET_KEY` | Render Environment | Django Secret Key |
-| `SUPABASE_URL` & Keys | Render Environment | S3-kompatibler Medien-Speicher für Zertifikate |
+| `USE_SUPABASE_S3` | Render Environment | `True` aktiviert den S3-Storage via `django-storages` |
+| `AWS_ACCESS_KEY_ID` | Render Environment | Supabase S3 Access Key ID |
+| `AWS_SECRET_ACCESS_KEY` | Render Environment | Supabase S3 Secret Access Key |
+| `AWS_STORAGE_BUCKET_NAME` | Render Environment | Name des Supabase Storage Buckets (z. B. `portfolio-media`) |
+| `AWS_S3_ENDPOINT_URL` | Render Environment | S3-Endpunkt (`https://<project-ref>.supabase.co/storage/v1/s3`) |
+| `AWS_S3_REGION_NAME` | Render Environment | Region (z. B. `eu-central-1`) |
+| `AWS_S3_PUBLIC_BUCKET` | Render Environment | `True` für dauerhafte Direkt-URLs, `False` für signierte URLs |
+| `SUPABASE_PUBLIC_MEDIA_URL` | Render Environment | Öffentliche CDN-Basis-URL des Buckets |
+| `GEMINI_API_KEY` | Render Environment | Optional: API-Key für multimodale OCR (Stufe 3) |
+| `VITE_API_URL` | Render Frontend | Basis-URL des Backend-Webservices (z. B. `https://portfolio-backend.onrender.com`) |
+
+---
+
+## 5. Supabase Storage: CORS-Konfiguration für Direct-to-Storage Uploads
+
+Da der Browser beim Direct-to-Storage Upload (User Story 10.1) Binärdateien direkt per `HTTP PUT` an den Supabase-S3-Endpunkt sendet, muss im Supabase-Projekt eine CORS-Regel für den Bucket hinterlegt sein:
+
+```json
+[
+  {
+    "AllowedOrigins": [
+      "https://portfolio.onrender.com",
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ],
+    "AllowedMethods": ["GET", "PUT", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+Diese Konfiguration kann über das Supabase Dashboard (Storage $\rightarrow$ Bucket Configuration $\rightarrow$ CORS Policies) oder über die AWS/S3-kompatible API hinterlegt werden.
+
