@@ -26,3 +26,5 @@ test_s3.py
 scratch/
 .venv/
 .ruff_cache/
+
+dist/

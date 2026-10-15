@@ -1,15 +1,125 @@
-import React, { useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Award, CheckCircle2, ExternalLink, Layers, RotateCcw, Search, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { usePublishedCertificates as useCertificates, useTracks } from '../hooks/usePortfolio';
 import { usePortfolioSearch } from '../hooks/usePortfolioSearch';
 import { SectionEmptyState } from './SectionEmptyState';
-import type { Certificate } from '../types';
+import type { Certificate, Track } from '../types';
+
+interface CertificateCardItemProps {
+  cert: Certificate;
+  issuerName: string;
+  trackMap: Map<number, Track>;
+  selectedTrackIds: number[];
+  onToggleTrack: (id: number) => void;
+}
+
+const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
+  ({ cert, issuerName, trackMap, selectedTrackIds, onToggleTrack }) => {
+    return (
+      <div className="group rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-5 hover:border-violet-500/50 hover:shadow-lg dark:hover:bg-slate-900/70 transition-all duration-300 flex flex-col justify-between shadow-sm hover:-translate-y-0.5 h-full">
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="px-2.5 py-1 rounded-md bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 text-violet-600 dark:text-violet-400 text-[11px] font-semibold">
+              {issuerName}
+            </span>
+            <span className="text-[11px] text-slate-500 font-medium">
+              {cert.issued_date
+                ? new Date(cert.issued_date).toLocaleDateString('de-DE')
+                : new Date(cert.uploaded_at).toLocaleDateString('de-DE')}
+            </span>
+          </div>
+
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors line-clamp-2">
+            {cert.title}
+          </h3>
+
+          {cert.credential_id && (
+            <p className="text-[11px] text-slate-500 font-mono mb-3">
+              ID: {cert.credential_id}
+            </p>
+          )}
+
+          {/* Zugeordnete Track-Badges */}
+          {cert.tracks && cert.tracks.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {cert.tracks.map((trackId: number) => {
+                const trackObj = trackMap.get(trackId);
+                if (!trackObj) return null;
+                const isSelected = selectedTrackIds.includes(trackId);
+                return (
+                  <button
+                    key={trackId}
+                    type="button"
+                    onClick={() => onToggleTrack(trackId)}
+                    aria-label={`Zertifikat-Track: ${trackObj.name}`}
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                      isSelected
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/60 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400'
+                    }`}
+                    title={`Nach Track "${trackObj.name}" filtern`}
+                  >
+                    {trackObj.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Verifiziert
+          </div>
+
+          <div className="flex items-center gap-3">
+            {cert.credential_url && (
+              <a
+                href={cert.credential_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
+                title="Online verifizieren"
+              >
+                Online prüfen
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+            {cert.pdf_file ? (
+              <a
+                href={cert.pdf_file}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors"
+              >
+                PDF
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            ) : (
+              <span className="text-xs text-slate-400 font-medium">Im Admin hinterlegt</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+);
+
+CertificateCardItem.displayName = 'CertificateCardItem';
 
 export const CertificatesSection: React.FC = () => {
   const { data: rawCertificates, isLoading } = useCertificates();
-  const certificates = Array.isArray(rawCertificates) ? rawCertificates : [];
-  const { data: tracks = [] } = useTracks();
+  const certificates = useMemo(
+    () => (Array.isArray(rawCertificates) ? rawCertificates : []),
+    [rawCertificates]
+  );
+  const { data: rawTracks = [] } = useTracks();
+  const tracks = useMemo(
+    () => (Array.isArray(rawTracks) ? rawTracks : []),
+    [rawTracks]
+  );
 
   const { searchTerm, setSearchTerm, clearSearch } = usePortfolioSearch();
   const [selectedIssuer, setSelectedIssuer] = useState<string>('all');
@@ -19,8 +129,11 @@ export const CertificatesSection: React.FC = () => {
     return cert.provider_details?.provider || 'Zertifikatsanbieter';
   };
 
-  const issuers = ['all', ...Array.from(new Set(certificates.map(getIssuerName)))];
-  const trackMap = new Map(tracks.map((t) => [t.id, t]));
+  const issuers = useMemo(
+    () => ['all', ...Array.from(new Set(certificates.map(getIssuerName)))],
+    [certificates]
+  );
+  const trackMap = useMemo(() => new Map(tracks.map((t) => [t.id, t])), [tracks]);
 
   const getTrackCount = (trackId: number): number => {
     return certificates.filter((c) => c.tracks?.includes(trackId)).length;
@@ -44,19 +157,62 @@ export const CertificatesSection: React.FC = () => {
     setSelectedTrackIds([]);
   };
 
-  const filteredCertificates = certificates.filter((cert) => {
-    const issuerName = getIssuerName(cert);
+  const filteredCertificates = useMemo(() => {
     const query = searchTerm.toLowerCase();
-    const matchesSearch =
-      !query ||
-      cert.title.toLowerCase().includes(query) ||
-      issuerName.toLowerCase().includes(query);
-    const matchesIssuer = selectedIssuer === 'all' || issuerName === selectedIssuer;
-    const matchesTracks =
-      selectedTrackIds.length === 0 ||
-      (cert.tracks && cert.tracks.some((id) => selectedTrackIds.includes(id)));
+    return certificates.filter((cert) => {
+      const issuerName = getIssuerName(cert);
+      const matchesSearch =
+        !query ||
+        cert.title.toLowerCase().includes(query) ||
+        issuerName.toLowerCase().includes(query);
+      const matchesIssuer = selectedIssuer === 'all' || issuerName === selectedIssuer;
+      const matchesTracks =
+        selectedTrackIds.length === 0 ||
+        (cert.tracks && cert.tracks.some((id) => selectedTrackIds.includes(id)));
 
-    return matchesSearch && matchesIssuer && matchesTracks;
+      return matchesSearch && matchesIssuer && matchesTracks;
+    });
+  }, [certificates, searchTerm, selectedIssuer, selectedTrackIds]);
+
+  const [columns, setColumns] = useState(() => {
+    if (typeof window === 'undefined') return 3;
+    if (window.innerWidth < 768) return 1;
+    if (window.innerWidth < 1024) return 2;
+    return 3;
+  });
+
+  useEffect(() => {
+    const updateColumns = () => {
+      const width = window.innerWidth;
+      const nextCols = width < 768 ? 1 : width < 1024 ? 2 : 3;
+      setColumns((prev) => (prev !== nextCols ? nextCols : prev));
+    };
+    window.addEventListener('resize', updateColumns);
+    return () => window.removeEventListener('resize', updateColumns);
+  }, []);
+
+  const rows = useMemo(() => {
+    const chunks: Certificate[][] = [];
+    for (let i = 0; i < filteredCertificates.length; i += columns) {
+      chunks.push(filteredCertificates.slice(i, i + columns));
+    }
+    return chunks;
+  }, [filteredCertificates, columns]);
+
+  const listRef = useRef<HTMLDivElement>(null);
+  const [scrollMargin, setScrollMargin] = useState(0);
+
+  useLayoutEffect(() => {
+    if (listRef.current) {
+      setScrollMargin(listRef.current.offsetTop);
+    }
+  }, []);
+
+  const virtualizer = useWindowVirtualizer({
+    count: rows.length,
+    estimateSize: () => 240,
+    overscan: 2,
+    scrollMargin,
   });
 
   const isAnyFilterActive =
@@ -252,109 +408,62 @@ export const CertificatesSection: React.FC = () => {
             query={searchTerm || selectedIssuer || activeTrackNames.join(', ')}
             onReset={resetAllFilters}
           />
-        ) : (
+        ) : filteredCertificates.length <= 6 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence>
-              {filteredCertificates.map((cert) => {
-                const issuerName = getIssuerName(cert);
+            {filteredCertificates.map((cert) => (
+              <CertificateCardItem
+                key={cert.id}
+                cert={cert}
+                issuerName={getIssuerName(cert)}
+                trackMap={trackMap}
+                selectedTrackIds={selectedTrackIds}
+                onToggleTrack={toggleTrack}
+              />
+            ))}
+          </div>
+        ) : (
+          <div ref={listRef} className="relative w-full">
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const rowItems = rows[virtualRow.index] || [];
                 return (
-                  <motion.div
-                    key={cert.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.96 }}
-                    transition={{ duration: 0.2 }}
-                    className="group rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-5 hover:border-violet-500/50 hover:shadow-lg dark:hover:bg-slate-900/70 transition-all duration-300 flex flex-col justify-between shadow-sm hover:-translate-y-0.5"
+                  <div
+                    key={virtualRow.index}
+                    ref={virtualizer.measureElement}
+                    data-index={virtualRow.index}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${
+                        virtualRow.start - (virtualizer.options.scrollMargin ?? 0)
+                      }px)`,
+                    }}
+                    className="pb-6"
                   >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="px-2.5 py-1 rounded-md bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 text-violet-600 dark:text-violet-400 text-[11px] font-semibold">
-                          {issuerName}
-                        </span>
-                        <span className="text-[11px] text-slate-500 font-medium">
-                          {cert.issued_date
-                            ? new Date(cert.issued_date).toLocaleDateString('de-DE')
-                            : new Date(cert.uploaded_at).toLocaleDateString('de-DE')}
-                        </span>
-                      </div>
-
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors line-clamp-2">
-                        {cert.title}
-                      </h3>
-
-                      {cert.credential_id && (
-                        <p className="text-[11px] text-slate-500 font-mono mb-3">
-                          ID: {cert.credential_id}
-                        </p>
-                      )}
-
-                      {/* Zugeordnete Track-Badges */}
-                      {cert.tracks && cert.tracks.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {cert.tracks.map((trackId: number) => {
-                            const trackObj = trackMap.get(trackId);
-                            if (!trackObj) return null;
-                            const isSelected = selectedTrackIds.includes(trackId);
-                            return (
-                              <button
-                                key={trackId}
-                                type="button"
-                                onClick={() => toggleTrack(trackId)}
-                                aria-label={`Zertifikat-Track: ${trackObj.name}`}
-                                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                                  isSelected
-                                    ? 'bg-violet-600 text-white'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/60 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400'
-                                }`}
-                                title={`Nach Track "${trackObj.name}" filtern`}
-                              >
-                                {trackObj.name}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {rowItems.map((cert) => (
+                        <CertificateCardItem
+                          key={cert.id}
+                          cert={cert}
+                          issuerName={getIssuerName(cert)}
+                          trackMap={trackMap}
+                          selectedTrackIds={selectedTrackIds}
+                          onToggleTrack={toggleTrack}
+                        />
+                      ))}
                     </div>
-
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Verifiziert
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {cert.credential_url && (
-                          <a
-                            href={cert.credential_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
-                            title="Online verifizieren"
-                          >
-                            Online prüfen
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        )}
-                        {cert.pdf_file ? (
-                          <a
-                            href={cert.pdf_file}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors"
-                          >
-                            PDF
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        ) : (
-                          <span className="text-xs text-slate-400 font-medium">Im Admin hinterlegt</span>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
+                  </div>
                 );
               })}
-            </AnimatePresence>
+            </div>
           </div>
         )}
       </div>

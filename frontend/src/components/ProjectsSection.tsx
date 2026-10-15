@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ExternalLink, FolderGit2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProjects } from '../hooks/usePortfolio';
@@ -38,16 +38,21 @@ export const ProjectsSection: React.FC = () => {
   const { data: projectsData, isLoading } = useProjects();
   const { searchTerm, clearSearch } = usePortfolioSearch();
 
-  const allProjects = projectsData && projectsData.length > 0 ? projectsData : defaultProjects;
+  const allProjects = useMemo(
+    () => (projectsData && projectsData.length > 0 ? projectsData : defaultProjects),
+    [projectsData]
+  );
 
-  const filteredProjects = allProjects.filter((project) => {
-    if (!searchTerm.trim()) return true;
+  const filteredProjects = useMemo(() => {
+    if (!searchTerm.trim()) return allProjects;
     const query = searchTerm.toLowerCase();
-    const matchTitle = project.title.toLowerCase().includes(query);
-    const matchDesc = project.description.toLowerCase().includes(query);
-    const matchSkill = project.skill_details?.some((s) => s.name.toLowerCase().includes(query));
-    return matchTitle || matchDesc || matchSkill;
-  });
+    return allProjects.filter((project) => {
+      const matchTitle = project.title.toLowerCase().includes(query);
+      const matchDesc = project.description.toLowerCase().includes(query);
+      const matchSkill = project.skill_details?.some((s) => s.name.toLowerCase().includes(query));
+      return matchTitle || matchDesc || matchSkill;
+    });
+  }, [allProjects, searchTerm]);
 
   return (
     <section id="projects" className="py-20 bg-slate-100/40 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800/80 transition-colors">
