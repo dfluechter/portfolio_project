@@ -563,6 +563,7 @@ class TestCertificateAPI:
 
     def test_authenticated_can_publish_and_unpublish(self, auth_client):
         provider = Provider.objects.create(provider="MIT")
+        track = Track.objects.create(name="MIT Track", slug="mit-track")
         f = SimpleUploadedFile("cert.pdf", b"data", content_type="application/pdf")
         cert = Certificate.objects.create(
             title="MIT AI",
@@ -571,6 +572,7 @@ class TestCertificateAPI:
             sha256_hash="f1" * 32,
             is_published=False,
         )
+        cert.tracks.add(track)
         publish_url = reverse("certificate-publish", kwargs={"pk": cert.pk})
         unpublish_url = reverse("certificate-unpublish", kwargs={"pk": cert.pk})
 
@@ -633,9 +635,7 @@ class TestCertificateAPI:
 
         import portfolio.services.extractor as extractor_module
 
-        monkeypatch.setattr(
-            extractor_module, "PdfReader", lambda _f: DummyReader()
-        )
+        monkeypatch.setattr(extractor_module, "PdfReader", lambda _f: DummyReader())
 
         url = reverse("certificate-extract-metadata", kwargs={"pk": cert.pk})
         resp = auth_client.post(url)

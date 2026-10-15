@@ -85,10 +85,10 @@ export const usePendingCertificates = () => {
   });
 };
 
-export const useProviders = () => {
+export const useProviders = (params?: { has_certificates?: boolean }) => {
   return useQuery({
-    queryKey: portfolioKeys.providers(),
-    queryFn: portfolioService.getProviders,
+    queryKey: params ? [...portfolioKeys.providers(), params] : portfolioKeys.providers(),
+    queryFn: () => portfolioService.getProviders(params),
     staleTime: 1000 * 60 * 5,
   });
 };
@@ -107,6 +107,17 @@ export const useCreateProject = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (formData: FormData) => portfolioService.createProject(formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.projects() });
+    },
+  });
+};
+
+export const useUpdateProject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, formData }: { id: number; formData: FormData }) =>
+      portfolioService.updateProject(id, formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: portfolioKeys.projects() });
     },
@@ -246,3 +257,16 @@ export const useCreateProvider = () => {
     },
   });
 };
+
+export const useSendAIChatMessage = () => {
+  return useMutation({
+    mutationFn: ({
+      message,
+      history,
+    }: {
+      message: string;
+      history?: { role: 'user' | 'model'; text: string }[];
+    }) => portfolioService.sendAIChatMessage(message, history),
+  });
+};
+

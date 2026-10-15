@@ -30,6 +30,9 @@ frontend/src/
 │   ├── client.ts                 # Axios Instanz mit JWT-Injektion & 401-Refresh-Queue
 │   └── client.test.ts            # Tests für Interceptors und Queue-Verhalten
 ├── components/
+│   ├── chat/                     # RAG KI-Copilot Chat-Widget
+│   │   ├── PortfolioChatWidget.tsx    # Vercel/ibelick Polish, Deep-Linking & Glassmorphism
+│   │   └── PortfolioChatWidget.test.tsx # Vitest Komponententests
 │   ├── dashboard/                # Admin-Komponenten
 │   │   ├── CertificateEditModal.tsx   # Review-Drawer & On-Demand OCR Metadaten
 │   │   ├── CertificateManager.tsx     # Paginierte Zertifikatsliste & Filter
@@ -210,6 +213,26 @@ npm run lint
 npm run build
 ```
 
-- **Vitest**: Ausführung aller 51 Komponenten-, Hook- und Interceptor-Tests in isolierten Umgebungen.
+- **Vitest**: Ausführung aller 58 Komponenten-, Hook- und Interceptor-Tests in isolierten Umgebungen.
 - **React Testing Library**: Nutzerzentrierte Tests basierend auf Accessibility-Rollen (`getByRole`, `findByText`).
 - **Oxlint**: Extrem schneller Rust-basierter Linter zur Einhaltung von Code-Standards.
+
+---
+
+## 10. Portfolio-Copilot Chat-Widget & UI-Skills Standards
+
+Mit **Epic 11** wurde der RAG Portfolio-Copilot nahtlos in die React-SPA integriert ([`PortfolioChatWidget.tsx`](../frontend/src/components/chat/PortfolioChatWidget.tsx)).
+
+### 10.1 Interaktive Deep-Linking Quell-Badges
+- KI-Antworten werden geparst und strukturierte Zitate am Fuß der Nachricht gerendert.
+- Ein Klick auf ein Badge führt einen sanften Bildlauf (`scrollIntoView({ behavior: 'smooth' })`) zu der entsprechenden DOM-ID (`#project-<id>` oder `#cert-<id>`) aus.
+- Die Zielkomponente wird für 2000 ms mit einem pulsierenden Ring hervorgehoben (`ring-2 ring-blue-500 shadow-lg`), sodass der Besucher die referenzierte Qualifikation sofort optisch erfasst.
+
+### 10.2 UI-Skills & Design-Veredelung (Vercel / ibelick Standards)
+- **Glassmorphism**: Transluzenter Hintergrund mit `backdrop-blur-2xl` und dezenten Gradient-Bordern im Dark- und Light-Mode.
+- **Taktile Haptik**: Mikrointeraktionen mit `active:scale-95` auf interaktiven Elementen.
+- **Thinking State**: Animierte 3-Dot Bouncing Wave (`animate-bounce` mit gestaffelten CSS-Delays).
+- **Radar-Ping**: Der schwebende Chat-Trigger-Button pulsiert dezent mit einem Radar-Ring (`animate-ping`), um auf die KI-Funktionalität aufmerksam zu machen.
+- **Copy-to-Clipboard**: Kopieren von Antworten mit animiertem Morphing von Copy-Icon zu Checkmark-Icon.
+- **Barrierefreiheit (a11y)**: Vollständige ARIA-Attribute (`aria-live="polite"`, `role="log"`), Tastatur-Bedienbarkeit (ESC zum Schließen) und sichtbare Fokus-Ringe (`focus-visible:ring-2`).
+

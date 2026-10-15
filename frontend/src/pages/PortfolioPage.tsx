@@ -7,6 +7,7 @@ import { CertificatesSection } from '../components/CertificatesSection';
 import { TimelineSection } from '../components/TimelineSection';
 import { ContactSection } from '../components/ContactSection';
 import { Footer } from '../components/Footer';
+import { PortfolioChatWidget } from '../components/chat/PortfolioChatWidget';
 
 export const PortfolioPage: React.FC = () => {
   return (
@@ -21,6 +22,7 @@ export const PortfolioPage: React.FC = () => {
         <ContactSection />
       </main>
       <Footer />
+      <PortfolioChatWidget />
     </div>
   );
 };

@@ -63,6 +63,8 @@ export interface Track {
   name: string;
   slug: string;
   description: string;
+  icon?: string;
+  icon_url?: string;
   created_at: string;
 }
 
@@ -150,3 +152,24 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+export interface CitationSource {
+  type: 'project' | 'certificate' | 'skill' | 'general';
+  id?: number;
+  title: string;
+  target_id?: string;
+}
+
+export type ChatSourceItem = string | CitationSource;
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'model';
+  text: string;
+  timestamp: string;
+  sources?: ChatSourceItem[];
+}
+
+export interface AIChatResponse {
+  reply: string;
+  sources: ChatSourceItem[];
+}

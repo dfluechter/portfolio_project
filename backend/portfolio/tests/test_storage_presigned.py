@@ -15,7 +15,9 @@ class TestPresignedUploadAPI:
         self.user = User.objects.create_superuser(
             email="admin@example.com", password="password123"
         )
-        self.provider = Provider.objects.create(provider="Amazon Web Services", aktiv=True)
+        self.provider = Provider.objects.create(
+            provider="Amazon Web Services", aktiv=True
+        )
         self.url = "/api/certificates/presigned_upload/"
 
     def test_presigned_upload_requires_authentication(self):
@@ -30,13 +32,17 @@ class TestPresignedUploadAPI:
 
     def test_presigned_upload_rejects_unsupported_extension(self):
         self.client.force_authenticate(user=self.user)
-        response = self.client.post(self.url, {"filename": "malicious.exe"}, format="json")
+        response = self.client.post(
+            self.url, {"filename": "malicious.exe"}, format="json"
+        )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Nicht unterstützter Dateityp" in response.json()["detail"]
 
     def test_presigned_upload_success_default_local_fallback(self):
         self.client.force_authenticate(user=self.user)
-        response = self.client.post(self.url, {"filename": "my_certificate.pdf"}, format="json")
+        response = self.client.post(
+            self.url, {"filename": "my_certificate.pdf"}, format="json"
+        )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["method"] == "PUT"
@@ -55,7 +61,9 @@ class TestPresignedUploadAPI:
 
         with (
             patch("portfolio.services.storage.get_s3_client", return_value=mock_s3),
-            patch.dict("os.environ", {"AWS_S3_ENDPOINT_URL": "https://fake-s3.example.com"}),
+            patch.dict(
+                "os.environ", {"AWS_S3_ENDPOINT_URL": "https://fake-s3.example.com"}
+            ),
         ):
             response = self.client.post(
                 self.url,
@@ -64,7 +72,10 @@ class TestPresignedUploadAPI:
             )
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            assert data["url"] == "https://my-supabase-ref.storage.supabase.co/v1/s3/presigned-url"
+            assert (
+                data["url"]
+                == "https://my-supabase-ref.storage.supabase.co/v1/s3/presigned-url"
+            )
             assert data["storage_key"].endswith(".png")
             assert data["headers"]["Content-Type"] == "image/png"
             mock_s3.generate_presigned_url.assert_called_once()

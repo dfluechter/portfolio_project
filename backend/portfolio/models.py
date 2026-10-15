@@ -256,6 +256,13 @@ class Track(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name="Track-Name")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug")
     description = models.TextField(blank=True, verbose_name="Beschreibung")
+    icon = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        verbose_name="FontAwesome Solid Icon Name",
+        help_text="z. B. 'database', 'code', 'cloud', 'shield-halved', 'brain'",
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Erstellt am")
 
     class Meta:
@@ -265,6 +272,12 @@ class Track(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def icon_url(self) -> str:
+        if self.icon:
+            return f"/static/img/icons/{self.icon}.svg"
+        return ""
 
 
 class Certificate(models.Model):
@@ -489,7 +502,9 @@ class Project(models.Model):
     is_featured = models.BooleanField(
         default=False, verbose_name="Hervorgehoben / Top-Projekt"
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Erstellt am")
+    created_at = models.DateTimeField(
+        default=timezone.now, verbose_name="Erstellt am"
+    )
 
     class Meta:
         verbose_name = "Projekt"

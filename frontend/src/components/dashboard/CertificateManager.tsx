@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  CloudUpload,
   ExternalLink,
   EyeOff,
   Globe,
@@ -20,11 +19,12 @@ import {
   useDeleteCertificate,
   useProviders,
   usePublishCertificate,
+  useTracks,
   useUnpublishCertificate,
 } from '../../hooks/usePortfolio';
 import { ConfirmModal } from './ConfirmModal';
 import { CertificateEditModal } from './CertificateEditModal';
-import { UploadCertificateModal } from './UploadCertificateModal';
+import { TrackIcon } from '../TrackIcon';
 import type { Certificate } from '../../types';
 
 interface CertificateManagerProps {
@@ -48,7 +48,9 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const { data: providers = [], isLoading: loadingProviders } = useProviders();
+  const { data: providers = [], isLoading: loadingProviders } = useProviders({ has_certificates: true });
+  const { data: tracks = [] } = useTracks();
+  const trackMap = React.useMemo(() => new Map(tracks.map((t) => [t.id, t])), [tracks]);
 
   // Query-Parameter für serverseitige Filter & Paginierung
   const queryParams = {
@@ -82,7 +84,6 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
   const [pendingActionId, setPendingActionId] = useState<number | null>(null);
   const [certToEdit, setCertToEdit] = useState<Certificate | null>(null);
   const [certToDelete, setCertToDelete] = useState<{ id: number; title: string } | null>(null);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   const handleStatusFilterChange = (
     status: 'all' | 'published' | 'unpublished' | 'incomplete'
@@ -109,6 +110,13 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
   };
 
   const handleTogglePublish = async (cert: Certificate) => {
+    if (!cert.is_published && (!cert.tracks || cert.tracks.length === 0)) {
+      onNotify({
+        type: 'error',
+        text: 'Ein Zertifikat kann nur veröffentlicht werden, wenn mindestens ein Track zugewiesen ist.',
+      });
+      return;
+    }
     setPendingActionId(cert.id);
     try {
       if (cert.is_published) {
@@ -155,16 +163,6 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
                 className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
               />
             </div>
-
-            {/* Direct-to-Storage Upload Button */}
-            <button
-              type="button"
-              onClick={() => setIsUploadModalOpen(true)}
-              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm shadow-indigo-600/30 shrink-0"
-            >
-              <CloudUpload className="w-4 h-4" />
-              <span>Zertifikat hochladen</span>
-            </button>
           </div>
         </div>
 
@@ -294,6 +292,20 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
                           <AlertCircle className="w-3 h-3" /> Unvollständig
                         </span>
                       )}
+                      {/* Track-Badges mit Icons */}
+                      {cert.tracks && cert.tracks.length > 0 && cert.tracks.map((trackId) => {
+                        const trackObj = trackMap.get(trackId);
+                        if (!trackObj) return null;
+                        return (
+                          <span
+                            key={trackId}
+                            className="text-xs font-medium text-slate-200 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/60 inline-flex items-center gap-2"
+                          >
+                            <TrackIcon track={trackObj} className="w-6 h-6 text-violet-400 dark:text-violet-300" />
+                            <span>{trackObj.name}</span>
+                          </span>
+                        );
+                      })}
                     </div>
                     <h3 className="font-bold text-white text-sm mt-1 truncate group-hover:text-indigo-300 transition-colors" title={cert.title}>
                       {cert.title}
@@ -311,35 +323,46 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Veröffentlichen / Zurückziehen Button */}
-                    <button
-                      type="button"
-                      disabled={isActionPending}
-                      onClick={() => handleTogglePublish(cert)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 ${
-                        cert.is_published
-                          ? 'bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300'
-                          : 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30'
-                      }`}
-                      title={
-                        cert.is_published
+                    {(() => {
+                      const hasTracks = Boolean(cert.tracks && cert.tracks.length > 0);
+                      const isPublishDisabled = isActionPending || (!cert.is_published && !hasTracks);
+                      const buttonTitle =
+                        !cert.is_published && !hasTracks
+                          ? 'Mindestens ein Track erforderlich für Veröffentlichung'
+                          : cert.is_published
                           ? 'Auf Entwurf zurücksetzen'
-                          : 'Veröffentlichen (in S3 ablegen)'
-                      }
-                    >
-                      {isActionPending ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : cert.is_published ? (
-                        <>
-                          <EyeOff className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Entwurf</span>
-                        </>
-                      ) : (
-                        <>
-                          <Globe className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Veröffentlichen</span>
-                        </>
-                      )}
-                    </button>
+                          : 'Veröffentlichen (in S3 ablegen)';
+
+                      return (
+                        <button
+                          type="button"
+                          disabled={isPublishDisabled}
+                          onClick={() => handleTogglePublish(cert)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                            cert.is_published
+                              ? 'bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300'
+                              : !hasTracks
+                              ? 'bg-slate-800/40 text-slate-500 border border-slate-800'
+                              : 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30'
+                          }`}
+                          title={buttonTitle}
+                        >
+                          {isActionPending ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : cert.is_published ? (
+                            <>
+                              <EyeOff className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Entwurf</span>
+                            </>
+                          ) : (
+                            <>
+                              <Globe className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Veröffentlichen</span>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })()}
 
                     {cert.pdf_file && (
                       <a
@@ -441,13 +464,6 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
         key={certToEdit?.id ?? 'none'}
         certificate={certToEdit}
         onClose={() => setCertToEdit(null)}
-        onNotify={onNotify}
-      />
-
-      {/* Direct-to-Storage Upload Modal */}
-      <UploadCertificateModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
         onNotify={onNotify}
       />
     </div>

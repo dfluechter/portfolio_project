@@ -60,7 +60,7 @@ In Produktion steuert Vite die API-URL über die Basis-Konfiguration.
 frontend/
 ├── src/
 │   ├── assets/              # Statische Grafiken und Icons
-│   ├── components/          # Wiederverwendbare UI-Komponenten (Navbar, Cards, Modale)
+│   ├── components/          # Wiederverwendbare UI-Komponenten (Navbar, Cards, Modale, chat/PortfolioChatWidget)
 │   ├── context/             # AuthContext für Session-/Token-Zustand
 │   ├── hooks/               # Custom Hooks (useDebounce, useAdminAuth etc.)
 │   ├── pages/               # Seiten (PortfolioPage, LoginPage, DashboardPage)

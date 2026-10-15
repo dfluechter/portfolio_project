@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from rest_framework.test import APIClient
 
-from portfolio.models import Certificate, Provider, User
+from portfolio.models import Certificate, Provider, Track, User
 from portfolio.services.storage import (
     ensure_certificate_in_storage,
     find_local_certificate_file,
@@ -48,6 +48,9 @@ class TestCertificatePublishStorage:
             is_published=False,
         )
 
+        track = Track.objects.create(name="Publish Track", slug="publish-track")
+        cert.tracks.add(track)
+
         with patch.dict("os.environ", {"CERTIFICATES_PATH": str(tmp_path)}):
             found = find_local_certificate_file(cert)
             assert found is not None
@@ -70,6 +73,8 @@ class TestCertificatePublishStorage:
             sha256_hash="publishhash987654321012",
             is_published=False,
         )
+        track = Track.objects.create(name="Publish Test Track", slug="publish-test-track")
+        cert.tracks.add(track)
 
         with patch.dict("os.environ", {"CERTIFICATES_PATH": str(tmp_path)}):
             response = self.client.post(f"/api/certificates/{cert.id}/publish/")

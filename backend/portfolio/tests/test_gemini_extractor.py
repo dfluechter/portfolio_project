@@ -69,7 +69,9 @@ def test_gemini_vision_successful_extraction(dummy_image_file):
 
 def test_gemini_vision_handles_api_error_gracefully(dummy_image_file):
     """Testet, dass API-Fehler (z.B. HTTP 500 oder Netzwerkfehler) abgefangen werden."""
-    with patch("urllib.request.urlopen", side_effect=OSError("Network connection refused")):
+    with patch(
+        "urllib.request.urlopen", side_effect=OSError("Network connection refused")
+    ):
         result = extract_via_gemini_vision(dummy_image_file, api_key="dummy-test-key")
         assert result is None
 

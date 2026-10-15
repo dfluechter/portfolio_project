@@ -2,7 +2,7 @@
 
 Diese Dokumentation beschreibt Architektur, Datenfluss, API-Endpunkte sowie das Authentifizierungs- und Sicherheitskonzept des Portfolios.
 
-Weiterführend: [Frontend-Architektur](frontend.md) · [Deployment & Operations](deployment.md) · [Glossar](glossary.md) · [Backlog](backlog.md) · [ADRs](adrs/)
+Weiterführend: [Frontend-Architektur](frontend.md) · [RAG Portfolio-Copilot](ai-assistant-rag.md) · [Deployment & Operations](deployment.md) · [Glossar](glossary.md) · [Backlog](backlog.md) · [ADRs](adrs/)
 
 ---
 
@@ -25,15 +25,15 @@ graph TB
     subgraph Backend["Django 5.2 (Headless API)"]
         CoreUrls["URL Routing (core/urls.py)"]
         AuthModule["Djoser + SimpleJWT"]
-        ViewSets["DRF ViewSets & Actions"]
-        Services["Services: storage, extractor, promotion"]
+        ViewSets["DRF ViewSets & Actions (inkl. AIChatView)"]
+        Services["Services: storage, extractor, promotion, ai_assistant"]
         Models["ORM Models"]
     end
 
-    subgraph Storage["Persistenz"]
+    subgraph Storage["Persistenz & KI"]
         NeonDB[("Neon PostgreSQL / SQLite lokal")]
         SupabaseS3[("Supabase Storage (S3)")]
-        Gemini["Gemini API (OCR Stufe 3, optional)"]
+        Gemini["Google Gemini 3.8 Flash (RAG Copilot & OCR)"]
     end
 
     Visitor --> StaticSite
@@ -56,8 +56,9 @@ graph TB
 |---|---|---|
 | Backend | Python 3.13 / Django 5.2 / DRF | REST-API und Geschäftslogik |
 | Paketmanagement | `uv` | Reproduzierbare Abhängigkeiten |
-| Frontend | React 19 / TypeScript / Vite / Tailwind CSS v4 | Öffentliche Seite & Admin-Dashboard |
+| Frontend | React 19 / TypeScript / Vite / Tailwind CSS v4 | Öffentliche Seite, Chatbot & Admin-Dashboard |
 | Datenbank | Neon Serverless PostgreSQL (Prod) / SQLite (Dev) | Relationale Daten |
+| KI / LLM | Google Gemini 3.8 Flash via `google-genai` | RAG Portfolio-Copilot (`/api/ai/chat/`) & OCR |
 | Media | Supabase Storage (S3-kompatibel, `django-storages` + `boto3`) | Zertifikatsdokumente |
 | Statische Dateien | WhiteNoise | Auslieferung der Django-Static-Files (Swagger-UI, Admin) |
 | OCR | `pypdf`, `pytesseract`, Gemini (optional) | Metadaten-Extraktion |
@@ -160,6 +161,16 @@ sequenceDiagram
 - Migrationen nutzen bevorzugt `DIRECT_DATABASE_URL` (PgBouncer-Bypass), Details siehe [deployment.md §2.3](deployment.md#23-neon-postgresql-trennung-von-pooled--und-direct-connection).
 - Tests laufen mit `core.settings_test` (gesetzt in `backend/pytest.ini`).
 
+### 2.5 RAG Portfolio-Copilot, Signals Caching & Deep-Linking
+
+Für interaktive Besucherfragen steht der Portfolio-Copilot bereit (`POST /api/ai/chat/`).
+- **LLM**: Google Gemini 3.8 Flash via `google-genai` SDK.
+- **RAG & Query-Pruning**: Der Prompt erhält ausschließlich veröffentlichte Datensätze (`is_published=True`). Über heuristisches Query-Pruning werden je nach Intention (z. B. "Projekte", "Zertifikate") bis zu 50 % der Kontext-Tokens eingespart.
+- **$O(1)$ Signal-basierte Cache-Invalidierung**: Django Signals (`post_save`, `post_delete` in `portfolio/signals.py`) invalidieren den Rohkontext und inkrementieren atomar die Version `portfolio_rag_context_version_v1`. Alle Response-Caches verfallen dadurch instantan ohne teure Pattern-Scans.
+- **Guardrails**: Pre-Flight Input-Limitierung auf 500 Zeichen und Regex-Filter zur Erkennung von Prompt Injections/Jailbreaks (0-Token Drop ohne LLM-Aufruf).
+- **Deep-Linking**: Generierte Antworten enthalten Quellhinweise, die vom Frontend in klickbare Badges umgewandelt werden (`#project-<id>`, `#cert-<id>`) und das Ziel für 2 Sekunden optisch hervorheben.
+- Ausführliche Dokumentation: siehe [docs/ai-assistant-rag.md](ai-assistant-rag.md).
+
 ---
 
 ## 3. API-Endpunkte
@@ -184,6 +195,7 @@ Standard-CRUD (`GET` Liste/Detail, `POST`, `PUT`, `PATCH`, `DELETE`) über den `
 
 | Endpunkt | Methode | Berechtigung | Zweck |
 |---|---|---|---|
+| `/api/ai/chat/` | `POST` | Öffentlich | RAG Portfolio-Copilot (Gemini 3.8 Flash mit Guardrails & Deep-Link Zitaten) |
 | `/api/certificates/presigned_upload/` | `POST` | Auth | Signierte S3-Upload-URL für Direct-to-Storage (Weg B) |
 | `/api/certificates/<id>/publish/` | `POST` | Auth | Stellt Datei im Storage sicher und setzt `is_published=true` |
 | `/api/certificates/<id>/unpublish/` | `POST` | Auth | Setzt `is_published=false` |

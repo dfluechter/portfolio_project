@@ -82,9 +82,9 @@ INSTALLED_APPS = [
 # -----------------------------------------------------------------------------
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -126,10 +126,13 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 DIRECT_DATABASE_URL = os.getenv("DIRECT_DATABASE_URL")
 
 # Prüfen, ob aktuell ein Migrationsbefehl ausgeführt wird
-IS_MIGRATION_COMMAND = any(
-    cmd in sys.argv
-    for cmd in ["migrate", "makemigrations", "showmigrations", "sqlmigrate"]
-) or os.getenv("RUNNING_MIGRATION") == "1"
+IS_MIGRATION_COMMAND = (
+    any(
+        cmd in sys.argv
+        for cmd in ["migrate", "makemigrations", "showmigrations", "sqlmigrate"]
+    )
+    or os.getenv("RUNNING_MIGRATION") == "1"
+)
 
 # Bei Migrationen DIRECT_DATABASE_URL priorisieren, falls konfiguriert
 EFFECTIVE_DB_URL = (
@@ -196,6 +199,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     d for d in [BASE_DIR / "static", BASE_DIR.parent / "static"] if d.exists()
 ]
+WHITENOISE_ALLOW_ALL_ORIGINS = True
 
 
 # -----------------------------------------------------------------------------
@@ -295,6 +299,10 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/minute",
+        "ai_chat": "20/minute",
+    },
 }
 
 

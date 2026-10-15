@@ -4,44 +4,68 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('portfolio', '0010_pendingcertificate_certificate_and_more'),
+        ("portfolio", "0010_pendingcertificate_certificate_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='project',
-            name='is_featured',
-            field=models.BooleanField(default=False, verbose_name='Hervorgehoben / Top-Projekt'),
+            model_name="project",
+            name="is_featured",
+            field=models.BooleanField(
+                default=False, verbose_name="Hervorgehoben / Top-Projekt"
+            ),
         ),
         migrations.AddField(
-            model_name='project',
-            name='is_published',
-            field=models.BooleanField(default=True, verbose_name='Veröffentlicht'),
+            model_name="project",
+            name="is_published",
+            field=models.BooleanField(default=True, verbose_name="Veröffentlicht"),
         ),
         migrations.AddIndex(
-            model_name='certificate',
-            index=models.Index(fields=['is_published', '-uploaded_at'], name='cert_pub_upload_idx'),
+            model_name="certificate",
+            index=models.Index(
+                fields=["is_published", "-uploaded_at"], name="cert_pub_upload_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='pendingcertificate',
-            index=models.Index(fields=['status', '-created_at'], name='pending_cert_status_idx'),
+            model_name="pendingcertificate",
+            index=models.Index(
+                fields=["status", "-created_at"], name="pending_cert_status_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='project',
-            index=models.Index(fields=['is_published', '-created_at'], name='proj_pub_created_idx'),
+            model_name="project",
+            index=models.Index(
+                fields=["is_published", "-created_at"], name="proj_pub_created_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='certificateimportrun',
-            constraint=models.CheckConstraint(condition=models.Q(('finished_at__isnull', True), ('finished_at__gte', models.F('started_at')), _connector='OR'), name='import_run_finished_after_started'),
+            model_name="certificateimportrun",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("finished_at__isnull", True),
+                    ("finished_at__gte", models.F("started_at")),
+                    _connector="OR",
+                ),
+                name="import_run_finished_after_started",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='skill',
-            constraint=models.CheckConstraint(condition=models.Q(('proficiency__gte', 1), ('proficiency__lte', 100)), name='skill_proficiency_range_1_to_100'),
+            model_name="skill",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("proficiency__gte", 1), ("proficiency__lte", 100)),
+                name="skill_proficiency_range_1_to_100",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='timelineentry',
-            constraint=models.CheckConstraint(condition=models.Q(('end_date__isnull', True), ('start_date__lte', models.F('end_date')), _connector='OR'), name='timeline_valid_date_range'),
+            model_name="timelineentry",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("end_date__isnull", True),
+                    ("start_date__lte", models.F("end_date")),
+                    _connector="OR",
+                ),
+                name="timeline_valid_date_range",
+            ),
         ),
     ]

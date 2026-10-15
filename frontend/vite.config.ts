@@ -9,6 +9,16 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    proxy: {
+      '/static': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/media': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     rollupOptions: {

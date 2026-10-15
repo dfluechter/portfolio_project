@@ -78,6 +78,13 @@ bash build.sh
 - ViewSets use `permission_classes = (IsAuthenticatedOrReadOnly,)` so public visitors can view portfolio data (GET) without logging in, while write operations (POST, PUT, PATCH, DELETE) require authentication.
 - Serializers follow the **Hybrid-Pattern**: Read requests output nested detail objects (`skill_details`, `provider_details`), while write operations accept PrimaryKey IDs (`skills`, `provider`).
 - Serializer `Meta.fields` must always be declared as a **tuple** (e.g. `fields = ("id", "title")`), not a mutable list, to comply with Ruff rule `RUF012`.
+- `POST api/ai/chat/` — Public endpoint for the RAG Portfolio Copilot (Gemini 3.8 Flash, input capped at 500 characters, pre-flight regex filtering against prompt injections, structured source citations).
+
+## Signals & Cache Invalidation
+
+- `portfolio/signals.py` attaches `post_save` and `post_delete` handlers to `Project`, `Certificate`, `Skill`, and `TimelineEntry`.
+- On change, signals clear `portfolio_rag_grounding_context` and atomically increment `portfolio_rag_context_version_v1`.
+- Any new model that contributes to public portfolio grounding MUST be wired to this signal invalidator.
 
 ## Management Commands
 

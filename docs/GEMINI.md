@@ -24,11 +24,12 @@ Detaillierte Systemarchitektur, Konfigurationen und API-Spezifikationen befinden
 
 ### Tech Stack & Standards
 - **Backend:** Python 3.13, Django 5.2, Django REST Framework, Djoser (Headless Token Auth)
-- **Frontend:** React 19, TypeScript 5.8, Vite 6, Tailwind CSS v4, TanStack Query v5, Lucide React
+- **KI & LLM:** Google Gemini 3.8 Flash (`google-genai`), RAG Portfolio-Copilot (`/api/ai/chat/`), Signals Caching & multimodale OCR
+- **Frontend:** React 19, TypeScript 5.8, Vite 8, Tailwind CSS v4, TanStack Query v5, Lucide React
 - **Package Manager:** Backend `uv` (niemals direkt `pip`), Frontend `npm`
 - **Linter & Formatter:** Backend `ruff check .` und `ruff format .`, Frontend `npm run lint`
 - **Type Checking:** Backend `mypy .`, Frontend `npm run build` (`tsc -b`)
-- **Tests:** Backend `uv run pytest --cov=portfolio --cov-fail-under=95` (212 Tests), Frontend `npm run test` (Vitest, 51 Tests)
+- **Tests:** Backend `uv run pytest --cov=portfolio --cov-fail-under=95` (236 Tests, 96% Coverage), Frontend `npm run test` (Vitest, 58 Tests)
 - **Media Storage:** S3-kompatibler Supabase Storage (Presigned Uploads & Downloads)
 - **Primary Database:** SQLite (lokal), Neon PostgreSQL (Produktion)
 
@@ -45,4 +46,5 @@ Das Projekt wird durch spezialisierte Sub-Agenten unterstützt. Aufgaben sind be
 - **`django-experte`**: Django ORM-Optimierung, komplexe SQL-Abfragen, Backend-Performance, DRF Views/Serializer und Security (OWASP).
 - **`frontend-developer`**: React 19 Komponenten, Single-Page Architecture, TanStack Query Server-State-Management, Tailwind CSS v4 Design-System und strikte TypeScript-Typisierung.
 - **`qa-tester`**: Automatisierte Tests (`pytest` für Django Backend inkl. `assertNumQueries`, `vitest` + React Testing Library für Frontend, Test-Coverage).
+- **`devops`**: CI/CD Pipelines (GitHub Actions), Neon PostgreSQL Branching, Render Web Service & Blueprint (`render.yaml`), Docker & Deployment-Automatisierung.
 - **`planer`**: Technical Product Manager. Pflegt die Dokumentation in `/docs`, definiert Epics, User Stories und präzise BDD-Akzeptanzkriterien.

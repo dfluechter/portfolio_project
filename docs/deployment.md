@@ -93,7 +93,7 @@ Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_projec
 
 1. **`backend-lint-test`**:
    - Startet ephemeren Neon DB-Branch via `neondatabase/create-branch-action@v5`.
-   - Führt Ruff, Mypy und Pytest mit Coverage ($\ge 95\%$) aus.
+   - Führt Ruff Linter (`check`), Ruff Formatter Check (`format --diff`), Mypy und Pytest mit Coverage ($\ge 95\%$) aus.
    - Bereinigt den Neon-Branch nach Testende (`always()`).
 2. **`frontend-lint-test`**:
    - Führt `npm ci`, Oxlint, Vitest und `npm run build` aus.
@@ -124,7 +124,7 @@ Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_projec
 | `AWS_S3_REGION_NAME` | Render Environment | Region (z. B. `eu-central-1`) |
 | `AWS_S3_PUBLIC_BUCKET` | Render Environment | `True` für dauerhafte Direkt-URLs, `False` für signierte URLs |
 | `SUPABASE_PUBLIC_MEDIA_URL` | Render Environment | Öffentliche CDN-Basis-URL des Buckets |
-| `GEMINI_API_KEY` | Render Environment | Optional: API-Key für multimodale OCR (Stufe 3) |
+| `GEMINI_API_KEY` | Render Environment | API-Key für Google Gemini 3.8 Flash (RAG Portfolio-Copilot & multimodale OCR) |
 | `VITE_API_URL` | Render Frontend | Basis-URL des Backend-Webservices (z. B. `https://portfolio-backend.onrender.com`) |
 
 ---

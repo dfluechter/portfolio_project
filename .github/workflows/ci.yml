@@ -61,7 +61,7 @@ jobs:
         run: uv run ruff check .
 
       - name: Ruff Formatter Check
-        run: uv run ruff format --check .
+        run: uv run ruff format --diff .
 
       - name: Mypy Type Check
         run: uv run mypy .

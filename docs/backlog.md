@@ -38,7 +38,9 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 7** | Headless Cleanup & Frontend Bundle Splitting | Abgeschlossen | US 7.1, US 7.2 |
 | **Epic 8** | Neon Connection Separation & DDL-Stabilität | Abgeschlossen | US 8.1 |
 | **Epic 9** | Gemini Vision Fallback & Magic-Byte Validation | Abgeschlossen | US 9.1, US 9.2 |
-| **Epic 10** | Supabase S3 Presigned Uploads & Security | In Bearbeitung | US 10.1 (Done), US 10.2 (Open) |
+| **Epic 10** | Supabase S3 Presigned Uploads & Security | In Bearbeitung | US 10.1 (Done), US 10.2 (Ready) |
+| **Epic 11** | RAG Portfolio-Copilot, Guardrails & UI-Skills Polish | Abgeschlossen | US 11.1, US 11.2, US 11.3, US 11.4 |
+| **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
 
 ---
 
@@ -274,3 +276,174 @@ In US 10.1 wurde der Presigned Upload umgesetzt. Aktuell vertraut das Backend be
   - **Given** die neuen Validierungsregeln im Backend
   - **When** die Testsuite ausgeführt wird
   - **Then** sind alle Szenarien (Existenzfehler, Magic-Byte-Mismatch, Größenüberschreitung, Hash-Mismatch) mit Mocks für `boto3` abgedeckt und die Gesamtabdeckung bleibt $\ge 95\%$.
+
+---
+
+### Epic 11: RAG Portfolio-Copilot, Guardrails & UI-Skills Polish (P1 - Hoch)
+
+#### User Story 11.1: RAG Grounding Context & Query-Pruning mit Gemini 3.8 Flash
+> **Als** Portfolio-Besucher  
+> **möchte ich** per KI-Chat Fragen zu Projekten, Fähigkeiten und Werdegang stellen,  
+> **damit** ich schnell fundierte Informationen erhalte, die strikt auf echten Portfolio-Daten basieren.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (Faktisches Grounding):**
+  - **Given** der Endpunkt `POST /api/ai/chat/` empfängt eine Frage
+  - **When** der Grounding Context aus der Datenbank (`is_published=True`) geladen wird
+  - **Then** beantwortet Google Gemini 3.8 Flash die Frage wahrheitsgemäß ohne Halluzinationen.
+- [x] **Szenario 2 (Heuristisches Query-Pruning):**
+  - **Given** eine domänenspezifische Frage (z. B. "Welche Python-Projekte hast du?")
+  - **When** `build_grounding_context(query)` ausgeführt wird
+  - **Then** werden irrelevante Sektionen (z. B. Zertifikate bei reinen Projektfragen) herausgefiltert und mindestens 40-50 % der Kontext-Tokens eingespart.
+
+#### User Story 11.2: Automatische Cache-Invalidierung via Django Signals ($O(1)$)
+> **Als** Administrator und Systemarchitekt  
+> **möchte ich**, dass Änderungen an Projekten, Skills, Zertifikaten oder dem Werdegang den KI-Kontext sofort invalidieren,  
+> **damit** Besucher niemals veraltete Antworten erhalten, während Lesezugriffe maximal performant aus dem Cache bedient werden.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (Signals-Anbindung):**
+  - **Given** ein Model `Project`, `Certificate`, `Skill` oder `TimelineEntry` wird gespeichert oder gelöscht (`post_save`, `post_delete`)
+  - **When** der Signal-Handler in `portfolio/signals.py` feuert
+  - **Then** wird der Cache-Key `portfolio_rag_grounding_context` gelöscht und der Versionsschlüssel `portfolio_rag_context_version_v1` atomar inkrementiert.
+- [x] **Szenario 2 (Versioniertes Response-Caching):**
+  - **Given** eine Benutzeranfrage wird beantwortet
+  - **When** die Antwort für 1 Stunde im Cache gespeichert wird
+  - **Then** ist der Cache-Key an die aktuelle Kontext-Version gekoppelt (`portfolio_ai_resp_v{version}_{hash}`), sodass alte Cache-Einträge bei Datenänderungen automatisch in $O(1)$ verfallen.
+
+#### User Story 11.3: Sicherheits-Guardrails (Pre-Flight Filterung & 0-Token Drop)
+> **Als** Security-Verantwortlicher  
+> **möchte ich**, dass der Chat-Endpunkt vor Prompt Injections, Jailbreaks und DoS-Angriffen geschützt ist,  
+> **damit** keine sensiblen Systemprompts geleakt werden und keine unnötigen LLM-Tokenkosten anfallen.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (Längenbeschränkung):**
+  - **Given** ein Request mit einer Nachricht von mehr als 500 Zeichen
+  - **When** die Validierung in `AIChatView` greift
+  - **Then** wird der Request sofort mit `400 Bad Request` abgewiesen.
+- [x] **Szenario 2 (0-Token Injection Drop):**
+  - **Given** ein Prompt-Injection- oder System-Prompt-Extraction-Versuch (z. B. "Ignore all previous instructions")
+  - **When** der Regex-Pre-Flight-Filter anschlägt
+  - **Then** wird der Request nicht an Gemini weitergeleitet, sondern direkt mit einer defensiven Antwort beantwortet (0 LLM-Tokens verbraucht).
+
+#### User Story 11.4: Interaktive Deep-Linking Quell-Badges & UI-Skills Polish
+> **Als** Portfolio-Besucher  
+> **möchte ich**, dass Quellen in KI-Antworten als klickbare Badges angezeigt werden und mich direkt zur relevanten Sektion scrollen,  
+> **damit** ich Aussagen der KI mit einem Klick visuell verifizieren kann.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (Deep-Linking Badges):**
+  - **Given** eine KI-Antwort enthält Quell-Tags wie `[Projekt: ...]` oder `[Zertifikat: ...]`
+  - **When** `PortfolioChatWidget` die Nachricht rendert
+  - **Then** werden interaktive Badges dargestellt; ein Klick scrollt sanft zum Element `#project-<id>` bzw. `#cert-<id>`.
+- [x] **Szenario 2 (Optisches Glow-Highlight):**
+  - **Given** ein Benutzer klickt auf ein Source-Badge
+  - **When** das Ziel-Element erreicht wird
+  - **Then** erhält die Zielkarte einen 2-Sekunden-Glow-Ring (`ring-2 ring-blue-500 shadow-lg`).
+- [x] **Szenario 3 (UI-Skills Design Standards):**
+  - **Given** das Chat-Widget ist auf der Startseite eingebunden
+  - **When** der Benutzer interagiert
+  - **Then** bietet die Oberfläche Glassmorphism (`backdrop-blur-2xl`), Radar-Ping am Trigger-Button, Bouncing Wave Thinking State und Copy-to-Clipboard mit Morphing Checkmark.
+
+---
+
+### Epic 12: Track-Pflicht für Zertifikate & FontAwesome Icon Integration (P1 - Hoch)
+
+#### User Story 12.1: Pflichtzuweisung von mindestens einem Track für veröffentlichte Zertifikate
+> **Als** Administrator und Kurator  
+> **möchte ich**, dass ein Zertifikat nur dann veröffentlicht werden kann (`is_published=True`), wenn ihm mindestens ein Track zugewiesen ist,  
+> **damit** alle öffentlich sichtbaren Zertifikate inhaltlich kategorisiert sind und die Track-Filterung auf der Startseite lückenlos funktioniert.
+
+**Kontext:**  
+Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unveröffentlichte Entwürfe (z. B. nach initialem Datei-Import oder Inbox-Kandidaten) dürfen weiterhin ohne Tracks existieren. Vor oder bei der Veröffentlichung (`POST /api/certificates/<id>/publish/` oder `PATCH` mit `is_published=true`) muss jedoch zwingend mindestens ein Track zugeordnet sein.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (Dedizierte Publish-Aktion ohne Tracks schlägt fehl):**
+  - **Given** ein bestehendes Zertifikat hat 0 Tracks (`cert.tracks.count() == 0`)
+  - **When** ein Administrator `POST /api/certificates/<id>/publish/` aufruft
+  - **Then** antwortet die API mit Statuscode `400 Bad Request` und der Fehlermeldung: `{"detail": "Ein Zertifikat kann nur veröffentlicht werden, wenn mindestens ein Track zugewiesen ist."}`
+  - **And** `cert.is_published` bleibt unverändert auf `False`.
+- [x] **Szenario 2 (Dedizierte Publish-Aktion mit Tracks ist erfolgreich):**
+  - **Given** ein bestehendes Zertifikat hat mindestens 1 Track (`cert.tracks.count() >= 1`)
+  - **When** ein Administrator `POST /api/certificates/<id>/publish/` aufruft
+  - **Then** antwortet die API mit Statuscode `200 OK`
+  - **And** `cert.is_published` wird auf `True` gesetzt.
+- [x] **Szenario 3 (Update mit `is_published=true` ohne Tracks schlägt fehl):**
+  - **Given** ein Zertifikat hat keine Tracks zugewiesen
+  - **When** ein Administrator `PATCH /api/certificates/<id>/` mit `{"is_published": true}` oder `{"tracks": [], "is_published": true}` sendet
+  - **Then** antwortet die API mit `400 Bad Request` und verweigert die Veröffentlichung.
+- [x] **Szenario 4 (Unveröffentlichtes Zertifikat ohne Tracks bleibt zulässig):**
+  - **Given** ein Administrator speichert oder bearbeitet ein Zertifikat mit `is_published=false`
+  - **When** keine Tracks angegeben werden (`tracks: []`)
+  - **Then** wird der Datensatz erfolgreich gespeichert (Status `200 OK` / `201 Created`).
+- [x] **Szenario 5 (Bestandsschutz für bereits veröffentlichte Zertifikate):**
+  - **Given** ein in der Vergangenheit bereits veröffentlichtes Zertifikat (`is_published=true`) hat keine Tracks
+  - **When** dieses Zertifikat aktualisiert wird (z. B. Titelkorrektur) oder der Publish-Endpunkt idempotent aufgerufen wird
+  - **Then** wird der Request nicht blockiert, sondern erfolgreich ausgeführt (`200 OK`).
+
+---
+
+#### User Story 12.2: Pytest Unit-Test-Suite für die Track-Zertifikats-Validierung
+> **Als** QA-Tester  
+> **möchte ich** eine dedizierte Pytest-Test-Suite für alle Veröffentlichungs- und Track-Validierungsfälle,  
+> **damit** die Integritätsregel regressionssicher abgedeckt ist und die Testabdeckung im Backend $\ge 95\%$ bleibt.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] Eine neue Testdatei [`backend/portfolio/tests/test_certificate_track_validation.py`](file:///D:/dev/portfolio_project/backend/portfolio/tests/test_certificate_track_validation.py) ist angelegt.
+- [x] Folgende Testszenarien sind implementiert und grün:
+  - `test_publish_without_tracks_returns_400`: `POST /api/certificates/{id}/publish/` ohne Tracks liefert `400 Bad Request`.
+  - `test_publish_with_tracks_returns_200`: `POST /api/certificates/{id}/publish/` mit Track liefert `200 OK` und setzt `is_published=True`.
+  - `test_patch_is_published_true_without_tracks_returns_400`: `PATCH` mit `is_published=True` ohne Tracks liefert `400`.
+  - `test_patch_tracks_empty_on_published_certificate_returns_400`: Entfernen aller Tracks eines bereits veröffentlichten Zertifikats wird abgewiesen.
+  - `test_draft_certificate_without_tracks_allowed`: Erstellen und Bearbeiten unveröffentlichter Zertifikate ohne Tracks ist erlaubt.
+  - `test_model_clean_validation`: `Certificate.clean()` validiert `is_published` gegen `tracks`.
+- [x] Alle Tests laufen im isolierten Pytest-Kontext fehlerfrei durch (`uv run pytest portfolio/tests/test_certificate_track_validation.py`).
+
+---
+
+#### User Story 12.3: FontAwesome Solid Icon Download-Service & Track-Model-Erweiterung
+> **Als** Entwickler und Maintainer  
+> **möchte ich**, dass Tracks ein Icon-Attribut besitzen und FontAwesome Solid Icons bei erstmaliger Verwendung automatisch von `fontawesome.com` heruntergeladen und lokal unter `/static/img/icons/` gecacht werden,  
+> **damit** keine externen CDN-Laufzeitabhängigkeiten bestehen und Icons schnell und zuverlässig ausgeliefert werden.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (Model & Migration):**
+  - **Given** das `Track`-Model
+  - **When** das Feld `icon = models.CharField(max_length=64, blank=True, default="", verbose_name="FontAwesome Solid Icon Name")` hinzugefügt wird
+  - **Then** wird eine saubere Django-Migration erzeugt und angewendet.
+- [x] **Szenario 2 (On-Demand Icon-Download Service):**
+  - **Given** ein Track mit einem Icon-Namen (z. B. `code`, `database`, `cloud`, `shield-halved`, `brain`, `server`)
+  - **When** der Service `portfolio.services.icon_service.ensure_track_icon(icon_name)` aufgerufen wird
+  - **Then** prüft er, ob die Datei `/static/img/icons/{icon_name}.svg` bereits existiert
+  - **And** falls nicht, lädt er das SVG von der offiziellen FontAwesome Solid Quelle herunter, speichert es atomar im Zielordner `/static/img/icons/` und gibt die relative URL `/static/img/icons/{icon_name}.svg` zurück.
+- [x] **Szenario 3 (Sicherheit & Sanitization):**
+  - **Given** ein eingehender Icon-Name
+  - **When** er Sonderzeichen oder Pfad-Traversierungen enthält (z. B. `../`, `/`, `\`)
+  - **Then** wird der Name strikt mit `re.match(r'^[a-z0-9\-]+$', icon_name)` validiert und ungültige Eingaben abgewiesen.
+- [x] **Szenario 4 (API-Exposition):**
+  - **Given** `GET /api/tracks/`
+  - **When** Tracks serialisiert werden
+  - **Then** liefert der `TrackSerializer` die Felder `icon` und `icon_url`.
+
+---
+
+#### User Story 12.4: Visualisierung der Track-Icons auf Portfolio- und Dashboard-Page
+> **Als** Besucher und Administrator  
+> **möchte ich** Tracks sowohl auf der öffentlichen Startseite als auch im Admin-Dashboard mit ihren Icons visualisiert sehen,  
+> **damit** die thematische Zuordnung visuell ansprechend, sofort erfassbar und konsistent ist.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (Portfolio-Startseite `CertificatesSection.tsx`):**
+  - **Given** die Track-Filter-Chips auf der Landingpage
+  - **When** die Komponente rendert
+  - **Then** zeigt jeder Chip das entsprechende SVG-Icon links neben dem Track-Namen an (z. B. `<img src={track.icon_url} className="w-4 h-4 mr-1.5" />` oder Fallback-Icon).
+- [x] **Szenario 2 (Dashboard `CertificateManager.tsx` & `CertificateEditModal.tsx`):**
+  - **Given** die Zertifikats-Übersicht und der Review-Drawer im Dashboard
+  - **When** die Tracks eines Zertifikats angezeigt oder ausgewählt werden
+  - **Then** sind die Track-Badges und Dropdown-Einträge mit ihren Icons gerendert.
+- [x] **Szenario 3 (Frontend Validierungs-Feedback):**
+  - **Given** der Administrator klickt im Review-Drawer auf „Veröffentlichen“
+  - **When** das Zertifikat keine Tracks ausgewählt hat
+  - **Then** wird der Button deaktiviert bzw. ein klarer Validierungshinweis angezeigt: *„Mindestens ein Track erforderlich für Veröffentlichung“*.
+
+

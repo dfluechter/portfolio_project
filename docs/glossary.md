@@ -81,3 +81,23 @@ Eine temporär signierte URL (z. B. mit 1 Stunde Gültigkeit), die vom Backend �
 Der relative Speicherpfad eines Objekts im S3-Storage Bucket (z. B. `certificates/uploads/a1b2c3d4e5f6_meinzertifikat.pdf`).
 * **Verwendung:** Wird dem Frontend bei der Presigned-URL-Generierung übermittelt und anschließend bei der Erstellung des `Certificate`-Datensatzes als Dateireferenz an Django übergeben.
 
+---
+
+## 4. RAG- & KI-Begriffe (Portfolio-Copilot)
+
+### Grounding Context (RAG-Datenbasis)
+Der strukturierte Text-Kontext aller veröffentlichten Portfolio-Daten (`Project`, `Skill`, `Certificate`, `TimelineEntry`), der dem LLM (Google Gemini 3.8 Flash) als verifizierte Faktenbasis übergeben wird. Verhindert Halluzinationen und bindet Antworten strikt an reale Daten.
+
+### Query-Pruning (Heuristischer Kontext-Schnitt)
+Die gezielte Vorfilterung des Grounding-Kontexts anhand semantischer Signalwörter in der Benutzerfrage (z. B. "Projekt", "Zertifikat", "Werdegang"). Spart 40–50 % der Tokens und senkt API-Latenzen signifikant.
+
+### Signal-basierte Cache-Invalidierung ($O(1)$)
+Ein reaktives Cache-Verfahren: Bei `post_save` und `post_delete` Signalen auf Portfolio-Modellen wird der Cache-Key des Grounding-Kontexts gelöscht und der Versionsschlüssel `portfolio_rag_context_version_v1` atomar inkrementiert. Sämtliche zuvor gecachten KI-Antworten verfallen instantan ohne teures Traversieren des Cache-Speichers.
+
+### Deep-Linking Source-Badges (Interaktive Zitate)
+Strukturierte Quellverweise in KI-Antworten (z. B. `[Projekt: ...]` oder `[Zertifikat: ...]`), die im Frontend als klickbare Badges gerendert werden. Ein Klick führt einen weichen Bildlauf zum Zielelement aus und hebt dieses für 2 Sekunden mit einem pulsierenden Leuchtring optisch hervor.
+
+### 0-Token Injection Drop (Pre-Flight Filter)
+Sicherheitsmechanismus in `AIChatView`: Eingehende Fragen werden vor dem LLM-Aufruf via Regex auf typische Prompt-Injection-Muster und Jailbreak-Versuche untersucht. Bei Treffern antwortet das Backend sofort mit einer statischen Schutzmeldung, ohne ein einziges Token bei externen KI-Providern zu verbrauchen.
+
+

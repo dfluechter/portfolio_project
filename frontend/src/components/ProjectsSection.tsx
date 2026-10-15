@@ -1,9 +1,10 @@
 import React from 'react';
-import { ExternalLink, FolderGit2, Sparkles } from 'lucide-react';
+import { Calendar, ExternalLink, FolderGit2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProjects } from '../hooks/usePortfolio';
 import { usePortfolioSearch } from '../hooks/usePortfolioSearch';
 import { SectionEmptyState } from './SectionEmptyState';
+import { resolveProjectImageUrl } from './dashboard/ProjectManager';
 import type { Project } from '../types';
 
 const defaultProjects: Project[] = [
@@ -14,7 +15,7 @@ const defaultProjects: Project[] = [
       'Enterprise-taugliches Portfolio-System mit Django 5.2, Neon PostgreSQL, Supabase S3 Media Storage und React/Vite Frontend.',
     github_url: 'https://github.com/DominikFluechter/portfolio_project',
     live_url: 'https://dfluechter.onrender.com',
-    created_at: new Date().toISOString(),
+    created_at: '2026-01-15T12:00:00Z',
   },
   {
     id: 2,
@@ -22,7 +23,7 @@ const defaultProjects: Project[] = [
     description:
       'Intelligenter PDF- & Bild-Parser für Zertifikatsaussteller mit Cloudflare Rate-Limit-Handling und automatischer Metadatenextraktion.',
     github_url: 'https://github.com/DominikFluechter',
-    created_at: new Date().toISOString(),
+    created_at: '2026-02-10T14:30:00Z',
   },
   {
     id: 3,
@@ -30,7 +31,7 @@ const defaultProjects: Project[] = [
     description:
       'Sicherheitsarchitektur mit Djoser, SimpleJWT, HttpOnly Refresh Token Rotation und granularen Rollenrechten.',
     github_url: 'https://github.com/DominikFluechter',
-    created_at: new Date().toISOString(),
+    created_at: '2026-03-01T09:15:00Z',
   },
 ];
 
@@ -84,59 +85,88 @@ export const ProjectsSection: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence>
-              {filteredProjects.map((project) => (
-                <motion.div
-                  key={project.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  transition={{ duration: 0.2 }}
-                  className="group flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 p-6 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:bg-slate-900/70 transition-all duration-300 hover:-translate-y-1 shadow-sm"
-                >
-                  <div>
-                    <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-600/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform text-indigo-600 dark:text-indigo-400">
-                      <FolderGit2 className="w-6 h-6" />
+              {filteredProjects.map((project) => {
+                const imageUrl = resolveProjectImageUrl(project.image);
+                const formattedDate = project.created_at
+                  ? new Date(project.created_at).toLocaleDateString('de-DE', {
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : null;
+
+                return (
+                  <motion.div
+                    key={project.id}
+                    id={`project-${project.id}`}
+                    layout
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ duration: 0.2 }}
+                    className="group flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 p-6 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:bg-slate-900/70 transition-all duration-300 hover:-translate-y-1 shadow-sm"
+                  >
+                    <div>
+                      {imageUrl ? (
+                        <div className="relative w-full h-44 mb-5 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
+                          <img
+                            src={imageUrl}
+                            alt={project.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-600/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform text-indigo-600 dark:text-indigo-400">
+                          <FolderGit2 className="w-6 h-6" />
+                        </div>
+                      )}
+
+                      {formattedDate && (
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-2 font-mono">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>{formattedDate}</span>
+                        </div>
+                      )}
+
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
+                        {project.title}
+                      </h3>
+
+                      <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-4 mb-6">
+                        {project.description}
+                      </p>
                     </div>
 
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
-                      {project.title}
-                    </h3>
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-3">
+                      {project.github_url && (
+                        <a
+                          href={project.github_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+                        >
+                          <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                          </svg>
+                          Code
+                        </a>
+                      )}
 
-                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-4 mb-6">
-                      {project.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-3">
-                    {project.github_url && (
-                      <a
-                        href={project.github_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-                      >
-                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-                        </svg>
-                        Code
-                      </a>
-                    )}
-
-                    {project.live_url && (
-                      <a
-                        href={project.live_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-xs font-semibold text-indigo-600 dark:text-indigo-300 transition-colors ml-auto"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Live Demo
-                      </a>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+                      {project.live_url && (
+                        <a
+                          href={project.live_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-xs font-semibold text-indigo-600 dark:text-indigo-300 transition-colors ml-auto"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          Live Demo
+                        </a>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
         )}

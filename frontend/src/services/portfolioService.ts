@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { apiClient } from '../api/client';
 import type {
+  AIChatResponse,
   Certificate,
   CreateCertificatePayload,
   ExtractedCertificateMetadata,
@@ -28,6 +29,14 @@ export const portfolioService = {
   // Projekt erstellen (Admin)
   async createProject(formData: FormData): Promise<Project> {
     const { data } = await apiClient.post<Project>('/api/projects/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  },
+
+  // Projekt bearbeiten (Admin)
+  async updateProject(id: number, formData: FormData): Promise<Project> {
+    const { data } = await apiClient.patch<Project>(`/api/projects/${id}/`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return data;
@@ -195,8 +204,10 @@ export const portfolioService = {
   },
 
   // Anbieter abrufen
-  async getProviders(): Promise<Provider[]> {
-    const { data } = await apiClient.get<Provider[] | PaginatedResponse<Provider>>('/api/providers/');
+  async getProviders(params?: { has_certificates?: boolean }): Promise<Provider[]> {
+    const { data } = await apiClient.get<Provider[] | PaginatedResponse<Provider>>('/api/providers/', {
+      params,
+    });
     if (Array.isArray(data)) return data;
     if (data && Array.isArray((data as PaginatedResponse<Provider>).results)) {
       return (data as PaginatedResponse<Provider>).results;
@@ -241,6 +252,18 @@ export const portfolioService = {
       return (data as PaginatedResponse<TimelineEntry>).results;
     }
     return [];
+  },
+
+  // Portfolio AI Copilot Chat
+  async sendAIChatMessage(
+    message: string,
+    history?: { role: 'user' | 'model'; text: string }[]
+  ): Promise<AIChatResponse> {
+    const { data } = await apiClient.post<AIChatResponse>('/api/ai/chat/', {
+      message,
+      history,
+    });
+    return data;
   },
 };
 

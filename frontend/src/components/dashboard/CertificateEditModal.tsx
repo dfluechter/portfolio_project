@@ -19,6 +19,7 @@ import {
   useTracks,
   useUpdateCertificate,
 } from '../../hooks/usePortfolio';
+import { TrackIcon } from '../TrackIcon';
 import type { Certificate, ExtractedCertificateMetadata } from '../../types';
 
 interface CertificateEditModalProps {
@@ -148,6 +149,18 @@ export const CertificateEditModal: React.FC<CertificateEditModalProps> = ({
     setError(null);
     const publishTarget =
       typeof shouldPublish === 'boolean' ? shouldPublish : certificate.is_published;
+
+    // Validierungs-Feedback: Mindestens ein Track bei Veröffentlichung erforderlich
+    if (publishTarget && trackIds.length === 0) {
+      const validationMsg =
+        'Ein Zertifikat kann nur veröffentlicht werden, wenn mindestens ein Track zugewiesen ist.';
+      setError(validationMsg);
+      onNotify({
+        type: 'error',
+        text: validationMsg,
+      });
+      return;
+    }
 
     try {
       await updateMutation.mutateAsync({
@@ -481,9 +494,16 @@ export const CertificateEditModal: React.FC<CertificateEditModalProps> = ({
               </div>
 
               <div>
-                <span className={labelClass}>
-                  Tracks zuweisen ({trackIds.length} ausgewählt)
-                </span>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={labelClass}>
+                    Tracks zuweisen ({trackIds.length} ausgewählt)
+                  </span>
+                  {trackIds.length === 0 && (
+                    <span className="text-[11px] text-amber-400 font-medium">
+                      * Min. 1 Track für Veröffentlichung erforderlich
+                    </span>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {tracks.map((t) => {
                     const isSelected = trackIds.includes(t.id);
@@ -492,13 +512,14 @@ export const CertificateEditModal: React.FC<CertificateEditModalProps> = ({
                         key={t.id}
                         type="button"
                         onClick={() => toggleTrack(t.id)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors inline-flex items-center gap-2 ${
                           isSelected
                             ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm shadow-indigo-600/30'
-                            : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-300'
+                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
                         }`}
                       >
-                        {t.name}
+                        <TrackIcon track={t} className={`w-6 h-6 ${isSelected ? 'text-white' : 'text-indigo-400 dark:text-indigo-300'}`} />
+                        <span>{t.name}</span>
                       </button>
                     );
                   })}
@@ -544,8 +565,13 @@ export const CertificateEditModal: React.FC<CertificateEditModalProps> = ({
             <button
               type="button"
               onClick={() => handleSave(true)}
-              disabled={updateMutation.isPending}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 flex items-center gap-1.5 transition-colors shadow-sm shadow-emerald-600/30"
+              disabled={updateMutation.isPending || trackIds.length === 0}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors shadow-sm shadow-emerald-600/30"
+              title={
+                trackIds.length === 0
+                  ? 'Mindestens ein Track erforderlich für Veröffentlichung'
+                  : 'Speichern & Veröffentlichen'
+              }
             >
               {updateMutation.isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

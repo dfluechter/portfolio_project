@@ -117,9 +117,7 @@ def ensure_certificate_in_storage(cert: Certificate) -> bool:
         ext = local_file.suffix.lower()
         file_content.content_type = CONTENT_TYPES.get(ext, "application/octet-stream")  # type: ignore[attr-defined]
 
-        provider_slug = (
-            slugify(cert.provider.provider) if cert.provider else "unsorted"
-        )
+        provider_slug = slugify(cert.provider.provider) if cert.provider else "unsorted"
         storage_key = safe_storage_key(
             provider_slug, cert.sha256_hash or "nohash", local_file.name
         )
@@ -212,4 +210,3 @@ def generate_presigned_upload(
             "Content-Type": final_content_type,
         },
     }
-

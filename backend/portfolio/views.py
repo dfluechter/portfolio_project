@@ -7,14 +7,17 @@ from django.db.models import Prefetch, ProtectedError, Q
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
-from rest_framework import status, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
+    AllowAny,
     IsAdminUser,
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
 )
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 
 from .models import (
     TRACK_RULES,
@@ -37,7 +40,9 @@ from .serializers import (
     TimelineEntrySerializer,
     TrackSerializer,
 )
+from .services.ai_assistant import answer_portfolio_query
 from .services.extractor import extract_metadata
+from .services.icon_service import ensure_track_icon
 from .services.promotion import (
     PromotionError,
     promote_pending_certificate,
@@ -94,9 +99,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
 
 class ProviderViewSet(viewsets.ModelViewSet):
-    queryset = Provider.objects.all()
     serializer_class = ProviderSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def get_queryset(self):
+        qs = Provider.objects.all()
+        has_certs = self.request.query_params.get("has_certificates")
+        if has_certs is not None and has_certs.lower() in ("true", "1"):
+            qs = qs.filter(certificates__isnull=False).distinct()
+        return qs
 
     def destroy(self, request, *args, **kwargs):
         try:
@@ -221,7 +232,24 @@ class CertificateViewSet(viewsets.ModelViewSet):
                 is_pub = is_pub.lower() in ("true", "1")
             is_pub_bool = bool(is_pub)
             instance = serializer.instance
+
+            # Track-Pflicht greift NUR bei Neu-Veröffentlichung (Statuswechsel von False -> True):
+            # Bereits veröffentlichte Zertifikate unterliegen dem Bestandsschutz.
             if is_pub_bool and (instance is None or not instance.is_published):
+                tracks_data = self.request.data.get("tracks")
+                has_tracks = (
+                    len(tracks_data) > 0
+                    if tracks_data is not None
+                    else (instance and instance.tracks.exists())
+                )
+                if not has_tracks:
+                    raise serializers.ValidationError(
+                        {
+                            "detail": (
+                                "Ein Zertifikat kann nur veröffentlicht werden, wenn mindestens ein Track zugewiesen ist."
+                            )
+                        }
+                    )
                 ensure_certificate_in_storage(instance or serializer.instance)
             update_kwargs["is_published"] = is_pub_bool
 
@@ -287,9 +315,18 @@ class CertificateViewSet(viewsets.ModelViewSet):
     def publish(self, request, pk=None):
         """Dedizierter Endpoint zur Veröffentlichung eines geprüften Zertifikats.
 
-        Stellt sicher, dass das Zertifikat im S3-Storage abgelegt wird.
+        Stellt sicher, dass das Zertifikat im S3-Storage abgelegt wird und bei Neu-Veröffentlichung mindestens ein Track zugeordnet ist.
         """
         cert = self.get_object()
+        if not cert.is_published and not cert.tracks.exists():
+            return Response(
+                {
+                    "detail": (
+                        "Ein Zertifikat kann nur veröffentlicht werden, wenn mindestens ein Track zugewiesen ist."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         ensure_certificate_in_storage(cert)
         cert.is_published = True
         cert.save()
@@ -343,9 +380,9 @@ class CertificateViewSet(viewsets.ModelViewSet):
 
             # Zugeordnete Track-IDs ermitteln basierend auf gefundenen Slugs
             matched_track_ids = list(
-                Track.objects.filter(
-                    slug__in=result.guessed_track_slugs
-                ).values_list("id", flat=True)
+                Track.objects.filter(slug__in=result.guessed_track_slugs).values_list(
+                    "id", flat=True
+                )
             )
 
             # Zugeordneten Provider ermitteln oder matchen
@@ -406,6 +443,16 @@ class TrackViewSet(viewsets.ModelViewSet):
     )
     serializer_class = TrackSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def perform_create(self, serializer):
+        track = serializer.save()
+        if track.icon:
+            ensure_track_icon(track.icon)
+
+    def perform_update(self, serializer):
+        track = serializer.save()
+        if track.icon:
+            ensure_track_icon(track.icon)
 
 
 class PendingCertificateViewSet(viewsets.ModelViewSet):
@@ -472,3 +519,66 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response({"detail": "Abgelehnt."}, status=status.HTTP_200_OK)
+
+
+class AIChatView(APIView):
+    """Beantwortet Besucherfragen zum Portfolio mittels RAG und Gemini 3.8 Flash.
+
+    Öffentlich erreichbar mit Scoped Rate Limiting (20 Anfragen/Minute).
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai_chat"
+
+    @extend_schema(
+        summary="Portfolio AI-Copilot Chat",
+        description="Beantwortet Fragen zum Portfolio, Projekten, Skills und Zertifikaten mit RAG via Gemini 3.8 Flash.",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "Welche Erfahrungen hat Dominik mit Django?",
+                    },
+                    "history": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "role": {"type": "string", "enum": ["user", "model"]},
+                                "text": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+                "required": ["message"],
+            }
+        },
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "reply": {"type": "string"},
+                    "sources": {"type": "array", "items": {"type": "string"}},
+                },
+            },
+            400: {"type": "object", "properties": {"detail": {"type": "string"}}},
+        },
+    )
+    def post(self, request):
+        message = request.data.get("message")
+        if not message or not isinstance(message, str) or not message.strip():
+            return Response(
+                {"detail": "Der Parameter 'message' ist erforderlich."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        history = request.data.get("history")
+        if history is not None and not isinstance(history, list):
+            history = None
+
+        result = answer_portfolio_query(message, history)
+        return Response(result, status=status.HTTP_200_OK)
+

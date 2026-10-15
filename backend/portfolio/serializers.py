@@ -92,6 +92,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         many=True, queryset=Skill.objects.all(), required=False
     )
     skill_details = SkillSerializer(source="skills", many=True, read_only=True)
+    created_at = serializers.DateTimeField(required=False)
 
     class Meta:
         model = Project
@@ -157,10 +158,20 @@ class TimelineEntrySerializer(serializers.ModelSerializer):
 
 class TrackSerializer(serializers.ModelSerializer):
     certificates = serializers.SerializerMethodField()
+    icon_url = serializers.ReadOnlyField()
 
     class Meta:
         model = Track
-        fields = ("id", "name", "slug", "description", "certificates", "created_at")
+        fields = (
+            "id",
+            "name",
+            "slug",
+            "description",
+            "icon",
+            "icon_url",
+            "certificates",
+            "created_at",
+        )
 
     def get_certificates(self, obj):
         request = self.context.get("request")

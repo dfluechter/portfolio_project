@@ -2,14 +2,14 @@
 [![CI/CD Pipeline](https://github.com/dfluechter/portfolio_project/actions/workflows/ci.yml/badge.svg)](https://github.com/dfluechter/portfolio_project/actions/workflows/ci.yml)
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/dfluechter/portfolio_project/CI%2FCD%20Pipeline?branch=main&style=for-the-badge&logo=github)
-![Coverage](https://img.shields.io/badge/Coverage-99%25-brightgreen?style=for-the-badge&logo=pytest)
+![Coverage](https://img.shields.io/badge/Coverage-96%25-brightgreen?style=for-the-badge&logo=pytest)
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-5.2-092E20?style=for-the-badge&logo=django&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Render](https://img.shields.io/badge/Render-Deployed-46E3B7?style=for-the-badge&logo=render&logoColor=white)
 
-Django REST API (Backend) und React SPA (Frontend) für mein persönliches Portfolio. Verwaltet Zertifikate, Projekte, Skills, Timeline und Zertifikatsanbieter über ein geschütztes Dashboard.
+Django REST API (Backend) und React SPA (Frontend) für mein persönliches Portfolio. Verwaltet Zertifikate, Projekte, Skills, Timeline und Zertifikatsanbieter über ein geschütztes Dashboard. Enthält einen integrierten RAG Portfolio-Copiloten (Google Gemini 3.8 Flash) mit Signals-gestützter $O(1)$ Cache-Invalidierung, Guardrail-Pipeline und interaktivem UI Deep-Linking.
 
 > 📚 **Architektur-Details**: Eine tiefere Analyse der Entscheidungen und Infrastruktur findest du unter [`/docs/architecture.md`](docs/architecture.md) sowie in den [Architectural Decision Records (ADRs)](docs/adrs/).
 
@@ -39,6 +39,7 @@ Django REST API (Backend) und React SPA (Frontend) für mein persönliches Portf
 | **Package Manager** | uv (Python) & npm (Node.js) |
 | **Datenbank (lokal)** | SQLite |
 | **Datenbank (Produktion)**| Neon PostgreSQL |
+| **KI / LLM** | Google Gemini 3.8 Flash (`google-genai`) |
 | **Media Storage** | Supabase (S3-kompatibel) |
 | **Static Files** | WhiteNoise (`CompressedManifestStaticFilesStorage`) |
 | **Auth** | Djoser + JWT (`api/auth/`) |
@@ -126,8 +127,8 @@ npm run test                         # Vitest
 
 Sowohl Backend als auch Frontend werden kontinuierlich via GitHub Actions getestet (Linting, Type Checks, Pytest/Vitest).
 
-* **Backend Coverage:** **$\ge$ 95%** (getestet mit 212 Pytest-Tests: Djoser Auth, JWT, DRF ViewSets, Models, Permissions & Presigned Uploads)
-* **Frontend Tests:** Vitest & React Testing Library (Komponenten, Routing, Modal-A11y, API-Client Interceptors)
+* **Backend Coverage:** **$\ge$ 95%** (aktuell 96% getestet mit 236 Pytest-Tests: Djoser Auth, JWT, DRF ViewSets, Models, Permissions, RAG Assistant & Presigned Uploads)
+* **Frontend Tests:** 58 Tests via Vitest & React Testing Library (Komponenten, Routing, Modal-A11y, API-Client Interceptors & Chat-Widget)
 
 ## 📁 Projektstruktur
 
@@ -154,6 +155,7 @@ portfolio_project/
 ├── docs/                    # Technische Dokumentation & ADRs
 │   ├── adrs/                # Architectural Decision Records (ADR-001 bis ADR-006)
 │   ├── architecture.md      # Gesamtsystem- und Architektur-Dokumentation
+│   ├── ai-assistant-rag.md  # RAG Portfolio-Copilot, Signals Caching & Guardrails
 │   ├── deployment.md        # Deployment-Leitfaden, Neon Connections & Render Config
 │   ├── frontend.md          # Frontend-Architektur, State & Testing
 │   ├── glossary.md          # Fachglossar und Terminologie

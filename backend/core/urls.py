@@ -6,6 +6,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
 from portfolio.views import (
+    AIChatView,
     CertificateViewSet,
     PendingCertificateViewSet,
     ProjectViewSet,
@@ -33,6 +34,7 @@ urlpatterns = [
     path("", api_root_view, name="backend-root"),
     path("admin/", admin.site.urls),
     path("health_check", health_check_view, name="health_check"),
+    path("api/ai/chat/", AIChatView.as_view(), name="ai-chat"),
     # REST-API Endpunkte
     path("api/", include(router.urls)),
     path("api/auth/", include("djoser.urls")),
