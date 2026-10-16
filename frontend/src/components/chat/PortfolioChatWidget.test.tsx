@@ -187,4 +187,31 @@ describe('PortfolioChatWidget Component', () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Antwort zum Kopieren');
     expect(await screen.findByText('Kopiert')).toBeInTheDocument();
   });
+
+  it('deactivates input and quick prompts when backend reports token limit reached (disabled: true)', async () => {
+    vi.mocked(portfolioService.sendAIChatMessage).mockResolvedValue({
+      reply:
+        'Das kostenfreie Token-Limit für den KI-Assistenten wurde erreicht. Die KI-Komponente wurde deaktiviert.',
+      sources: [],
+      disabled: true,
+    });
+
+    renderWithProviders(<PortfolioChatWidget />);
+    fireEvent.click(screen.getByRole('button', { name: /Portfolio KI-Assistent öffnen/i }));
+
+    const input = screen.getByPlaceholderText(/Frage zu Dominiks Portfolio stellen.../i);
+    fireEvent.change(input, { target: { value: 'Testfrage' } });
+    fireEvent.click(screen.getByRole('button', { name: /Nachricht senden/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Deaktiviert \(Token-Schutz\)/i)).toBeInTheDocument();
+    });
+
+    const disabledInput = screen.getByPlaceholderText(
+      /KI-Assistent deaktiviert \(Token-Limit geschützt\)/i,
+    );
+    expect(disabledInput).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Nachricht senden/i })).toBeDisabled();
+  });
 });
+

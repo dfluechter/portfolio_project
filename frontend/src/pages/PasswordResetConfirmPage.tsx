@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, KeyRound, Lock, Shield, Sparkles } from 'lucide-react';
 import { useConfirmPasswordReset } from '../hooks/usePortfolio';
+import { PORTFOLIO_OWNER_NAME } from '../constants';
 
 export const PasswordResetConfirmPage: React.FC = () => {
   const { uid, token } = useParams<{ uid: string; token: string }>();
@@ -218,7 +219,7 @@ export const PasswordResetConfirmPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center text-xs text-slate-600 font-mono">
-        &copy; {new Date().getFullYear()} Dominik Flüchter • All Rights Reserved
+        &copy; {new Date().getFullYear()} {PORTFOLIO_OWNER_NAME} • All Rights Reserved
       </footer>
     </div>
   );

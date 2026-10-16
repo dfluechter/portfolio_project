@@ -1,6 +1,7 @@
 import React from 'react';
 import { Code2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PORTFOLIO_OWNER_NAME } from '../constants';
 
 export const Footer: React.FC = () => {
   return (
@@ -10,7 +11,9 @@ export const Footer: React.FC = () => {
           <div className="w-6 h-6 rounded-lg bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
             <Code2 className="w-3.5 h-3.5" />
           </div>
-          <span className="text-slate-700 dark:text-slate-400 font-medium">Dominik Flüchter — Full-Stack Portfolio</span>
+          <span className="text-slate-700 dark:text-slate-400 font-medium">
+            {PORTFOLIO_OWNER_NAME} — Full-Stack Portfolio
+          </span>
         </div>
 
         <div className="flex items-center gap-6">

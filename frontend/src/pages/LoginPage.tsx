@@ -15,6 +15,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
+import { PORTFOLIO_OWNER_NAME } from '../constants';
 
 export const LoginPage: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
@@ -329,7 +330,7 @@ export const LoginPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center text-xs text-slate-600 font-mono">
-        &copy; {new Date().getFullYear()} Dominik Flüchter • All Rights Reserved
+        &copy; {new Date().getFullYear()} {PORTFOLIO_OWNER_NAME} • All Rights Reserved
       </footer>
     </div>
   );

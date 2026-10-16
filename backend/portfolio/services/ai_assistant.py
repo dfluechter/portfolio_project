@@ -56,9 +56,7 @@ def is_ai_enabled() -> bool:
     env_flag = os.getenv("GEMINI_AI_ENABLED", "true").strip().lower()
     if env_flag in ("false", "0", "no", "off"):
         return False
-    if cache.get(AI_CIRCUIT_BREAKER_KEY):
-        return False
-    return True
+    return not bool(cache.get(AI_CIRCUIT_BREAKER_KEY))
 
 
 def trip_ai_circuit_breaker(reason: str) -> None:
@@ -73,7 +71,9 @@ def estimate_tokens(text: str, extra_bytes: int = 0) -> int:
     """Konservative Schätzung der Token-Anzahl (ca. 4 Zeichen pro Token + Binärdaten-Aufschlag)."""
     text_tokens = max(1, len(text or "") // 4 + 1)
     # Für Bilder/PDFs in Gemini Vision: ca. 258 Tokens pro angefangene 100 KB konservativ ansetzen
-    binary_tokens = (max(0, extra_bytes) // (100 * 1024) + (1 if extra_bytes > 0 else 0)) * 258
+    binary_tokens = (
+        max(0, extra_bytes) // (100 * 1024) + (1 if extra_bytes > 0 else 0)
+    ) * 258
     return text_tokens + binary_tokens
 
 
@@ -492,11 +492,14 @@ def answer_portfolio_query(
                 "Zertifikate direkt auf der Portfolio-Startseite einsehen."
             ),
             "sources": [],
+            "disabled": True,
         }
 
-    # 2. Gecachter Wissenskontext & Token-Kompression
+    # 2. Gecachter Wissenskontext & Token-Kompression + Harte Zeichenbegrenzung
     full_context = get_cached_grounding_context()
-    grounding_data = prune_context_by_query(cleaned_query, full_context)
+    grounding_data = prune_context_by_query(cleaned_query, full_context)[
+        :MAX_GROUNDING_CHARS
+    ]
 
     system_instruction = (
         "Du bist 'Dominik's Portfolio Copilot', ein freundlicher, hochkompetenter und präziser "
@@ -513,21 +516,49 @@ def answer_portfolio_query(
         f"Hier ist die offizielle Wissensbasis über Dominik:\n{grounding_data}"
     )
 
+    # Chat-Historie vorbereiten & Längen pro Eintrag strikt begrenzen
+    history_texts: list[tuple[str, str]] = []
+    if history:
+        for item in history[-6:]:  # Maximal letzte 6 Nachrichten für Kontext
+            if isinstance(item, dict):
+                role = "user" if item.get("role") == "user" else "model"
+                text = str(item.get("text") or "").strip()[:MAX_HISTORY_ITEM_CHARS]
+                if text:
+                    history_texts.append((role, text))
+
+    # 3. Zero-Cost & Token-Limit Guardrail vor dem API-Aufruf
+    combined_input_text = (
+        system_instruction
+        + "\n"
+        + "\n".join(t for _, t in history_texts)
+        + "\n"
+        + cleaned_query
+    )
+    estimated_tokens = estimate_tokens(combined_input_text)
+    allowed, block_reason = check_and_reserve_ai_budget(estimated_tokens)
+    if not allowed:
+        logger.warning(
+            "Portfolio AI Anfrage durch Token-Limit/Circuit-Breaker blockiert: %s",
+            block_reason,
+        )
+        return {
+            "reply": (
+                "Das kostenfreie Token-Limit für den KI-Assistenten wurde erreicht. "
+                "Um Kosten zuverlässig auszuschließen, wurde die KI-Komponente vorübergehend "
+                "deaktiviert. Du kannst alle Projekte, Skills und Zertifikate direkt auf der "
+                "Portfolio-Seite einsehen."
+            ),
+            "sources": [],
+            "disabled": True,
+        }
+
     try:
         client = get_genai_client(api_key=api_key)
 
-        # Chat-Historie aufbauen
-        contents: list[types.Content] = []
-        if history:
-            for item in history[-6:]:  # Maximal letzte 6 Nachrichten für Kontext
-                role = "user" if item.get("role") == "user" else "model"
-                text = item.get("text", "").strip()
-                if text:
-                    contents.append(
-                        types.Content(
-                            role=role, parts=[types.Part.from_text(text=text)]
-                        )
-                    )
+        contents: list[types.Content] = [
+            types.Content(role=role, parts=[types.Part.from_text(text=text)])
+            for role, text in history_texts
+        ]
 
         # Aktuelle Benutzerfrage anhängen
         contents.append(
@@ -540,15 +571,22 @@ def answer_portfolio_query(
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=0.3,
-                max_output_tokens=800,
+                max_output_tokens=600,
             ),
         )
 
+        # Tatsächlich verbrauchte Tokens aus usage_metadata erfassen (falls vorhanden)
+        usage_meta = getattr(response, "usage_metadata", None)
+        actual_total = getattr(usage_meta, "total_token_count", None)
+        if isinstance(actual_total, int):
+            record_actual_ai_tokens(estimated_tokens, actual_total)
+
         reply_text = response.text or "Keine Antwort generiert."
         sources = extract_sources(reply_text)
-        result = {
+        result: dict[str, Any] = {
             "reply": reply_text,
             "sources": sources,
+            "disabled": not is_ai_enabled(),
         }
 
         # Antwort cachen
@@ -557,6 +595,20 @@ def answer_portfolio_query(
 
         return result
     except Exception as exc:  # noqa: BLE001
+        err_msg = str(exc).lower()
+        if any(
+            k in err_msg
+            for k in ("429", "quota", "resource_exhausted", "rate limit", "exceeded")
+        ):
+            trip_ai_circuit_breaker(f"Gemini API Quota/Rate-Limit erreicht: {exc}")
+            return {
+                "reply": (
+                    "Das kostenfreie Kontingent des KI-Dienstes ist erschöpft. "
+                    "Die KI-Komponente wurde zum Schutz vor Kosten automatisch deaktiviert."
+                ),
+                "sources": [],
+                "disabled": True,
+            }
         logger.error("Fehler beim Aufruf der Gemini API für Portfolio AI Chat: %s", exc)
         return {
             "reply": (

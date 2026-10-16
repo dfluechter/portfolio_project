@@ -172,4 +172,6 @@ export interface ChatMessage {
 export interface AIChatResponse {
   reply: string;
   sources: ChatSourceItem[];
+  disabled?: boolean;
 }
+

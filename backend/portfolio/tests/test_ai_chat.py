@@ -464,3 +464,53 @@ class TestAIChatView:
     def test_get_chat_method_not_allowed(self):
         resp = self.client.get("/api/ai/chat/")
         assert resp.status_code == 405
+
+
+@pytest.mark.django_db
+class TestZeroCostTokenBudgetAndCircuitBreaker:
+    """Tests für den 0-Kosten-Schutz, Token-Limits und die automatische Komponenten-Deaktivierung."""
+
+    @patch.dict(
+        "os.environ",
+        {"GEMINI_API_KEY": "dummy_key", "GEMINI_AI_ENABLED": "False"},
+    )
+    @patch("portfolio.services.ai_assistant.genai.Client")
+    def test_ai_disabled_via_env_flag_prevents_api_call(self, mock_client_cls):
+        res = answer_portfolio_query("Welche Skills hat Dominik?")
+        assert res["disabled"] is True
+        assert "deaktiviert" in res["reply"]
+        mock_client_cls.assert_not_called()
+
+    @patch.dict(
+        "os.environ",
+        {"GEMINI_API_KEY": "dummy_key", "GEMINI_DAILY_TOKEN_LIMIT": "10"},
+    )
+    @patch("portfolio.services.ai_assistant.genai.Client")
+    def test_daily_token_limit_trips_circuit_breaker_and_disables_component(
+        self, mock_client_cls
+    ):
+        res = answer_portfolio_query("Welche Projekte hat Dominik entwickelt?")
+        assert res["disabled"] is True
+        assert "Token-Limit" in res["reply"]
+        mock_client_cls.assert_not_called()
+
+    @patch.dict("os.environ", {"GEMINI_API_KEY": "dummy_key"})
+    @patch("portfolio.services.ai_assistant.genai.Client")
+    def test_quota_429_error_trips_circuit_breaker_and_disables_component(
+        self, mock_client_cls
+    ):
+        mock_client = MagicMock()
+        mock_client.models.generate_content.side_effect = RuntimeError(
+            "429 RESOURCE_EXHAUSTED: Quota exceeded"
+        )
+        mock_client_cls.return_value = mock_client
+
+        res1 = answer_portfolio_query("Welche Zertifikate gibt es?")
+        assert res1["disabled"] is True
+        assert "deaktiviert" in res1["reply"]
+        assert mock_client.models.generate_content.call_count == 1
+
+        # Folgeanfrage wird sofort durch den Circuit-Breaker ohne API-Call blockiert
+        res2 = answer_portfolio_query("Und welche Projekte?")
+        assert res2["disabled"] is True
+        assert mock_client.models.generate_content.call_count == 1

@@ -2,20 +2,31 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
+import { loadEnv } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, '../', ['VITE_', 'PORTFOLIO_'])
+  const ownerName =
+    env.PORTFOLIO_OWNER_NAME || env.VITE_PORTFOLIO_OWNER_NAME || 'Dominik Flüchter'
+
+  return {
+    envDir: '../',
+    envPrefix: ['VITE_', 'PORTFOLIO_'],
+    define: {
+      'import.meta.env.PORTFOLIO_OWNER_NAME': JSON.stringify(ownerName),
+    },
+    plugins: [react(), tailwindcss()],
   server: {
     port: 3000,
     host: true,
     proxy: {
       '/static': {
-        target: 'http://localhost:8000',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
       '/media': {
-        target: 'http://localhost:8000',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
     },
@@ -51,6 +62,9 @@ export default defineConfig({
     setupFiles: ['./src/setupTests.ts'],
     globals: true,
     pool: 'forks',
-    fileParallelism: false,
   },
+}
 })
+
+
+

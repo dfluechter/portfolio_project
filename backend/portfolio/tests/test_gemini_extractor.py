@@ -114,3 +114,51 @@ def test_extract_metadata_integrates_stage3_fallback(dummy_image_file, tmp_path)
     assert "cloud-devops" in result.guessed_track_slugs
     # Da Gemini Vision erfolgreich war, ist OCR nicht mehr pending
     assert result.ocr_pending is False
+
+
+def test_gemini_vision_disabled_when_flag_false(dummy_image_file):
+    """Stellt sicher, dass keine API-Aufrufe stattfinden, wenn GEMINI_VISION_ENABLED=False gesetzt ist."""
+    with (
+        patch.dict(
+            os.environ,
+            {"GEMINI_API_KEY": "dummy-key", "GEMINI_VISION_ENABLED": "False"},
+        ),
+        patch("urllib.request.urlopen") as mock_urlopen,
+    ):
+        result = extract_via_gemini_vision(dummy_image_file, api_key="dummy-key")
+        assert result is None
+        mock_urlopen.assert_not_called()
+
+
+def test_gemini_vision_skips_oversized_file_to_prevent_token_spike(
+    dummy_image_file,
+):
+    """Verhindert das Senden zu großer Dateien an Gemini Vision, um Token-Grenzen zu schützen."""
+    with (
+        patch.dict(
+            os.environ,
+            {"GEMINI_API_KEY": "dummy-key", "GEMINI_VISION_MAX_FILE_BYTES": "10"},
+        ),
+        patch("urllib.request.urlopen") as mock_urlopen,
+    ):
+        result = extract_via_gemini_vision(dummy_image_file, api_key="dummy-key")
+        assert result is None
+        mock_urlopen.assert_not_called()
+
+
+def test_gemini_vision_blocked_when_daily_token_limit_reached(dummy_image_file):
+    """Deaktiviert Gemini Vision automatisch, wenn das tägliche Token-Limit erreicht ist."""
+    from django.core.cache import cache
+
+    cache.clear()
+    with (
+        patch.dict(
+            os.environ,
+            {"GEMINI_API_KEY": "dummy-key", "GEMINI_DAILY_TOKEN_LIMIT": "5"},
+        ),
+        patch("urllib.request.urlopen") as mock_urlopen,
+    ):
+        result = extract_via_gemini_vision(dummy_image_file, api_key="dummy-key")
+        assert result is None
+        mock_urlopen.assert_not_called()
+    cache.clear()

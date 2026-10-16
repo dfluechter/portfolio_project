@@ -31,15 +31,23 @@ const QUICK_PROMPTS = [
   '💼 Welchen beruflichen Werdegang hat er?',
 ];
 
+const MAX_INPUT_CHARS = 500;
+const MAX_SESSION_USER_MESSAGES = 10;
+
 export const PortfolioChatWidget: FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [inputValue, setInputValue] = useState('');
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [isDisabled, setIsDisabled] = useState(false);
 
   const chatMutation = useSendAIChatMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isFeatureDisabledByEnv =
+    import.meta.env.VITE_AI_CHAT_ENABLED === 'false' ||
+    import.meta.env.VITE_AI_CHAT_ENABLED === '0';
 
   // Auto-Scroll zum Ende bei neuen Nachrichten
   useEffect(() => {
@@ -50,10 +58,10 @@ export const PortfolioChatWidget: FC = () => {
 
   // Fokus auf das Eingabefeld setzen beim Öffnen
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isDisabled) {
       inputRef.current?.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, isDisabled]);
 
   // ESC schließt das Chat-Widget
   useEffect(() => {
@@ -65,6 +73,10 @@ export const PortfolioChatWidget: FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
+
+  if (isFeatureDisabledByEnv) {
+    return null;
+  }
 
   // In die Zwischenablage kopieren mit Feedback
   const handleCopyText = async (id: string, text: string) => {
@@ -117,8 +129,26 @@ export const PortfolioChatWidget: FC = () => {
   };
 
   const handleSendMessage = async (textToSend?: string) => {
-    const text = (textToSend ?? inputValue).trim();
-    if (!text || chatMutation.isPending) return;
+    const text = (textToSend ?? inputValue).trim().slice(0, MAX_INPUT_CHARS);
+    if (!text || chatMutation.isPending || isDisabled) return;
+
+    const userCount = messages.filter((m) => m.role === 'user').length;
+    if (userCount >= MAX_SESSION_USER_MESSAGES) {
+      setIsDisabled(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `limit-${Date.now()}`,
+          role: 'model',
+          text: 'Das Sitzungs-Limit für kostenfreie KI-Anfragen wurde erreicht. Zum Schutz vor Token-Überschreitungen wurde der Chat für diese Sitzung deaktiviert.',
+          timestamp: new Date().toLocaleTimeString('de-DE', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        },
+      ]);
+      return;
+    }
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -134,17 +164,21 @@ export const PortfolioChatWidget: FC = () => {
     setMessages(nextMessages);
     setInputValue('');
 
-    // Letzte 6 Nachrichten als Historie formatieren
+    // Letzte 6 Nachrichten als Historie formatieren (mit Zeichenlimit pro Eintrag)
     const history = nextMessages
       .filter((m) => m.id !== 'welcome')
       .slice(-6)
-      .map((m) => ({ role: m.role, text: m.text }));
+      .map((m) => ({ role: m.role, text: m.text.slice(0, MAX_INPUT_CHARS) }));
 
     try {
       const response = await chatMutation.mutateAsync({
         message: text,
         history,
       });
+
+      if (response.disabled || userCount + 1 >= MAX_SESSION_USER_MESSAGES) {
+        setIsDisabled(true);
+      }
 
       const modelMsg: ChatMessage = {
         id: `model-${Date.now()}`,
@@ -158,11 +192,18 @@ export const PortfolioChatWidget: FC = () => {
       };
 
       setMessages((prev) => [...prev, modelMsg]);
-    } catch {
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 429 || status === 503) {
+        setIsDisabled(true);
+      }
       const errorMsg: ChatMessage = {
         id: `error-${Date.now()}`,
         role: 'model',
-        text: 'Entschuldigung, der KI-Dienst ist gerade nicht erreichbar. Bitte versuche es später noch einmal.',
+        text:
+          status === 429
+            ? 'Das kostenfreie Anfrage-Limit wurde erreicht. Die KI-Komponente wurde zum Schutz vor Kosten deaktiviert.'
+            : 'Entschuldigung, der KI-Dienst ist gerade nicht erreichbar. Bitte versuche es später noch einmal.',
         timestamp: new Date().toLocaleTimeString('de-DE', {
           hour: '2-digit',
           minute: '2-digit',
@@ -202,13 +243,19 @@ export const PortfolioChatWidget: FC = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold text-white tracking-tight">Dominik&apos;s Copilot</h3>
-                  <span className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                  {isDisabled ? (
+                    <span className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                      Deaktiviert (Token-Schutz)
                     </span>
-                    Online
-                  </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                      </span>
+                      Online
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px] text-slate-400 font-medium">RAG via Gemini 3.8 Flash</p>
               </div>
@@ -364,14 +411,14 @@ export const PortfolioChatWidget: FC = () => {
           </div>
 
           {/* Quick Prompts (Taktile Chips nach ui-skills) */}
-          {messages.length <= 2 && (
+          {messages.length <= 2 && !isDisabled && (
             <div className="px-3.5 py-2 bg-white/95 dark:bg-slate-900/95 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
               {QUICK_PROMPTS.map((prompt) => (
                 <button
                   key={prompt}
                   type="button"
                   onClick={() => handleSendMessage(prompt)}
-                  disabled={chatMutation.isPending}
+                  disabled={chatMutation.isPending || isDisabled}
                   className="px-2.5 py-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-[11px] font-medium whitespace-nowrap border border-slate-200/60 dark:border-slate-700/60 active:scale-95 transition-all duration-150 disabled:opacity-50 cursor-pointer shadow-2xs"
                 >
                   {prompt}
@@ -392,15 +439,20 @@ export const PortfolioChatWidget: FC = () => {
             <input
               ref={inputRef}
               type="text"
-              placeholder="Frage zu Dominiks Portfolio stellen..."
+              maxLength={MAX_INPUT_CHARS}
+              placeholder={
+                isDisabled
+                  ? 'KI-Assistent deaktiviert (Token-Limit geschützt)'
+                  : 'Frage zu Dominiks Portfolio stellen...'
+              }
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              disabled={chatMutation.isPending}
-              className="flex-1 px-3.5 py-2 bg-slate-50/80 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800/80 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all disabled:opacity-50"
+              disabled={chatMutation.isPending || isDisabled}
+              className="flex-1 px-3.5 py-2 bg-slate-50/80 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800/80 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <button
               type="submit"
-              disabled={!inputValue.trim() || chatMutation.isPending}
+              disabled={!inputValue.trim() || chatMutation.isPending || isDisabled}
               aria-label="Nachricht senden"
               className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white flex items-center justify-center active:scale-90 transition-all duration-150 shadow-md shadow-indigo-600/25 disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
             >

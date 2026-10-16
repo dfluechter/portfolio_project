@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import { LayoutDashboard, LogIn, LogOut, Menu, X } from 'lucide-react';
+import { PORTFOLIO_OWNER_NAME } from '../constants';
 
 const LOGO_SRC = import.meta.env.DEV
   ? '/static/img/icons/logo_df_3.png'
@@ -22,11 +23,11 @@ export const Navbar: React.FC = () => {
         <Link to="/" className="flex items-center gap-2.5 group">
           <img
             src={LOGO_SRC}
-            alt="Dominik Flüchter Logo"
+            alt={`${PORTFOLIO_OWNER_NAME} Logo`}
             className="w-10 h-10 rounded-xl object-contain shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform bg-black"
           />
           <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">
-            Dominik Flüchter
+            {PORTFOLIO_OWNER_NAME}
           </span>
         </Link>
 

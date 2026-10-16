@@ -18,14 +18,8 @@ from rest_framework.permissions import (
     IsAuthenticatedOrReadOnly,
 )
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
-from rest_framework import status
-from portfolio.throttles import (
-    AIChatBurstThrottle,
-    AIChatSustainedThrottle,
-    AIChatGlobalBudgetThrottle,
-)
-from portfolio.services.ai_assistant import generate_chat_response
 
 from .models import (
     TRACK_RULES,
@@ -484,26 +478,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
                 {"detail": "Fehler bei der Metadatenanalyse des Dokuments."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-class AIAssistantChatView(APIView):
-    # Aktivierung aller 3 Schutzschichten für diesen Endpunkt
-    throttle_classes = [
-        AIChatBurstThrottle,
-        AIChatSustainedThrottle,
-        AIChatGlobalBudgetThrottle,
-    ]
 
-    def post(self, request):
-        user_message = request.data.get("message", "").strip()
-        if not user_message:
-            return Response(
-                {"error": "Die Nachricht darf nicht leer sein."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Antwort über den bestehenden AI-Assistenten-Service generieren
-        response_text = generate_chat_response(user_message)
-        
-        return Response({"response": response_text}, status=status.HTTP_200_OK)
 
 class SkillViewSet(viewsets.ModelViewSet):
     queryset = Skill.objects.all()

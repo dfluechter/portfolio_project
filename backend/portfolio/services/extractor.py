@@ -504,6 +504,12 @@ def _extract_from_image(
     return metadata, extracted_text, dimensions, ocr_pending
 
 
+MAX_GEMINI_VISION_FILE_BYTES = (
+    2 * 1024 * 1024
+)  # Max. 2 MB um Token-Spitzen zu verhindern
+MAX_GEMINI_VISION_OUTPUT_TOKENS = 500
+
+
 def extract_via_gemini_vision(
     file_path: Path,
     api_key: str | None = None,
@@ -512,20 +518,35 @@ def extract_via_gemini_vision(
     """
     Stufe 3 der Metadaten-Extraktion:
     Analysiert gescannte oder bildbasierte Zertifikate via Google Gemini 1.5/2.5 Flash Vision.
-    Fällt transparent auf None zurück, wenn kein GEMINI_API_KEY konfiguriert ist (Graceful Degradation).
+    Fällt transparent auf None zurück, wenn kein GEMINI_API_KEY konfiguriert ist oder
+    Token-Grenzen/Circuit-Breaker greifen (0-Kosten-Garantie & Graceful Degradation).
     """
+    from portfolio.services.ai_assistant import (
+        check_and_reserve_ai_budget,
+        estimate_tokens,
+        record_actual_ai_tokens,
+        trip_ai_circuit_breaker,
+    )
+
+    vision_flag = os.getenv("GEMINI_VISION_ENABLED", "true").strip().lower()
+    ai_flag = os.getenv("GEMINI_AI_ENABLED", "true").strip().lower()
+    if vision_flag in ("false", "0", "no", "off") or ai_flag in (
+        "false",
+        "0",
+        "no",
+        "off",
+    ):
+        logger.info(
+            "Gemini Vision ist zum Schutz vor Kosten/Token-Überschreitung deaktiviert."
+        )
+        return None
+
     key = api_key or os.getenv("GEMINI_API_KEY")
     if not key:
         logger.debug(
             "Kein GEMINI_API_KEY konfiguriert - überspringe Gemini Vision Stufe 3."
         )
         return None
-
-    gemini_model = model or os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent"
-        f"?key={key}"
-    )
 
     ext = file_path.suffix.lower()
     if ext == ".pdf":
@@ -538,21 +559,55 @@ def extract_via_gemini_vision(
         return None
 
     try:
+        file_size = file_path.stat().st_size
+    except OSError:
+        return None
+
+    max_bytes = int(
+        os.getenv("GEMINI_VISION_MAX_FILE_BYTES", str(MAX_GEMINI_VISION_FILE_BYTES))
+    )
+    if file_size > max_bytes:
+        logger.warning(
+            "Datei %s (%d Bytes) überschreitet das Token-Sicherheitslimit (%d Bytes) - "
+            "Gemini Vision Stufe 3 wird deaktiviert/übersprungen.",
+            file_path.name,
+            file_size,
+            max_bytes,
+        )
+        return None
+
+    prompt = (
+        "Du bist ein Experte für die Analyse von Zertifikaten und Weiterbildungsnachweisen. "
+        "Extrahiere die Metadaten dieses Zertifikats und antworte ausschließlich als valides JSON "
+        "mit den folgenden Feldern:\n"
+        "- title: Der genaue Titel des Zertifikats oder Kurses\n"
+        "- provider: Der Name des Ausstellers oder der Plattform (z. B. AWS, Google Cloud, Coursera, Udemy, etc.)\n"
+        "- credential_id: Identifikationsnummer oder Lizenznummer des Zertifikats (falls vorhanden, sonst leer)\n"
+        "- issued_date: Ausstellungsdatum im ISO-Format YYYY-MM-DD (falls erkennbar, sonst leer)\n"
+        "- extracted_text: Der wichtigste erkannte Text des Dokuments\n"
+        "- tracks: Liste passender technischer Lernpfade aus [backend, frontend, fullstack, cloud-devops, data-ai, security, agile]\n"
+    )
+
+    estimated_tokens = estimate_tokens(prompt, extra_bytes=file_size)
+    allowed, block_reason = check_and_reserve_ai_budget(estimated_tokens)
+    if not allowed:
+        logger.warning(
+            "Gemini Vision für %s durch Token-Budget/Circuit-Breaker deaktiviert: %s",
+            file_path.name,
+            block_reason,
+        )
+        return None
+
+    gemini_model = model or os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent"
+        f"?key={key}"
+    )
+
+    try:
         with open(file_path, "rb") as f:
             file_bytes = f.read()
         b64_data = base64.b64encode(file_bytes).decode("utf-8")
-
-        prompt = (
-            "Du bist ein Experte für die Analyse von Zertifikaten und Weiterbildungsnachweisen. "
-            "Extrahiere die Metadaten dieses Zertifikats und antworte ausschließlich als valides JSON "
-            "mit den folgenden Feldern:\n"
-            "- title: Der genaue Titel des Zertifikats oder Kurses\n"
-            "- provider: Der Name des Ausstellers oder der Plattform (z. B. AWS, Google Cloud, Coursera, Udemy, etc.)\n"
-            "- credential_id: Identifikationsnummer oder Lizenznummer des Zertifikats (falls vorhanden, sonst leer)\n"
-            "- issued_date: Ausstellungsdatum im ISO-Format YYYY-MM-DD (falls erkennbar, sonst leer)\n"
-            "- extracted_text: Der wichtigste erkannte Text des Dokuments\n"
-            "- tracks: Liste passender technischer Lernpfade aus [backend, frontend, fullstack, cloud-devops, data-ai, security, agile]\n"
-        )
 
         payload = {
             "contents": [
@@ -571,6 +626,7 @@ def extract_via_gemini_vision(
             "generationConfig": {
                 "response_mime_type": "application/json",
                 "temperature": 0.1,
+                "maxOutputTokens": MAX_GEMINI_VISION_OUTPUT_TOKENS,
             },
         }
 
@@ -586,6 +642,12 @@ def extract_via_gemini_vision(
             resp_body = resp.read().decode("utf-8")
             data = json.loads(resp_body)
 
+        usage_meta = data.get("usageMetadata", {})
+        if isinstance(usage_meta, dict):
+            actual_total = usage_meta.get("totalTokenCount")
+            if isinstance(actual_total, int):
+                record_actual_ai_tokens(estimated_tokens, actual_total)
+
         candidates = data.get("candidates", [])
         if not candidates:
             return None
@@ -598,6 +660,14 @@ def extract_via_gemini_vision(
         parsed_json: dict[str, Any] = json.loads(raw_text)
         return parsed_json
     except Exception as exc:  # noqa: BLE001
+        err_msg = str(exc).lower()
+        if getattr(exc, "code", None) == 429 or any(
+            k in err_msg
+            for k in ("429", "quota", "resource_exhausted", "rate limit", "exceeded")
+        ):
+            trip_ai_circuit_breaker(
+                f"Gemini Vision Quota/Rate-Limit für {file_path.name} erreicht: {exc}"
+            )
         logger.warning(
             "Gemini Vision Extraktion für %s fehlgeschlagen: %s", file_path.name, exc
         )
