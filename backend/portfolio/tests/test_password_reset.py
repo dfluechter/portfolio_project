@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.db import OperationalError
 from django.urls import reverse
 from djoser.utils import encode_uid
 from rest_framework import status
@@ -39,7 +40,9 @@ class TestPasswordResetRequestView:
     def test_password_reset_falls_back_to_superuser_when_owner_email_differs(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Nutzt hinterlegte PORTFOLIO_OWNER_EMAIL als Empfänger, auch wenn DB-Superuser abweicht."""
+        """Nutzt hinterlegte PORTFOLIO_OWNER_EMAIL als Empfänger,
+        auch wenn DB-Superuser abweicht.
+        """
         monkeypatch.setenv("PORTFOLIO_OWNER_EMAIL", "configured-owner@portfolio.dev")
         User.objects.create_superuser(
             email="db-admin@portfolio.dev", password="OldPassword123!"
@@ -54,7 +57,9 @@ class TestPasswordResetRequestView:
     def test_password_reset_falls_back_to_staff_when_no_owner_and_no_superuser(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Greift auf Staff-Account zurück, falls PORTFOLIO_OWNER_EMAIL fehlt und kein Superuser existiert."""
+        """Greift auf Staff-Account zurück,
+        falls PORTFOLIO_OWNER_EMAIL fehlt und kein Superuser existiert.
+        """
         monkeypatch.delenv("PORTFOLIO_OWNER_EMAIL", raising=False)
         User.objects.create_user(
             email="staff-lead@portfolio.dev",
@@ -71,7 +76,9 @@ class TestPasswordResetRequestView:
     def test_password_reset_handles_runtime_error_gracefully(
         self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Fängt RuntimeError bei E-Mail-Versand ab, loggt den Fehler und gibt 200 OK zurück."""
+        """Fängt RuntimeError bei E-Mail-Versand ab,
+        loggt den Fehler und gibt 200 OK zurück.
+        """
         owner_email = "owner@portfolio.dev"
         monkeypatch.setenv("PORTFOLIO_OWNER_EMAIL", owner_email)
         User.objects.create_superuser(email=owner_email, password="OldPassword123!")
@@ -92,7 +99,9 @@ class TestPasswordResetRequestView:
     def test_password_reset_handles_smtp_exception_gracefully(
         self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Fängt SMTPException bei Mailserver-Ausfall ab, loggt und gibt kontrollierte 200 Response."""
+        """Fängt SMTPException bei Mailserver-Ausfall ab,
+        loggt und gibt kontrollierte 200 Response.
+        """
         owner_email = "owner@portfolio.dev"
         monkeypatch.setenv("PORTFOLIO_OWNER_EMAIL", owner_email)
         User.objects.create_superuser(email=owner_email, password="OldPassword123!")
@@ -114,7 +123,9 @@ class TestPasswordResetRequestView:
     def test_password_reset_returns_200_even_if_no_user_exists(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Anti-Enumeration: Gibt 200 OK zurück, auch wenn kein passender Account existiert."""
+        """Anti-Enumeration: Gibt 200 OK zurück,
+        auch wenn kein passender Account existiert.
+        """
         monkeypatch.setenv("PORTFOLIO_OWNER_EMAIL", "nonexistent@portfolio.dev")
         User.objects.all().delete()
 
@@ -135,7 +146,9 @@ class TestPasswordResetConfirmAPI:
         self.login_url = reverse("jwt-create")
 
     def test_reset_password_confirm_e2e_success_and_login(self) -> None:
-        """End-to-End Test: Passwort wird erfolgreich zurückgesetzt und neuer Login gelingt."""
+        """End-to-End Test: Passwort wird erfolgreich zurückgesetzt
+        und neuer Login gelingt.
+        """
         old_password = "OldPassword123!"
         new_password = "BrandNewSecurePassword2026!#"
         user = User.objects.create_superuser(
@@ -231,7 +244,9 @@ class TestPasswordResetConfirmAPI:
         assert "token" in response.data or "detail" in response.data
 
     def test_reset_password_confirm_weak_or_short_password_returns_400(self) -> None:
-        """Zu kurzes Passwort (< 8 Zeichen) verletzt die Validierung und liefert 400 Bad Request."""
+        """Zu kurzes Passwort (< 8 Zeichen) verletzt Validierung
+        und liefert 400 Bad Request.
+        """
         old_password = "OldPassword123!"
         user = User.objects.create_superuser(
             email="admin@portfolio.dev", password=old_password
@@ -257,7 +272,7 @@ class TestPasswordResetConfirmAPI:
 
 @pytest.mark.django_db
 class TestHealthCheckAndAPIErrorHandling:
-    """Tests für das erweiterte API-Error-Handling in health_check_view und AIChatView."""
+    """Tests für erweitertes Error-Handling in health_check_view und AIChatView."""
 
     def setup_method(self) -> None:
         self.client = APIClient()
@@ -268,8 +283,6 @@ class TestHealthCheckAndAPIErrorHandling:
         assert response.json() == {"status": "ok"}
 
     def test_health_check_returns_503_when_db_fails(self) -> None:
-        from django.db import OperationalError
-
         with patch(
             "portfolio.views.connection.cursor",
             side_effect=OperationalError("DB down"),

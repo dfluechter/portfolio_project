@@ -187,4 +187,40 @@ describe('CertificateEditModal Component', () => {
     });
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
+
+  it('prevents publishing and shows error notification when no tracks are selected', async () => {
+    const cert = getMockCertificate({
+      id: 5,
+      title: 'Django Mastery',
+      provider: 1,
+      pdf_file: 'https://example.com/cert.pdf',
+      tracks: [],
+      is_published: false,
+    });
+
+    renderWithProviders(
+      <CertificateEditModal
+        certificate={cert}
+        onClose={mockOnClose}
+        onNotify={mockOnNotify}
+      />
+    );
+
+    const publishBtn = screen.getByRole('button', {
+      name: /Speichern & Veröffentlichen/i,
+    });
+    fireEvent.click(publishBtn);
+
+    expect(
+      screen.getByText(
+        'Ein Zertifikat kann nur veröffentlicht werden, wenn mindestens ein Track zugewiesen ist.'
+      )
+    ).toBeInTheDocument();
+    expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
+    expect(mockOnNotify).toHaveBeenCalledWith({
+      type: 'error',
+      text: 'Ein Zertifikat kann nur veröffentlicht werden, wenn mindestens ein Track zugewiesen ist.',
+    });
+    expect(mockOnClose).not.toHaveBeenCalled();
+  });
 });

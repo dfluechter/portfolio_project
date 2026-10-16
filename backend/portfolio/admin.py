@@ -4,6 +4,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     Certificate,
     CertificateImportRun,
+    KnowledgeChunk,
     PendingCertificate,
     Project,
     Provider,
@@ -188,3 +189,22 @@ class CertificateImportRunAdmin(admin.ModelAdmin):
         "inbox_path",
         "log",
     )
+
+
+@admin.register(KnowledgeChunk)
+class KnowledgeChunkAdmin(admin.ModelAdmin):
+    list_display = (
+        "title",
+        "source_type",
+        "source_id",
+        "chunk_index",
+        "has_embedding",
+        "updated_at",
+    )
+    list_filter = ("source_type",)
+    search_fields = ("title", "content")
+    readonly_fields = ("created_at", "updated_at")
+
+    @admin.display(boolean=True, description="Vektor vorhanden")
+    def has_embedding(self, obj: KnowledgeChunk) -> bool:
+        return obj.embedding is not None

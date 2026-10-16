@@ -89,7 +89,7 @@ def health_check_view(request):
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.exception("Health-Check fehlgeschlagen: Datenbank nicht erreichbar.")
         return JsonResponse(
             {"status": "error", "database": "unavailable"},
@@ -215,7 +215,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
             )
 
     def perform_create(self, serializer):
-        """Berechnet SHA-256 aus der hochgeladenen Datei oder verifiziert das S3-Objekt bei Direct-S3-Uploads (US 10.2)."""
+        """Berechnet SHA-256 aus der Datei oder verifiziert Direct-S3-Uploads (US 10.2)."""
         pdf_file = self.request.FILES.get("pdf_file")
         storage_key = self.request.data.get("storage_key")
 
@@ -249,7 +249,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
             serializer.save(is_published=False)
 
     def perform_update(self, serializer):
-        """Erlaubt autorisierten Nutzern das Ändern des Veröffentlichungsstatus und der Datei bei Updates."""
+        """Erlaubt autorisierten Nutzern das Ändern von Status und Datei bei Updates."""
         update_kwargs = {}
         storage_key = self.request.data.get("storage_key")
         if storage_key and not self.request.FILES.get("pdf_file"):
@@ -282,7 +282,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
                     )
                 try:
                     ensure_certificate_in_storage(instance or serializer.instance)
-                except Exception as err:
+                except Exception as err:  # noqa: BLE001
                     logger.exception(
                         "Fehler beim Übertragen des Zertifikats in den S3-Storage bei Veröffentlichung."
                     )
@@ -348,7 +348,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
                 {"detail": str(err)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception("Fehler bei der Generierung der Presigned-Upload-URL.")
             return Response(
                 {"detail": "S3-Presigned-URL konnte nicht erzeugt werden."},
@@ -359,7 +359,8 @@ class CertificateViewSet(viewsets.ModelViewSet):
     def publish(self, request, pk=None):
         """Dedizierter Endpoint zur Veröffentlichung eines geprüften Zertifikats.
 
-        Stellt sicher, dass das Zertifikat im S3-Storage abgelegt wird und bei Neu-Veröffentlichung mindestens ein Track zugeordnet ist.
+        Stellt sicher, dass das Zertifikat im S3-Storage abgelegt wird und bei
+        Neu-Veröffentlichung mindestens ein Track zugeordnet ist.
         """
         cert = self.get_object()
         if not cert.is_published and not cert.tracks.exists():
@@ -373,7 +374,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
             )
         try:
             ensure_certificate_in_storage(cert)
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception(
                 "Fehler beim Übertragen des Zertifikats ID %s in den S3-Storage bei Veröffentlichung.",
                 cert.pk,
@@ -396,7 +397,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def extract_metadata(self, request, pk=None):
-        """Führt eine zweistufige On-Demand Extraktion (Textschicht + OCR) für das Zertifikat aus."""
+        """Zweistufige On-Demand Extraktion (Textschicht + OCR) für Zertifikat."""
         cert = self.get_object()
         if not cert.pdf_file:
             return Response(
@@ -472,7 +473,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
                     "source_type": result.source_type,
                 }
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception("Fehler bei der On-Demand-Metadatenextraktion.")
             return Response(
                 {"detail": "Fehler bei der Metadatenanalyse des Dokuments."},
@@ -582,7 +583,7 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
                 {"detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception(
                 "Unerwarteter Fehler beim Freigeben des Pending-Zertifikats."
             )
@@ -609,7 +610,7 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
                 {"detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception(
                 "Unerwarteter Fehler beim Ablehnen des Pending-Zertifikats."
             )
@@ -687,7 +688,7 @@ class AIChatView(APIView):
         try:
             result = answer_portfolio_query(message, history)
             return Response(result, status=status.HTTP_200_OK)
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception(
                 "Unerwarteter Fehler bei der Anfrage an den KI-Assistenten."
             )
@@ -705,9 +706,10 @@ class AIChatView(APIView):
 
 
 class PasswordResetRequestView(APIView):
-    """
-    Stößt den Use-Case 'Passwort zurücksetzen' für den einzigen Portfolio-User an.
-    Versendet das Template backend/templates/email/password_reset.html an PORTFOLIO_OWNER_EMAIL.
+    """Stößt den Use-Case 'Passwort zurücksetzen' für den Portfolio-User an.
+
+    Versendet das Template backend/templates/email/password_reset.html
+    an PORTFOLIO_OWNER_EMAIL.
     """
 
     permission_classes = (AllowAny,)
@@ -716,7 +718,10 @@ class PasswordResetRequestView(APIView):
 
     @extend_schema(
         summary="Passwort-Reset anfordern",
-        description="Sendet eine E-Mail mit Wiederherstellungs-Token an den in .env hinterlegten Portfolio-Inhaber (PORTFOLIO_OWNER_EMAIL).",
+        description=(
+            "Sendet eine E-Mail mit Wiederherstellungs-Token an den in .env "
+            "hinterlegten Portfolio-Inhaber (PORTFOLIO_OWNER_EMAIL)."
+        ),
         request=None,
         responses={
             200: {"type": "object", "properties": {"detail": {"type": "string"}}}
@@ -748,19 +753,21 @@ class PasswordResetRequestView(APIView):
                 to = [recipient]
                 try:
                     djoser_settings.EMAIL.password_reset(request, context).send(to)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     logger.exception(
                         "Fehler beim Versenden der Passwort-Reset-Mail an %s", recipient
                     )
             else:
                 logger.warning(
-                    "Passwort-Reset angefordert: Benutzer ID %s gefunden, aber keine gültige Empfänger-E-Mail vorhanden.",
+                    "Passwort-Reset angefordert: Benutzer ID %s gefunden, "
+                    "aber keine gültige Empfänger-E-Mail vorhanden.",
                     user.pk,
                 )
         else:
             logger.warning(
                 "Passwort-Reset angefordert, aber kein passender Benutzer gefunden "
-                "(weder für PORTFOLIO_OWNER_EMAIL='%s' noch existiert ein Superuser/Staff-Account).",
+                "(weder für PORTFOLIO_OWNER_EMAIL='%s' noch existiert ein "
+                "Superuser/Staff-Account).",
                 owner_email,
             )
 

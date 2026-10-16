@@ -24,6 +24,7 @@ dependencies = [
     "pypdf>=6.19.0",
     "pytesseract>=0.3.13",
     "google-genai",
+    "pgvector>=0.3.6",
 ]
 
 # Konfiguration für Mypy (löst deine Fehler-Meldungen)

@@ -12,6 +12,28 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
+try:
+    from pgvector.django import VectorField
+except ImportError:
+    # Graceful fallback für Umgebungen ohne vorinstalliertes pgvector
+    class VectorField(models.Field):  # type: ignore[no-redef]
+        def __init__(
+            self, *args: Any, dimensions: int | None = None, **kwargs: Any
+        ) -> None:
+            self.dimensions = dimensions
+            super().__init__(*args, **kwargs)
+
+        def deconstruct(self) -> Any:
+            name, path, args, kwargs = super().deconstruct()
+            if self.dimensions is not None:
+                kwargs["dimensions"] = self.dimensions
+            return name, path, args, kwargs
+
+        def db_type(self, connection: Any) -> str:
+            if connection.vendor == "postgresql":
+                return f"vector({self.dimensions})" if self.dimensions else "vector"
+            return "text"
+
 # ==============================================================================
 # VALIDATOREN (Security & Limits)
 # ==============================================================================
@@ -578,3 +600,75 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self) -> str:
         return self.email
+
+
+class KnowledgeChunk(models.Model):
+    """
+    Speichert semantische Wissens-Chunks (Projekte, Zertifikate, Skills, Werdegang)
+    inklusive 768-dimensionaler Vektoreinbettungen für den RAG-Workflow des Portfolio-Copilots.
+    """
+
+    SOURCE_PROJECT = "project"
+    SOURCE_CERTIFICATE = "certificate"
+    SOURCE_SKILL = "skill"
+    SOURCE_TIMELINE = "timeline"
+
+    SOURCE_TYPE_CHOICES = (
+        (SOURCE_PROJECT, "Projekt"),
+        (SOURCE_CERTIFICATE, "Zertifikat"),
+        (SOURCE_SKILL, "Skill"),
+        (SOURCE_TIMELINE, "Werdegang"),
+    )
+
+    source_type = models.CharField(
+        max_length=20,
+        choices=SOURCE_TYPE_CHOICES,
+        db_index=True,
+        verbose_name="Quell-Typ",
+    )
+    source_id = models.PositiveIntegerField(
+        db_index=True,
+        verbose_name="Quell-Datensatz-ID",
+    )
+    chunk_index = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Chunk-Index",
+    )
+    title = models.CharField(
+        max_length=255,
+        verbose_name="Titel",
+    )
+    content = models.TextField(
+        verbose_name="Chunk-Inhalt (Grounding Text)",
+    )
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Zusatz-Metadaten",
+    )
+    embedding = VectorField(
+        dimensions=768,
+        null=True,
+        blank=True,
+        verbose_name="Vektor-Embedding (768 Dim)",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Erstellt am",
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Aktualisiert am",
+    )
+
+    class Meta:
+        verbose_name = "Knowledge Chunk"
+        verbose_name_plural = "Knowledge Chunks"
+        indexes = [
+            models.Index(fields=["source_type", "source_id"]),
+        ]
+        unique_together = ("source_type", "source_id", "chunk_index")
+
+    def __str__(self) -> str:
+        label = self.get_source_type_display()
+        return f"[{label}] {self.title} (Chunk {self.chunk_index})"

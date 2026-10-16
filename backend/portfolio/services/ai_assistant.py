@@ -10,6 +10,11 @@ from google import genai
 from google.genai import types
 
 from portfolio.models import Certificate, Project, Skill, TimelineEntry
+from .retrieval import (
+    extract_chunk_sources,
+    format_chunks_for_grounding,
+    retrieve_relevant_chunks,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -495,11 +500,17 @@ def answer_portfolio_query(
             "disabled": True,
         }
 
-    # 2. Gecachter Wissenskontext & Token-Kompression + Harte Zeichenbegrenzung
-    full_context = get_cached_grounding_context()
-    grounding_data = prune_context_by_query(cleaned_query, full_context)[
-        :MAX_GROUNDING_CHARS
-    ]
+    # 2. Gecachter Wissenskontext & Hybrid Retrieval
+    retrieved_chunks = retrieve_relevant_chunks(cleaned_query)
+    if retrieved_chunks:
+        grounding_data = format_chunks_for_grounding(retrieved_chunks)[
+            :MAX_GROUNDING_CHARS
+        ]
+    else:
+        full_context = get_cached_grounding_context()
+        grounding_data = prune_context_by_query(cleaned_query, full_context)[
+            :MAX_GROUNDING_CHARS
+        ]
 
     system_instruction = (
         "Du bist 'Dominik's Portfolio Copilot', ein freundlicher, hochkompetenter und präziser "
@@ -582,10 +593,26 @@ def answer_portfolio_query(
             record_actual_ai_tokens(estimated_tokens, actual_total)
 
         reply_text = response.text or "Keine Antwort generiert."
-        sources = extract_sources(reply_text)
+        extracted_text_sources = extract_sources(reply_text)
+        chunk_sources = extract_chunk_sources(retrieved_chunks) if retrieved_chunks else []
+
+        # Zusammenführen und Duplikate anhand target_id eliminieren
+        combined_sources: list[dict[str, Any] | str] = []
+        seen_targets: set[str] = set()
+        for s in chunk_sources + [s for s in extracted_text_sources if isinstance(s, dict)]:
+            target = s.get("target_id")
+            if target and target not in seen_targets:
+                seen_targets.add(target)
+                combined_sources.append(s)
+
+        if not combined_sources:
+            combined_sources = extracted_text_sources or [
+                "Dominik's Verified Portfolio Knowledge Base"
+            ]
+
         result: dict[str, Any] = {
             "reply": reply_text,
-            "sources": sources,
+            "sources": combined_sources,
             "disabled": not is_ai_enabled(),
         }
 

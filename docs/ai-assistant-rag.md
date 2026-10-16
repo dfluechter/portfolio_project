@@ -157,3 +157,24 @@ Das Frontend-Widget [`PortfolioChatWidget.tsx`](../frontend/src/components/chat/
    - 3-Dot Bouncing Wave (`animate-bounce` mit Staggered Delays).
 5. **Radar-Ping**:
    - Dezenter animierter Puls am Floating Trigger Button (`animate-ping`).
+
+---
+
+## 7. Vektor-Storage & Hybrid Retrieval (`pgvector` & `text-embedding-004`)
+
+Für präzise semantische Suchen und Skalierbarkeit über tausende von Textabschnitten (inkl. OCR-Extrakten von Zertifikats-PDFs) verfügt das Backend über eine **pgvector**-Erweiterung auf Neon PostgreSQL:
+
+1. **Modell `KnowledgeChunk`**:
+   - Zerlegt `Project`, `Certificate`, `Skill` und `TimelineEntry` in semantisch abgegrenzte Wissens-Chunks.
+   - Enthält ein 768-dimensionales Vektorfeld `VectorField(dimensions=768)`.
+   - Indiziert via HNSW-Index (`vector_cosine_ops`) für $O(\log N)$ Kosinus-Ähnlichkeitssuchen.
+2. **Embedding-Pipeline**:
+   - Erzeugt Embeddings via `google-genai` SDK (`text-embedding-004`).
+   - Gecacht auf Basis des SHA-256 Text-Hashes (7 Tage TTL).
+   - Integriert in den Zero-Cost Circuit-Breaker und das tägliche Token-Budget.
+3. **Hybrid Retrieval**:
+   - Auf PostgreSQL/Neon: Vektorsuche mit `CosineDistance('embedding', query_vector)` liefert die Top-$K$ relevantesten Chunks.
+   - Auf SQLite (lokal) oder bei Kontingenterschöpfung: Nahtloser Fallback auf Keyword-Matching und Volltext-Filterung.
+4. **Management Command**:
+   - `python manage.py index_rag_chunks [--with-embeddings]`: Indiziert und synchronisiert den gesamten Datenbestand.
+

@@ -216,4 +216,35 @@ describe('CertificateManager Component', () => {
       text: expect.stringContaining('erfolgreich veröffentlicht'),
     });
   });
+
+  it('disables publish button for unpublished certificates without tracks', () => {
+    const certWithoutTracks = getMockCertificate({
+      id: 16,
+      title: 'Docker Associate',
+      tracks: [],
+      is_published: false,
+    });
+
+    vi.mocked(useCertificatesPaginated).mockReturnValue({
+      data: {
+        count: 1,
+        total_pages: 1,
+        current_page: 1,
+        next: null,
+        previous: null,
+        results: [certWithoutTracks],
+      },
+      isLoading: false,
+      isPlaceholderData: false,
+    } as unknown as ReturnType<typeof useCertificatesPaginated>);
+
+    renderWithProviders(<CertificateManager onNotify={mockOnNotify} />);
+
+    const publishBtn = screen.getByRole('button', { name: /Veröffentlichen/i });
+    expect(publishBtn).toBeDisabled();
+    expect(publishBtn).toHaveAttribute(
+      'title',
+      'Mindestens ein Track erforderlich für Veröffentlichung'
+    );
+  });
 });

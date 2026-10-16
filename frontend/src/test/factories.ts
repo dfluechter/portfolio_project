@@ -84,7 +84,7 @@ export const getMockCertificate = (
   issued_date: '2024-01-01',
   pdf_file: 'https://example.com/certificate.pdf',
   uploaded_at: '2024-01-01T00:00:00Z',
-  tracks: [],
+  tracks: [1],
   is_published: true,
   ...overrides,
 });

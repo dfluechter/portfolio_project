@@ -179,9 +179,10 @@ describe('PortfolioChatWidget Component', () => {
       expect(screen.getByText('Antwort zum Kopieren')).toBeInTheDocument();
     });
 
-    const copyBtns = screen.getAllByRole('button', {
+    const copyBtns = await screen.findAllByRole('button', {
       name: /Antwort in die Zwischenablage kopieren/i,
     });
+    expect(copyBtns.length).toBeGreaterThanOrEqual(1);
     fireEvent.click(copyBtns[copyBtns.length - 1]);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Antwort zum Kopieren');
