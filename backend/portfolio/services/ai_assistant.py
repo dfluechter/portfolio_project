@@ -19,6 +19,18 @@ RAG_VERSION_KEY = "portfolio_rag_context_version_v1"
 GROUNDING_CACHE_TTL = 900  # 15 Minuten
 RESPONSE_CACHE_TTL = 3600  # 1 Stunde für identische Einzelanfragen
 
+# Zero-Cost & Token-Limit Schutz (Circuit-Breaker)
+AI_CIRCUIT_BREAKER_KEY = "portfolio_gemini_circuit_breaker_tripped_v1"
+AI_DAILY_TOKENS_KEY = "portfolio_gemini_daily_tokens_v1"
+AI_DAILY_REQUESTS_KEY = "portfolio_gemini_daily_requests_v1"
+AI_BUDGET_TTL = 86400  # 24 Stunden Fenster
+
+DEFAULT_DAILY_TOKEN_LIMIT = 50000  # Strikt im kostenlosen Kontingent (0 Kosten)
+DEFAULT_DAILY_REQUEST_LIMIT = 100  # Max. Anfragen pro 24h
+DEFAULT_MAX_INPUT_TOKENS = 4000  # Max. Input-Tokens pro Einzelanfrage
+MAX_GROUNDING_CHARS = 12000  # Harte Obergrenze für RAG-Wissenskontext
+MAX_HISTORY_ITEM_CHARS = 500  # Harte Obergrenze pro Nachricht in der Chat-Historie
+
 # Pre-Flight Injection-Filter Patterns
 INJECTION_PATTERNS = [
     r"ignore\s+(?:all\s+)?previous",
@@ -37,6 +49,126 @@ INJECTION_REGEX = re.compile("|".join(INJECTION_PATTERNS), re.IGNORECASE)
 # Modul-weiter Client-Singleton
 _GENAI_CLIENT: genai.Client | None = None
 _CACHED_API_KEY: str | None = None
+
+
+def is_ai_enabled() -> bool:
+    """Prüft, ob die KI-Komponenten aktiv sind und das Token-Budget nicht überschritten wurde."""
+    env_flag = os.getenv("GEMINI_AI_ENABLED", "true").strip().lower()
+    if env_flag in ("false", "0", "no", "off"):
+        return False
+    if cache.get(AI_CIRCUIT_BREAKER_KEY):
+        return False
+    return True
+
+
+def trip_ai_circuit_breaker(reason: str) -> None:
+    """Deaktiviert alle Gemini-KI-Komponenten für 24h, sobald Token-Grenzen erreicht werden."""
+    cache.set(AI_CIRCUIT_BREAKER_KEY, reason, timeout=AI_BUDGET_TTL)
+    logger.warning(
+        "Zero-Cost-Schutz: KI-Komponenten wurden deaktiviert (Grund: %s)", reason
+    )
+
+
+def estimate_tokens(text: str, extra_bytes: int = 0) -> int:
+    """Konservative Schätzung der Token-Anzahl (ca. 4 Zeichen pro Token + Binärdaten-Aufschlag)."""
+    text_tokens = max(1, len(text or "") // 4 + 1)
+    # Für Bilder/PDFs in Gemini Vision: ca. 258 Tokens pro angefangene 100 KB konservativ ansetzen
+    binary_tokens = (max(0, extra_bytes) // (100 * 1024) + (1 if extra_bytes > 0 else 0)) * 258
+    return text_tokens + binary_tokens
+
+
+def check_and_reserve_ai_budget(estimated_tokens: int) -> tuple[bool, str]:
+    """Prüft Token- und Request-Grenzen vor jedem API-Call.
+
+    Wenn eine Grenze überschritten wird, wird die Komponente via Circuit-Breaker deaktiviert,
+    damit garantiert keine Kosten entstehen.
+    """
+    env_flag = os.getenv("GEMINI_AI_ENABLED", "true").strip().lower()
+    if env_flag in ("false", "0", "no", "off"):
+        return False, "KI-Komponenten sind administrativ deaktiviert."
+
+    tripped_reason = cache.get(AI_CIRCUIT_BREAKER_KEY)
+    if tripped_reason:
+        return False, str(tripped_reason)
+
+    try:
+        daily_token_limit = int(
+            os.getenv("GEMINI_DAILY_TOKEN_LIMIT", str(DEFAULT_DAILY_TOKEN_LIMIT))
+        )
+    except ValueError:
+        daily_token_limit = DEFAULT_DAILY_TOKEN_LIMIT
+
+    try:
+        daily_req_limit = int(
+            os.getenv("GEMINI_DAILY_REQUEST_LIMIT", str(DEFAULT_DAILY_REQUEST_LIMIT))
+        )
+    except ValueError:
+        daily_req_limit = DEFAULT_DAILY_REQUEST_LIMIT
+
+    try:
+        max_input_tokens = int(
+            os.getenv("GEMINI_MAX_INPUT_TOKENS", str(DEFAULT_MAX_INPUT_TOKENS))
+        )
+    except ValueError:
+        max_input_tokens = DEFAULT_MAX_INPUT_TOKENS
+
+    if estimated_tokens > max_input_tokens:
+        return (
+            False,
+            f"Anfrage überschreitet das Token-Limit pro Aufruf ({estimated_tokens} > {max_input_tokens}).",
+        )
+
+    current_tokens = int(cache.get(AI_DAILY_TOKENS_KEY) or 0)
+    current_reqs = int(cache.get(AI_DAILY_REQUESTS_KEY) or 0)
+
+    if (
+        current_tokens + estimated_tokens > daily_token_limit
+        or current_reqs + 1 > daily_req_limit
+    ):
+        reason = (
+            f"Tägliches kostenfreies Token-/Anfragelimit erreicht "
+            f"(Tokens: {current_tokens + estimated_tokens}/{daily_token_limit}, "
+            f"Requests: {current_reqs + 1}/{daily_req_limit})."
+        )
+        trip_ai_circuit_breaker(reason)
+        return False, reason
+
+    cache.set(
+        AI_DAILY_TOKENS_KEY,
+        current_tokens + estimated_tokens,
+        timeout=AI_BUDGET_TTL,
+    )
+    cache.set(
+        AI_DAILY_REQUESTS_KEY,
+        current_reqs + 1,
+        timeout=AI_BUDGET_TTL,
+    )
+    return True, ""
+
+
+def record_actual_ai_tokens(
+    reserved_tokens: int, actual_total_tokens: int | None
+) -> None:
+    """Aktualisiert den täglichen Token-Zähler mit den real verbrauchten Tokens der API-Antwort."""
+    if actual_total_tokens is None or actual_total_tokens <= 0:
+        return
+    try:
+        daily_token_limit = int(
+            os.getenv("GEMINI_DAILY_TOKEN_LIMIT", str(DEFAULT_DAILY_TOKEN_LIMIT))
+        )
+    except ValueError:
+        daily_token_limit = DEFAULT_DAILY_TOKEN_LIMIT
+
+    current_tokens = int(cache.get(AI_DAILY_TOKENS_KEY) or 0)
+    diff = max(0, int(actual_total_tokens) - int(reserved_tokens))
+    updated_tokens = current_tokens + diff
+    if diff > 0:
+        cache.set(AI_DAILY_TOKENS_KEY, updated_tokens, timeout=AI_BUDGET_TTL)
+
+    if updated_tokens >= daily_token_limit:
+        trip_ai_circuit_breaker(
+            f"Tägliches Token-Limit nach Antwort erreicht ({updated_tokens}/{daily_token_limit})."
+        )
 
 
 def get_genai_client(api_key: str) -> genai.Client:
