@@ -555,7 +555,7 @@ def answer_portfolio_query(
     try:
         client = get_genai_client(api_key=api_key)
 
-        contents: list[types.Content] = [
+        contents: list[Any] = [
             types.Content(role=role, parts=[types.Part.from_text(text=text)])
             for role, text in history_texts
         ]
