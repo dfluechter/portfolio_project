@@ -2,7 +2,19 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Eye, EyeOff, Lock, Mail, Shield, Sparkles } from 'lucide-react';
+import { useRequestPasswordReset } from '../hooks/usePortfolio';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Lock,
+  Mail,
+  Shield,
+  Sparkles,
+  X,
+} from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
@@ -13,6 +25,35 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Passwort-Reset Modal State
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+
+  const resetMutation = useRequestPasswordReset();
+
+  const handleRequestReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError(null);
+    setResetSuccess(null);
+
+    try {
+      const res = await resetMutation.mutateAsync();
+      setResetSuccess(
+        res.detail ||
+          'Eine E-Mail mit dem Wiederherstellungslink wurde erfolgreich an die hinterlegte Inhaber-Adresse versendet!'
+      );
+    } catch (err: unknown) {
+      let msg = 'Fehler beim Anfordern des Passwort-Resets.';
+      if (axios.isAxiosError(err)) {
+        msg = err.response?.data?.detail || msg;
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
+      setResetError(msg);
+    }
+  };
 
   // Falls bereits eingeloggt, direkt ins Dashboard
   React.useEffect(() => {
@@ -156,6 +197,21 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Passwort zurücksetzen Trigger */}
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setResetSuccess(null);
+                  setResetError(null);
+                  setShowResetModal(true);
+                }}
+                className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline transition-colors focus:outline-none"
+              >
+                Passwort zurücksetzen?
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -182,6 +238,94 @@ export const LoginPage: React.FC = () => {
 
         </div>
       </main>
+
+      {/* Passwort zurücksetzen Modal */}
+      {showResetModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reset-modal-title"
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 id="reset-modal-title" className="text-base font-bold text-white">
+                    Passwort zurücksetzen
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Sicheren Wiederherstellungs-Link anfordern
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+                aria-label="Schließen"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {resetSuccess ? (
+              <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3.5">
+                <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+                <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                  {resetSuccess}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowResetModal(false)}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition-colors shadow-md shadow-emerald-600/20"
+                >
+                  Verstanden & Schließen
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleRequestReset} className="space-y-4">
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Ein Link zum Zurücksetzen deines Passworts wird direkt an die in der Server-Konfiguration hinterlegte Inhaber-Adresse (<code className="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">PORTFOLIO_OWNER_EMAIL</code>) versendet.
+                </p>
+
+                {resetError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold">
+                    {resetError}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="submit"
+                    disabled={resetMutation.isPending}
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {resetMutation.isPending ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Wird versendet...</span>
+                      </>
+                    ) : (
+                      <span>E-Mail an Inhaber senden</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowResetModal(false)}
+                    className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center text-xs text-slate-600 font-mono">

@@ -647,4 +647,3 @@ class TestCertificateAPI:
         assert data["matched_provider"]["id"] == provider.id
         assert data["credential_id"] == "COURSERA-12345"
         assert data["issued_date"] == "2023-05-12"
-

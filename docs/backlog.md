@@ -38,7 +38,7 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 7** | Headless Cleanup & Frontend Bundle Splitting | Abgeschlossen | US 7.1, US 7.2 |
 | **Epic 8** | Neon Connection Separation & DDL-Stabilität | Abgeschlossen | US 8.1 |
 | **Epic 9** | Gemini Vision Fallback & Magic-Byte Validation | Abgeschlossen | US 9.1, US 9.2 |
-| **Epic 10** | Supabase S3 Presigned Uploads & Security | In Bearbeitung | US 10.1 (Done), US 10.2 (Ready) |
+| **Epic 10** | Supabase S3 Presigned Uploads & Security | Abgeschlossen | US 10.1, US 10.2 |
 | **Epic 11** | RAG Portfolio-Copilot, Guardrails & UI-Skills Polish | Abgeschlossen | US 11.1, US 11.2, US 11.3, US 11.4 |
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
 
@@ -255,24 +255,24 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 In US 10.1 wurde der Presigned Upload umgesetzt. Aktuell vertraut das Backend bei `POST /api/certificates/` mit `storage_key` darauf, dass die Datei existiert und der vom Client übermittelte `sha256_hash` korrekt ist. Es erfolgt noch keine serverseitige Header-Bytes-Prüfung auf dem S3-Objekt.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [ ] **Szenario 1 (S3-Objekt-Existenzprüfung & Größenvalidierung):**
+- [x] **Szenario 1 (S3-Objekt-Existenzprüfung & Größenvalidierung):**
   - **Given** ein authentifizierter Administrator sendet `POST /api/certificates/` mit einem `storage_key`
   - **When** das Backend die Metadaten via `head_object` aus Supabase S3 abfragt
   - **Then** wird geprüft, ob das Objekt tatsächlich existiert (`400 Bad Request`, falls Objekt nicht auffindbar)
   - **And** die Dateigröße (`ContentLength`) darf maximal 10 MB betragen (`400 Bad Request` bei Überschreitung).
-- [ ] **Szenario 2 (Magic-Byte-Validierung via S3 Range Request):**
+- [x] **Szenario 2 (Magic-Byte-Validierung via S3 Range Request):**
   - **Given** das S3-Objekt existiert im Storage-Bucket
   - **When** das Backend die ersten 2048 Bytes des Objekts per Range-Request (`Range='bytes=0-2047'`) liest
   - **Then** werden die Magic Bytes (`%PDF`, `\x89PNG`, `\xFF\xD8\xFF`) gegen die deklarierte Dateiendung validiert; bei Mismatch wird der Request mit `400 Bad Request` abgewiesen.
-- [ ] **Szenario 3 (Serverseitige SHA-256 Integritätsprüfung):**
+- [x] **Szenario 3 (Serverseitige SHA-256 Integritätsprüfung):**
   - **Given** ein Client übermittelt einen `sha256_hash` zusammen mit dem `storage_key`
   - **When** das Zertifikat registriert wird
   - **Then** berechnet das Backend den tatsächlichen SHA-256-Hash des S3-Objekts (oder verifiziert ihn bei Übermittlung strikt); bei Diskrepanzen wird der vom Server berechnete Hash gespeichert bzw. der Request abgewiesen.
-- [ ] **Szenario 4 (Fallback bei deaktiviertem S3-Storage):**
+- [x] **Szenario 4 (Fallback bei deaktiviertem S3-Storage):**
   - **Given** die Umgebungsvariable `USE_SUPABASE_S3` ist auf `False` gesetzt
   - **When** ein Request mit `storage_key` eingeht
   - **Then** antwortet die API mit Statuscode `501 Not Implemented` mit der Meldung, dass Direct-to-Storage-Uploads eine aktive S3-Konfiguration erfordern.
-- [ ] **Szenario 5 (Automatisierte Pytest-Testabdeckung):**
+- [x] **Szenario 5 (Automatisierte Pytest-Testabdeckung):**
   - **Given** die neuen Validierungsregeln im Backend
   - **When** die Testsuite ausgeführt wird
   - **Then** sind alle Szenarien (Existenzfehler, Magic-Byte-Mismatch, Größenüberschreitung, Hash-Mismatch) mit Mocks für `boto3` abgedeckt und die Gesamtabdeckung bleibt $\ge 95\%$.

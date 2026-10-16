@@ -183,6 +183,7 @@ describe('CertificateManager Component', () => {
     const cert = getMockCertificate({
       id: 15,
       title: 'AWS Certified Developer',
+      tracks: [10],
       is_published: false,
     });
 

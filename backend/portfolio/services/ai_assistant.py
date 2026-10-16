@@ -78,29 +78,43 @@ def extract_sources(reply_text: str) -> list[dict[str, Any] | str]:
     try:
         # 1. Veröffentlichte Projekte scannen
         for project in Project.objects.filter(is_published=True).only("id", "title"):
-            if project.title and project.title.strip() and re.search(re.escape(project.title.strip()), reply_text, re.IGNORECASE):
+            if (
+                project.title
+                and project.title.strip()
+                and re.search(
+                    re.escape(project.title.strip()), reply_text, re.IGNORECASE
+                )
+            ):
                 key = f"project:{project.id}"
                 if key not in seen:
                     seen.add(key)
-                    sources.append({
-                        "type": "project",
-                        "id": project.id,
-                        "title": project.title,
-                        "target_id": f"project-{project.id}",
-                    })
+                    sources.append(
+                        {
+                            "type": "project",
+                            "id": project.id,
+                            "title": project.title,
+                            "target_id": f"project-{project.id}",
+                        }
+                    )
 
         # 2. Verifizierte Zertifikate scannen
         for cert in Certificate.objects.filter(is_published=True).only("id", "title"):
-            if cert.title and cert.title.strip() and re.search(re.escape(cert.title.strip()), reply_text, re.IGNORECASE):
+            if (
+                cert.title
+                and cert.title.strip()
+                and re.search(re.escape(cert.title.strip()), reply_text, re.IGNORECASE)
+            ):
                 key = f"certificate:{cert.id}"
                 if key not in seen:
                     seen.add(key)
-                    sources.append({
-                        "type": "certificate",
-                        "id": cert.id,
-                        "title": cert.title,
-                        "target_id": f"cert-{cert.id}",
-                    })
+                    sources.append(
+                        {
+                            "type": "certificate",
+                            "id": cert.id,
+                            "title": cert.title,
+                            "target_id": f"cert-{cert.id}",
+                        }
+                    )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Fehler beim Extrahieren strukturierter Quellen: %s", exc)
 
@@ -184,8 +198,10 @@ def build_portfolio_grounding_context() -> str:
         context_parts.append("--- BERUFLICHER WERDEGANG & AUSBILDUNG ---")
         for entry in timeline_entries:
             start = entry.start_date.strftime("%m/%Y")
-            end = "Aktuell" if entry.is_current else (
-                entry.end_date.strftime("%m/%Y") if entry.end_date else ""
+            end = (
+                "Aktuell"
+                if entry.is_current
+                else (entry.end_date.strftime("%m/%Y") if entry.end_date else "")
             )
             period = f"{start} - {end}".strip(" -")
             context_parts.append(
@@ -219,10 +235,51 @@ def prune_context_by_query(user_message: str, full_context: str) -> str:
     header = sections[0].strip()
     pruned_sections = [header]
 
-    is_skill_query = any(k in msg_lower for k in ["skill", "technolog", "sprache", "framework", "tool", "stack"])
-    is_project_query = any(k in msg_lower for k in ["projekt", "app", "gebaut", "entwickelt", "arbeit", "code", "github", "demo"])
-    is_cert_query = any(k in msg_lower for k in ["zertifikat", "certificate", "prüfung", "qualifikation", "nachweis", "kurs", "aussteller", "cloud", "aws", "gcp"])
-    is_career_query = any(k in msg_lower for k in ["werdegang", "lebenslauf", "erfahrung", "karriere", "studium", "beruf", "cv", "station"])
+    is_skill_query = any(
+        k in msg_lower
+        for k in ["skill", "technolog", "sprache", "framework", "tool", "stack"]
+    )
+    is_project_query = any(
+        k in msg_lower
+        for k in [
+            "projekt",
+            "app",
+            "gebaut",
+            "entwickelt",
+            "arbeit",
+            "code",
+            "github",
+            "demo",
+        ]
+    )
+    is_cert_query = any(
+        k in msg_lower
+        for k in [
+            "zertifikat",
+            "certificate",
+            "prüfung",
+            "qualifikation",
+            "nachweis",
+            "kurs",
+            "aussteller",
+            "cloud",
+            "aws",
+            "gcp",
+        ]
+    )
+    is_career_query = any(
+        k in msg_lower
+        for k in [
+            "werdegang",
+            "lebenslauf",
+            "erfahrung",
+            "karriere",
+            "studium",
+            "beruf",
+            "cv",
+            "station",
+        ]
+    )
 
     # Wenn die Frage sehr allgemein ist, den vollen Kontext beibehalten
     if not (is_skill_query or is_project_query or is_cert_query or is_career_query):
@@ -230,13 +287,12 @@ def prune_context_by_query(user_message: str, full_context: str) -> str:
 
     for sec in sections[1:]:
         sec_title = sec.split("\n", 1)[0].upper()
-        if "TECHNISCHE SKILLS" in sec_title and is_skill_query:
-            pruned_sections.append("--- " + sec.strip())
-        elif "HIGHLIGHT-PROJEKTE" in sec_title and is_project_query:
-            pruned_sections.append("--- " + sec.strip())
-        elif "VERIFIZIERTE QUALIFIKATIONEN" in sec_title and is_cert_query:
-            pruned_sections.append("--- " + sec.strip())
-        elif "BERUFLICHER WERDEGANG" in sec_title and is_career_query:
+        if (
+            ("TECHNISCHE SKILLS" in sec_title and is_skill_query)
+            or ("HIGHLIGHT-PROJEKTE" in sec_title and is_project_query)
+            or ("VERIFIZIERTE QUALIFIKATIONEN" in sec_title and is_cert_query)
+            or ("BERUFLICHER WERDEGANG" in sec_title and is_career_query)
+        ):
             pruned_sections.append("--- " + sec.strip())
 
     # Fallback falls alle Filter leer wären: Gesamtkontext nutzen
@@ -269,9 +325,7 @@ def answer_portfolio_query(
 
     # Guardrail b: Pre-Flight Injection-Filter (0 Tokens verbraucht!)
     if INJECTION_REGEX.search(cleaned_query):
-        logger.warning(
-            "Prompt-Injection Versuch abgewehrt: %s", cleaned_query[:80]
-        )
+        logger.warning("Prompt-Injection Versuch abgewehrt: %s", cleaned_query[:80])
         return {
             "reply": (
                 "Ich bin Dominiks Portfolio-Assistent und beantworte ausschließlich "
@@ -345,9 +399,7 @@ def answer_portfolio_query(
 
         # Aktuelle Benutzerfrage anhängen
         contents.append(
-            types.Content(
-                role="user", parts=[types.Part.from_text(text=cleaned_query)]
-            )
+            types.Content(role="user", parts=[types.Part.from_text(text=cleaned_query)])
         )
 
         response = client.models.generate_content(

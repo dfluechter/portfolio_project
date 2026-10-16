@@ -1,8 +1,10 @@
 import hashlib
 import logging
+import os
 import tempfile
 from pathlib import Path
 
+from django.db import connection
 from django.db.models import Prefetch, ProtectedError, Q
 from django.http import JsonResponse
 from django.shortcuts import redirect
@@ -49,8 +51,10 @@ from .services.promotion import (
     reject_pending_certificate,
 )
 from .services.storage import (
+    S3StorageNotConfiguredError,
     ensure_certificate_in_storage,
     generate_presigned_upload,
+    verify_s3_uploaded_certificate,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,8 +83,18 @@ def api_root_view(request):
 
 def health_check_view(request):
     """
-    Einfacher Health-Check-Endpunkt für Render und Monitoring.
+    Health-Check-Endpunkt für Render, Load-Balancer und Monitoring.
+    Führt einen Datenbank-Konnektivitäts-Check durch und liefert Status 503 bei DB-Ausfall.
     """
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except Exception:
+        logger.exception("Health-Check fehlgeschlagen: Datenbank nicht erreichbar.")
+        return JsonResponse(
+            {"status": "error", "database": "unavailable"},
+            status=503,
+        )
     return JsonResponse({"status": "ok"})
 
 
@@ -191,8 +205,17 @@ class CertificateViewSet(viewsets.ModelViewSet):
 
         return qs.distinct()
 
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except S3StorageNotConfiguredError as err:
+            return Response(
+                {"detail": str(err)},
+                status=status.HTTP_501_NOT_IMPLEMENTED,
+            )
+
     def perform_create(self, serializer):
-        """Berechnet SHA-256 aus der hochgeladenen Datei oder übernimmt den Storage-Key bei Direct-S3-Uploads."""
+        """Berechnet SHA-256 aus der hochgeladenen Datei oder verifiziert das S3-Objekt bei Direct-S3-Uploads (US 10.2)."""
         pdf_file = self.request.FILES.get("pdf_file")
         storage_key = self.request.data.get("storage_key")
 
@@ -208,7 +231,14 @@ class CertificateViewSet(viewsets.ModelViewSet):
             )
         elif storage_key:
             client_hash = self.request.data.get("sha256_hash")
-            sha256_val = client_hash or hashlib.sha256(storage_key.encode()).hexdigest()
+            try:
+                sha256_val = verify_s3_uploaded_certificate(
+                    storage_key=str(storage_key),
+                    client_hash=str(client_hash) if client_hash else None,
+                )
+            except ValueError as err:
+                raise serializers.ValidationError({"storage_key": str(err)}) from err
+
             serializer.save(
                 pdf_file=storage_key,
                 storage_key=storage_key,
@@ -250,7 +280,17 @@ class CertificateViewSet(viewsets.ModelViewSet):
                             )
                         }
                     )
-                ensure_certificate_in_storage(instance or serializer.instance)
+                try:
+                    ensure_certificate_in_storage(instance or serializer.instance)
+                except Exception as err:
+                    logger.exception(
+                        "Fehler beim Übertragen des Zertifikats in den S3-Storage bei Veröffentlichung."
+                    )
+                    raise serializers.ValidationError(
+                        {
+                            "detail": "Zertifikat konnte nicht im Storage bereitgestellt werden."
+                        }
+                    ) from err
             update_kwargs["is_published"] = is_pub_bool
 
         serializer.save(**update_kwargs)
@@ -288,14 +328,18 @@ class CertificateViewSet(viewsets.ModelViewSet):
     )
     def presigned_upload(self, request):
         """Erzeugt eine signierte S3-Upload-URL für Direct-to-Storage Uploads zu Supabase S3."""
-        filename = request.data.get("filename")
+        filename = (
+            request.data.get("filename") if isinstance(request.data, dict) else None
+        )
         if not filename or not isinstance(filename, str):
             return Response(
                 {"detail": "Der Parameter 'filename' ist erforderlich."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        content_type = request.data.get("content_type")
+        content_type = (
+            request.data.get("content_type") if isinstance(request.data, dict) else None
+        )
         try:
             data = generate_presigned_upload(filename, content_type)
             return Response(data, status=status.HTTP_200_OK)
@@ -304,8 +348,8 @@ class CertificateViewSet(viewsets.ModelViewSet):
                 {"detail": str(err)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as exc:  # noqa: BLE001
-            logger.error("Fehler bei der Generierung der Presigned-Upload-URL: %s", exc)
+        except Exception:
+            logger.exception("Fehler bei der Generierung der Presigned-Upload-URL.")
             return Response(
                 {"detail": "S3-Presigned-URL konnte nicht erzeugt werden."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -327,9 +371,19 @@ class CertificateViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        ensure_certificate_in_storage(cert)
+        try:
+            ensure_certificate_in_storage(cert)
+        except Exception:
+            logger.exception(
+                "Fehler beim Übertragen des Zertifikats ID %s in den S3-Storage bei Veröffentlichung.",
+                cert.pk,
+            )
+            return Response(
+                {"detail": "Zertifikat konnte nicht im Storage bereitgestellt werden."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         cert.is_published = True
-        cert.save()
+        cert.save(update_fields=["is_published"])
         return Response({"status": "published", "is_published": True})
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
@@ -351,6 +405,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
             )
 
         suffix = Path(cert.pdf_file.name).suffix.lower() or ".pdf"
+        tmp_path = None
         try:
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp_file:
                 for chunk in cert.pdf_file.chunks():
@@ -369,8 +424,13 @@ class CertificateViewSet(viewsets.ModelViewSet):
                     known_providers=known_providers,
                 )
             finally:
-                if tmp_path.exists():
-                    tmp_path.unlink()
+                if tmp_path and tmp_path.exists():
+                    try:
+                        tmp_path.unlink()
+                    except OSError:
+                        logger.warning(
+                            "Temporäre Datei konnte nicht gelöscht werden: %s", tmp_path
+                        )
 
             if not result:
                 return Response(
@@ -412,10 +472,10 @@ class CertificateViewSet(viewsets.ModelViewSet):
                     "source_type": result.source_type,
                 }
             )
-        except Exception as e:
+        except Exception:
             logger.exception("Fehler bei der On-Demand-Metadatenextraktion.")
             return Response(
-                {"detail": f"Fehler bei der Metadatenanalyse: {e!s}"},
+                {"detail": "Fehler bei der Metadatenanalyse des Dokuments."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -447,12 +507,24 @@ class TrackViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         track = serializer.save()
         if track.icon:
-            ensure_track_icon(track.icon)
+            try:
+                ensure_track_icon(track.icon)
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "Track-Icon '%s' konnte nicht heruntergeladen/gesichert werden.",
+                    track.icon,
+                )
 
     def perform_update(self, serializer):
         track = serializer.save()
         if track.icon:
-            ensure_track_icon(track.icon)
+            try:
+                ensure_track_icon(track.icon)
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "Track-Icon '%s' konnte nicht heruntergeladen/gesichert werden.",
+                    track.icon,
+                )
 
 
 class PendingCertificateViewSet(viewsets.ModelViewSet):
@@ -471,17 +543,28 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def approve(self, request, pk=None):
         pending = self.get_object()
-        title = request.data.get("title")
-        provider_name = request.data.get("provider")
-        track_ids = request.data.get("track_ids")
+        title = request.data.get("title") if isinstance(request.data, dict) else None
+        provider_name = (
+            request.data.get("provider") if isinstance(request.data, dict) else None
+        )
+        track_ids = (
+            request.data.get("track_ids") if isinstance(request.data, dict) else None
+        )
 
         tracks = None
         if track_ids is not None:
+            if not isinstance(track_ids, (list, tuple)):
+                return Response(
+                    {
+                        "detail": "Der Parameter 'track_ids' muss eine Liste von IDs sein."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             tracks = []
             for track_id in track_ids:
                 try:
                     tracks.append(Track.objects.get(pk=track_id))
-                except Track.DoesNotExist:
+                except (Track.DoesNotExist, ValueError, TypeError):
                     return Response(
                         {"detail": f"Track {track_id} nicht gefunden."},
                         status=status.HTTP_400_BAD_REQUEST,
@@ -498,6 +581,14 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
             return Response(
                 {"detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception:
+            logger.exception(
+                "Unerwarteter Fehler beim Freigeben des Pending-Zertifikats."
+            )
+            return Response(
+                {"detail": "Fehler bei der Freigabe des Zertifikats."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         return Response(
@@ -518,6 +609,14 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
                 {"detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        except Exception:
+            logger.exception(
+                "Unerwarteter Fehler beim Ablehnen des Pending-Zertifikats."
+            )
+            return Response(
+                {"detail": "Fehler beim Ablehnen des Zertifikats."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         return Response({"detail": "Abgelehnt."}, status=status.HTTP_200_OK)
 
 
@@ -527,8 +626,8 @@ class AIChatView(APIView):
     Öffentlich erreichbar mit Scoped Rate Limiting (20 Anfragen/Minute).
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
+    permission_classes = (AllowAny,)
+    throttle_classes = (ScopedRateThrottle,)
     throttle_scope = "ai_chat"
 
     @extend_schema(
@@ -568,6 +667,12 @@ class AIChatView(APIView):
         },
     )
     def post(self, request):
+        if not isinstance(request.data, dict):
+            return Response(
+                {"detail": "Der Parameter 'message' ist erforderlich."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         message = request.data.get("message")
         if not message or not isinstance(message, str) or not message.strip():
             return Response(
@@ -579,6 +684,92 @@ class AIChatView(APIView):
         if history is not None and not isinstance(history, list):
             history = None
 
-        result = answer_portfolio_query(message, history)
-        return Response(result, status=status.HTTP_200_OK)
+        try:
+            result = answer_portfolio_query(message, history)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception:
+            logger.exception(
+                "Unerwarteter Fehler bei der Anfrage an den KI-Assistenten."
+            )
+            return Response(
+                {
+                    "reply": (
+                        "Entschuldigung, bei der Bearbeitung deiner Anfrage ist ein temporärer Fehler "
+                        "aufgetreten. Bitte versuche es in wenigen Momenten erneut oder wirf einen Blick "
+                        "auf die Projektübersicht."
+                    ),
+                    "sources": [],
+                },
+                status=status.HTTP_200_OK,
+            )
 
+
+class PasswordResetRequestView(APIView):
+    """
+    Stößt den Use-Case 'Passwort zurücksetzen' für den einzigen Portfolio-User an.
+    Versendet das Template backend/templates/email/password_reset.html an PORTFOLIO_OWNER_EMAIL.
+    """
+
+    permission_classes = (AllowAny,)
+    throttle_classes = (ScopedRateThrottle,)
+    throttle_scope = "anon"
+
+    @extend_schema(
+        summary="Passwort-Reset anfordern",
+        description="Sendet eine E-Mail mit Wiederherstellungs-Token an den in .env hinterlegten Portfolio-Inhaber (PORTFOLIO_OWNER_EMAIL).",
+        request=None,
+        responses={
+            200: {"type": "object", "properties": {"detail": {"type": "string"}}}
+        },
+    )
+    def post(self, request):
+        from django.contrib.auth import get_user_model
+        from djoser.compat import get_user_email
+        from djoser.conf import settings as djoser_settings
+
+        User = get_user_model()
+        owner_email = (os.getenv("PORTFOLIO_OWNER_EMAIL") or "").strip()
+        user = None
+
+        if owner_email:
+            user = User.objects.filter(email__iexact=owner_email).first()
+
+        # Fallback auf den einzigen Superuser/Staff-Account, falls die DB-E-Mail abweicht
+        if not user:
+            user = (
+                User.objects.filter(is_superuser=True).first()
+                or User.objects.filter(is_staff=True).first()
+            )
+
+        if user:
+            recipient = owner_email or get_user_email(user)
+            if recipient:
+                context = {"user": user}
+                to = [recipient]
+                try:
+                    djoser_settings.EMAIL.password_reset(request, context).send(to)
+                except Exception:
+                    logger.exception(
+                        "Fehler beim Versenden der Passwort-Reset-Mail an %s", recipient
+                    )
+            else:
+                logger.warning(
+                    "Passwort-Reset angefordert: Benutzer ID %s gefunden, aber keine gültige Empfänger-E-Mail vorhanden.",
+                    user.pk,
+                )
+        else:
+            logger.warning(
+                "Passwort-Reset angefordert, aber kein passender Benutzer gefunden "
+                "(weder für PORTFOLIO_OWNER_EMAIL='%s' noch existiert ein Superuser/Staff-Account).",
+                owner_email,
+            )
+
+        return Response(
+            {
+                "detail": (
+                    "Eine E-Mail zum Zurücksetzen des Passworts wurde an die hinterlegte "
+                    "Inhaber-Adresse versendet."
+                )
+            },
+            status=status.HTTP_200_OK,
+        )

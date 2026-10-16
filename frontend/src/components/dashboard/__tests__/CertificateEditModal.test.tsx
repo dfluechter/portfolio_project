@@ -152,6 +152,7 @@ describe('CertificateEditModal Component', () => {
       title: 'Django Mastery',
       provider: 1,
       pdf_file: 'https://example.com/cert.pdf',
+      tracks: [10],
       is_published: false,
     });
 

@@ -14,12 +14,12 @@ jobs:
   backend-lint-test:
     name: 🐍 Backend Lint & Test
     runs-on: ubuntu-latest
-    
-    # WICHTIG: Legt das Standard-Arbeitsverzeichnis für alle Schritte fest 
-    defaults: 
-      run: 
+
+    # WICHTIG: Legt das Standard-Arbeitsverzeichnis für alle Schritte fest
+    defaults:
+      run:
         working-directory: backend
-        
+
     steps:
       - uses: actions/checkout@v4
 
@@ -51,11 +51,11 @@ jobs:
       - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          # Liest die Python-Version direkt aus der pyproject.toml im Backend 
+          # Liest die Python-Version direkt aus der pyproject.toml im Backend
           python-version-file: "backend/pyproject.toml"
 
       - name: Install dependencies
-        run: uv sync --all-groups
+        run: uv sync --frozen --all-groups
 
       - name: Ruff Linter
         run: uv run ruff check .
@@ -64,12 +64,30 @@ jobs:
         run: uv run ruff format --diff .
 
       - name: Mypy Type Check
+        env:
+          SECRET_KEY: "django-insecure-ci-test-secret-key-at-least-32-chars-long-for-jwt"
+          DEBUG: "False"
+          USE_SUPABASE_S3: "False"
+          PORTFOLIO_OWNER_EMAIL: "owner@example.com"
+          FRONTEND_DOMAIN: "localhost:3000"
+          SITE_NAME: "Dominik Flüchter Portfolio"
         run: uv run mypy .
 
-      - name: Run Tests with Coverage
+      - name: Run API & Unit Tests with Coverage
         env:
           DATABASE_URL: ${{ steps.create-branch.outputs.db_url_with_pooler }}
-        run: uv run pytest --cov=core --cov=portfolio --cov-report=term-missing --cov-fail-under=95
+          DIRECT_DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
+          SECRET_KEY: "django-insecure-ci-test-secret-key-at-least-32-chars-long-for-jwt"
+          DEBUG: "False"
+          USE_SUPABASE_S3: "False"
+          PORTFOLIO_OWNER_NAME: "Dominik Flüchter"
+          PORTFOLIO_OWNER_EMAIL: "owner@example.com"
+          FRONTEND_DOMAIN: "localhost:3000"
+          SITE_NAME: "Dominik Flüchter Portfolio"
+          EMAIL_BACKEND: "django.core.mail.backends.locmem.EmailBackend"
+        run: |
+          set -euo pipefail
+          uv run pytest --cov=core --cov=portfolio --cov-report=term-missing --cov-fail-under=95
 
       - name: Clean up Neon Branch
         if: always() && steps.create-branch.outputs.branch_id != ''
@@ -84,6 +102,9 @@ jobs:
     defaults:
       run:
         working-directory: ./frontend
+    env:
+      CI: "true"
+      VITE_API_URL: "http://localhost:8000"
     steps:
       - uses: actions/checkout@v4
 
@@ -97,13 +118,15 @@ jobs:
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Run Linter
+      - name: Run Linter (Oxlint)
         run: npm run lint
 
-      - name: Run Tests
-        run: npm run test
+      - name: Run Frontend Unit & API Integration Tests (Vitest)
+        run: |
+          set -euo pipefail
+          npx vitest run
 
-      - name: Verify Build
+      - name: Verify TypeScript & Production Build
         run: npm run build
 
   # ── 3. BUILD VERIFICATION (BACKEND) ──
@@ -114,6 +137,13 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      SECRET_KEY: "ci-build-test-secret-key-at-least-32-chars-long-for-jwt"
+      DEBUG: "False"
+      USE_SUPABASE_S3: "False"
+      PORTFOLIO_OWNER_EMAIL: "owner@example.com"
+      FRONTEND_DOMAIN: "localhost:3000"
+      SITE_NAME: "Dominik Flüchter Portfolio"
     steps:
       - uses: actions/checkout@v4
 
@@ -133,15 +163,12 @@ jobs:
         run: uv sync --frozen --no-dev
 
       - name: Django System Check
-        env:
-          SECRET_KEY: "ci-build-test-secret-key"
-          DEBUG: "False"
         run: uv run python manage.py check
 
+      - name: Verify Migrations Consistency
+        run: uv run python manage.py makemigrations --check --dry-run
+
       - name: Test Collectstatic
-        env:
-          SECRET_KEY: "ci-build-test-secret-key"
-          DEBUG: "False"
         run: uv run python manage.py collectstatic --noinput
 
   # ── 4. DEPLOY TO RENDER ──
@@ -155,9 +182,10 @@ jobs:
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
-          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
-            echo "Error: RENDER_DEPLOY_HOOK_URL secret is not set!"
+          set -euo pipefail
+          if [ -z "${RENDER_DEPLOY_HOOK_URL:-}" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK_URL secret is not set!"
             exit 1
           fi
-          # Using GET request for maximum compatibility with Render hooks
-          curl -f "$RENDER_DEPLOY_HOOK_URL"
+          # Using GET request with retry and fail-on-error for Render hooks
+          curl --fail-with-body --silent --show-error --retry 3 "$RENDER_DEPLOY_HOOK_URL"

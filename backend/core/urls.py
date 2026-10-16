@@ -8,6 +8,7 @@ from rest_framework.routers import DefaultRouter
 from portfolio.views import (
     AIChatView,
     CertificateViewSet,
+    PasswordResetRequestView,
     PendingCertificateViewSet,
     ProjectViewSet,
     ProviderViewSet,
@@ -36,6 +37,11 @@ urlpatterns = [
     path("health_check", health_check_view, name="health_check"),
     path("api/ai/chat/", AIChatView.as_view(), name="ai-chat"),
     # REST-API Endpunkte
+    path(
+        "api/auth/password-reset/",
+        PasswordResetRequestView.as_view(),
+        name="password-reset-request",
+    ),
     path("api/", include(router.urls)),
     path("api/auth/", include("djoser.urls")),
     path("api/auth/", include("djoser.urls.jwt")),

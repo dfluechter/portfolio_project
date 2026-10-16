@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useProjects } from '../hooks/usePortfolio';
 import { usePortfolioSearch } from '../hooks/usePortfolioSearch';
 import { SectionEmptyState } from './SectionEmptyState';
-import { resolveProjectImageUrl } from './dashboard/ProjectManager';
+import { resolveProjectImageUrl } from '../utils/mediaUrl';
 import type { Project } from '../types';
 
 const defaultProjects: Project[] = [
@@ -103,23 +103,27 @@ export const ProjectsSection: React.FC = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.96 }}
                     transition={{ duration: 0.2 }}
-                    className="group flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 p-6 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:bg-slate-900/70 transition-all duration-300 hover:-translate-y-1 shadow-sm"
+                    style={
+                      imageUrl
+                        ? {
+                            backgroundImage: `url("${imageUrl}")`,
+                            backgroundSize: '796px 102.5px',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'top center',
+                          }
+                        : undefined
+                    }
+                    className="relative overflow-hidden group flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 p-6 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:bg-slate-900/70 transition-all duration-300 hover:-translate-y-1 shadow-sm"
                   >
-                    <div>
-                      {imageUrl ? (
-                        <div className="relative w-full h-44 mb-5 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-                          <img
-                            src={imageUrl}
-                            alt={project.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-600/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform text-indigo-600 dark:text-indigo-400">
-                          <FolderGit2 className="w-6 h-6" />
-                        </div>
-                      )}
+                    {/* Sanfter Kontrast-Overlay bei vorhandenem Hintergrundbild */}
+                    {imageUrl && (
+                      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/20 via-white/90 to-white dark:via-slate-900/90 dark:to-slate-900 z-0" />
+                    )}
+
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-50/90 dark:bg-indigo-600/20 backdrop-blur-md border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform text-indigo-600 dark:text-indigo-400 shadow-sm">
+                        <FolderGit2 className="w-6 h-6" />
+                      </div>
 
                       {formattedDate && (
                         <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-2 font-mono">
@@ -137,7 +141,7 @@ export const ProjectsSection: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-3">
+                    <div className="relative z-10 pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-3">
                       {project.github_url && (
                         <a
                           href={project.github_url}

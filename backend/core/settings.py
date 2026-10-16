@@ -312,9 +312,20 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
+DOMAIN = (
+    os.getenv("FRONTEND_DOMAIN", "localhost:3000")
+    .replace("https://", "")
+    .replace("http://", "")
+    .rstrip("/")
+)
+SITE_NAME = os.getenv("SITE_NAME", "Dominik Flüchter Portfolio")
+
 DJOSER = {
     "LOGIN_FIELD": "email",
     "USER_CREATE_PASSWORD_RETYPE": True,
+    "PASSWORD_RESET_CONFIRM_URL": "password-reset/confirm/{uid}/{token}",
+    "DOMAIN": DOMAIN,
+    "SITE_NAME": SITE_NAME,
     "SERIALIZERS": {},
     "PERMISSIONS": {
         # Sperrt die öffentliche Registrierung neuer Konten über die API

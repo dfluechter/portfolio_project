@@ -8,6 +8,9 @@ import { PortfolioPage } from './pages/PortfolioPage';
 
 const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const PasswordResetConfirmPage = lazy(() =>
+  import('./pages/PasswordResetConfirmPage').then((m) => ({ default: m.PasswordResetConfirmPage }))
+);
 
 const RouteLoadingFallback = () => (
   <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
@@ -38,6 +41,10 @@ export function App() {
               <Routes>
                 <Route path="/" element={<PortfolioPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route
+                  path="/password-reset/confirm/:uid/:token"
+                  element={<PasswordResetConfirmPage />}
+                />
                 <Route path="/dashboard" element={<DashboardPage />} />
               </Routes>
             </Suspense>

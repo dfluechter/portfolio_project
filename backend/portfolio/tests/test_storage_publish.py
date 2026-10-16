@@ -73,7 +73,9 @@ class TestCertificatePublishStorage:
             sha256_hash="publishhash987654321012",
             is_published=False,
         )
-        track = Track.objects.create(name="Publish Test Track", slug="publish-test-track")
+        track = Track.objects.create(
+            name="Publish Test Track", slug="publish-test-track"
+        )
         cert.tracks.add(track)
 
         with patch.dict("os.environ", {"CERTIFICATES_PATH": str(tmp_path)}):

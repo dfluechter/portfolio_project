@@ -9,9 +9,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 ICON_NAME_REGEX = re.compile(r"^[a-z0-9\-]+$")
-FONTAWESOME_SOLID_URL = (
-    "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/svgs/solid/{icon_name}.svg"
-)
+FONTAWESOME_SOLID_URL = "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/svgs/solid/{icon_name}.svg"
 
 
 def ensure_track_icon(icon_name: str) -> str | None:

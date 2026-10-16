@@ -502,9 +502,7 @@ class Project(models.Model):
     is_featured = models.BooleanField(
         default=False, verbose_name="Hervorgehoben / Top-Projekt"
     )
-    created_at = models.DateTimeField(
-        default=timezone.now, verbose_name="Erstellt am"
-    )
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Erstellt am")
 
     class Meta:
         verbose_name = "Projekt"

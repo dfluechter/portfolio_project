@@ -210,3 +210,111 @@ def generate_presigned_upload(
             "Content-Type": final_content_type,
         },
     }
+
+
+class S3StorageNotConfiguredError(Exception):
+    """Wird ausgelöst, wenn Direct-to-Storage-Uploads bei deaktiviertem S3 angefordert werden."""
+
+
+MAX_DIRECT_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def verify_s3_uploaded_certificate(
+    storage_key: str, client_hash: str | None = None
+) -> str:
+    """Verifiziert ein per Direct-to-Storage hochgeladenes S3-Objekt serverseitig (US 10.2).
+
+    1. Prüft, ob S3-Storage aktiv ist (sonst S3StorageNotConfiguredError -> HTTP 501).
+    2. Prüft Existenz und Maximalgröße (<= 10 MB) via head_object.
+    3. Liest die ersten 2048 Bytes per Range-Request ('bytes=0-2047') und validiert Magic Bytes.
+    4. Berechnet den serverseitigen SHA-256-Hash und gleicht ihn gegen einen optionalen client_hash ab.
+    """
+    import hashlib
+
+    from portfolio.models import MAGIC_BYTE_SIGNATURES
+
+    use_s3 = (
+        getattr(settings, "USE_SUPABASE_S3", False)
+        or os.getenv("USE_SUPABASE_S3", "").lower() == "true"
+    )
+    if not use_s3:
+        raise S3StorageNotConfiguredError(
+            "Direct-to-Storage-Uploads erfordern eine aktive S3-Konfiguration (USE_SUPABASE_S3=True)."
+        )
+
+    ext = Path(storage_key).suffix.lower()
+    if ext not in MAGIC_BYTE_SIGNATURES:
+        allowed = ", ".join(MAGIC_BYTE_SIGNATURES.keys())
+        raise ValueError(f"Ungültiges Dateiformat '{ext}'. Erlaubt sind nur: {allowed}")
+
+    bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "portfolio-media")
+    s3_client = get_s3_client()
+
+    # 1. Existenz- und Größenprüfung via head_object
+    try:
+        head_resp = s3_client.head_object(Bucket=bucket_name, Key=storage_key)
+    except Exception as exc:
+        logger.warning(
+            "S3 head_object fehlgeschlagen für storage_key='%s': %s", storage_key, exc
+        )
+        raise ValueError(
+            "Das angegebene S3-Objekt wurde im Storage-Bucket nicht gefunden."
+        ) from exc
+
+    content_length = int(head_resp.get("ContentLength", 0))
+    if content_length <= 0:
+        raise ValueError("Das hochgeladene S3-Objekt ist leer.")
+    if content_length > MAX_DIRECT_UPLOAD_SIZE_BYTES:
+        raise ValueError(
+            "Die Datei im S3-Storage ist zu groß! Maximal erlaubt sind 10 MB."
+        )
+
+    # 2. Magic-Byte-Validierung via Range-Request (erste 2048 Bytes)
+    try:
+        range_resp = s3_client.get_object(
+            Bucket=bucket_name, Key=storage_key, Range="bytes=0-2047"
+        )
+        header_bytes = range_resp["Body"].read(2048)
+    except Exception as exc:
+        logger.warning(
+            "S3 Range-Request fehlgeschlagen für storage_key='%s': %s", storage_key, exc
+        )
+        raise ValueError(
+            "Header-Bytes des S3-Objekts konnten nicht gelesen werden."
+        ) from exc
+
+    expected_signatures = MAGIC_BYTE_SIGNATURES[ext]
+    if not header_bytes or not any(
+        header_bytes.startswith(sig) for sig in expected_signatures
+    ):
+        raise ValueError(
+            f"MIME-Type-Spoofing erkannt! Der Dateiinhalt im S3-Storage passt nicht zur Dateiendung '{ext}'."
+        )
+
+    # 3. Serverseitige SHA-256 Integritätsprüfung
+    try:
+        obj_resp = s3_client.get_object(Bucket=bucket_name, Key=storage_key)
+        body = obj_resp["Body"]
+        sha256 = hashlib.sha256()
+        while True:
+            chunk = body.read(65536)
+            if not chunk:
+                break
+            sha256.update(chunk)
+        computed_hash = sha256.hexdigest()
+    except Exception as exc:
+        logger.warning(
+            "Fehler beim Berechnen des SHA-256-Hashes für S3-Objekt '%s': %s",
+            storage_key,
+            exc,
+        )
+        raise ValueError(
+            "Integritätsprüfung (SHA-256) des S3-Objekts fehlgeschlagen."
+        ) from exc
+
+    if client_hash and client_hash.strip().lower() != computed_hash.lower():
+        raise ValueError(
+            "SHA-256-Integritätsfehler: Der übermittelte Hash stimmt nicht mit dem S3-Objekt überein."
+        )
+
+    return computed_hash

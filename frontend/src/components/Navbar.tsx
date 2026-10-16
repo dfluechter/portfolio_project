@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
-import { Code2, LayoutDashboard, LogIn, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, LogIn, LogOut, Menu, X } from 'lucide-react';
+
+const LOGO_SRC = import.meta.env.DEV
+  ? '/static/img/icons/logo_df_3.png'
+  : `${(import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')}/static/img/icons/logo_df_3.png`;
 
 export const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -16,9 +20,11 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-            <Code2 className="w-5 h-5 text-white" />
-          </div>
+          <img
+            src={LOGO_SRC}
+            alt="Dominik Flüchter Logo"
+            className="w-10 h-10 rounded-xl object-contain shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform bg-black"
+          />
           <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">
             Dominik Flüchter
           </span>

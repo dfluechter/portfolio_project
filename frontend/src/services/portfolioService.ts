@@ -265,5 +265,28 @@ export const portfolioService = {
     });
     return data;
   },
+
+  // Passwort-Reset anfordern (sendet an PORTFOLIO_OWNER_EMAIL oder angegebene E-Mail)
+  async requestPasswordReset(email?: string): Promise<{ detail: string }> {
+    const { data } = await apiClient.post<{ detail: string }>('/api/auth/password-reset/', {
+      email: email || undefined,
+    });
+    return data;
+  },
+
+  // Neues Passwort mit UID und Token bestätigen
+  async confirmPasswordReset(payload: {
+    uid: string;
+    token: string;
+    new_password: string;
+    re_new_password?: string;
+  }): Promise<void> {
+    await apiClient.post('/api/auth/users/reset_password_confirm/', {
+      uid: payload.uid,
+      token: payload.token,
+      new_password: payload.new_password,
+      re_new_password: payload.re_new_password || payload.new_password,
+    });
+  },
 };
 

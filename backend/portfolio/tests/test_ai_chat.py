@@ -130,8 +130,14 @@ class TestGroundingContext:
         assert "Projekt: Portfolio Hub" in context
         assert "GitHub: https://github.com/test/repo" in context
         assert "Live-Demo: https://example.com/demo" in context
-        assert "Meta Backend Developer von Coursera [15.05.2023] (ID: CERT-12345) | Track: Backend Development" in context
-        assert "Senior Developer bei Tech GmbH (01/2022 - Aktuell, Remote): Entwicklung von Cloud-APIs" in context
+        assert (
+            "Meta Backend Developer von Coursera [15.05.2023] (ID: CERT-12345) | Track: Backend Development"
+            in context
+        )
+        assert (
+            "Senior Developer bei Tech GmbH (01/2022 - Aktuell, Remote): Entwicklung von Cloud-APIs"
+            in context
+        )
 
     def test_build_portfolio_grounding_context_empty_database(self):
         context = build_portfolio_grounding_context()
@@ -177,7 +183,9 @@ class TestGroundingContext:
         assert "DOMINIK FLÜCHTER" in context1
         assert cache.get(GROUNDING_CACHE_KEY) == context1
 
-        with patch("portfolio.services.ai_assistant.build_portfolio_grounding_context") as mock_build:
+        with patch(
+            "portfolio.services.ai_assistant.build_portfolio_grounding_context"
+        ) as mock_build:
             context2 = get_cached_grounding_context()
             assert context2 == context1
             mock_build.assert_not_called()
@@ -200,32 +208,43 @@ class TestPruneContextByQuery:
     )
 
     def test_prune_context_skill_query(self):
-        pruned = prune_context_by_query("Welche Frameworks und Skills beherrscht Dominik?", self.SAMPLE_CONTEXT)
+        pruned = prune_context_by_query(
+            "Welche Frameworks und Skills beherrscht Dominik?", self.SAMPLE_CONTEXT
+        )
         assert "TECHNISCHE SKILLS" in pruned
         assert "HIGHLIGHT-PROJEKTE" not in pruned
         assert "VERIFIZIERTE QUALIFIKATIONEN" not in pruned
         assert "BERUFLICHER WERDEGANG" not in pruned
 
     def test_prune_context_project_query(self):
-        pruned = prune_context_by_query("Welche Apps oder Projekte hat er gebaut?", self.SAMPLE_CONTEXT)
+        pruned = prune_context_by_query(
+            "Welche Apps oder Projekte hat er gebaut?", self.SAMPLE_CONTEXT
+        )
         assert "HIGHLIGHT-PROJEKTE" in pruned
         assert "TECHNISCHE SKILLS" not in pruned
         assert "VERIFIZIERTE QUALIFIKATIONEN" not in pruned
 
     def test_prune_context_certificate_query(self):
-        pruned = prune_context_by_query("Welche AWS Zertifikate oder Qualifikationen liegen vor?", self.SAMPLE_CONTEXT)
+        pruned = prune_context_by_query(
+            "Welche AWS Zertifikate oder Qualifikationen liegen vor?",
+            self.SAMPLE_CONTEXT,
+        )
         assert "VERIFIZIERTE QUALIFIKATIONEN & ZERTIFIKATE" in pruned
         assert "HIGHLIGHT-PROJEKTE" not in pruned
         assert "BERUFLICHER WERDEGANG" not in pruned
 
     def test_prune_context_career_query(self):
-        pruned = prune_context_by_query("Wie ist sein beruflicher Werdegang und Lebenslauf?", self.SAMPLE_CONTEXT)
+        pruned = prune_context_by_query(
+            "Wie ist sein beruflicher Werdegang und Lebenslauf?", self.SAMPLE_CONTEXT
+        )
         assert "BERUFLICHER WERDEGANG & AUSBILDUNG" in pruned
         assert "TECHNISCHE SKILLS" not in pruned
         assert "HIGHLIGHT-PROJEKTE" not in pruned
 
     def test_prune_context_general_query_returns_full(self):
-        pruned = prune_context_by_query("Hallo! Wer ist Dominik Flüchter?", self.SAMPLE_CONTEXT)
+        pruned = prune_context_by_query(
+            "Hallo! Wer ist Dominik Flüchter?", self.SAMPLE_CONTEXT
+        )
         assert pruned == self.SAMPLE_CONTEXT
 
     def test_prune_context_fallback_when_pruned_sections_empty(self):
@@ -241,7 +260,10 @@ class TestAIGuardrails:
     def test_query_length_guardrail_exceeds_500_chars(self):
         long_query = "A" * 501
         res = answer_portfolio_query(long_query)
-        assert res["reply"] == "Bitte formuliere deine Frage etwas kürzer (maximal 500 Zeichen)."
+        assert (
+            res["reply"]
+            == "Bitte formuliere deine Frage etwas kürzer (maximal 500 Zeichen)."
+        )
         assert res["sources"] == []
 
     @patch.dict("os.environ", {}, clear=True)
@@ -267,7 +289,9 @@ class TestAIGuardrails:
         ],
     )
     @patch("portfolio.services.ai_assistant.genai.Client")
-    def test_preflight_injection_filter_blocks_attacks(self, mock_client_cls, attack_prompt):
+    def test_preflight_injection_filter_blocks_attacks(
+        self, mock_client_cls, attack_prompt
+    ):
         res = answer_portfolio_query(attack_prompt)
         assert (
             res["reply"]
@@ -285,7 +309,9 @@ class TestAIGuardrails:
         mock_client.models.generate_content.return_value = mock_resp
         mock_client_cls.return_value = mock_client
 
-        res = answer_portfolio_query("Welche Programmiersprachen und Frameworks beherrscht Dominik?")
+        res = answer_portfolio_query(
+            "Welche Programmiersprachen und Frameworks beherrscht Dominik?"
+        )
         assert res["reply"] == "Dominik besitzt fundierte Kenntnisse in Python."
         assert mock_client.models.generate_content.call_count == 1
 
@@ -302,7 +328,9 @@ class TestRAGVersioningAndStructuredSources:
 
     @patch.dict("os.environ", {"GEMINI_API_KEY": "dummy_key"})
     @patch("portfolio.services.ai_assistant.genai.Client")
-    def test_versioned_response_cache_invalidates_on_version_bump(self, mock_client_cls):
+    def test_versioned_response_cache_invalidates_on_version_bump(
+        self, mock_client_cls
+    ):
         mock_client = MagicMock()
         mock_resp = MagicMock()
         mock_resp.text = "Antwort Version 1"
@@ -360,13 +388,17 @@ class TestRAGVersioningAndStructuredSources:
         assert len(sources) == 2
 
         # Überprüfe Struktur des Projekts
-        proj_source = next(s for s in sources if isinstance(s, dict) and s.get("type") == "project")
+        proj_source = next(
+            s for s in sources if isinstance(s, dict) and s.get("type") == "project"
+        )
         assert proj_source["id"] == proj.id
         assert proj_source["title"] == "Cloud Monitoring Platform"
         assert proj_source["target_id"] == f"project-{proj.id}"
 
         # Überprüfe Struktur des Zertifikats
-        cert_source = next(s for s in sources if isinstance(s, dict) and s.get("type") == "certificate")
+        cert_source = next(
+            s for s in sources if isinstance(s, dict) and s.get("type") == "certificate"
+        )
         assert cert_source["id"] == cert.id
         assert cert_source["title"] == "AWS Certified DevOps Engineer"
         assert cert_source["target_id"] == f"cert-{cert.id}"
@@ -405,7 +437,14 @@ class TestAIChatView:
     def test_post_chat_success(self, mock_answer):
         mock_answer.return_value = {
             "reply": "Hier sind Dominiks Top-Projekte...",
-            "sources": [{"type": "project", "id": 1, "title": "Portfolio Hub", "target_id": "project-1"}],
+            "sources": [
+                {
+                    "type": "project",
+                    "id": 1,
+                    "title": "Portfolio Hub",
+                    "target_id": "project-1",
+                }
+            ],
         }
 
         resp = self.client.post(

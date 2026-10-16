@@ -270,3 +270,20 @@ export const useSendAIChatMessage = () => {
   });
 };
 
+export const useRequestPasswordReset = () => {
+  return useMutation({
+    mutationFn: (email?: string) => portfolioService.requestPasswordReset(email),
+  });
+};
+
+export const useConfirmPasswordReset = () => {
+  return useMutation({
+    mutationFn: (payload: {
+      uid: string;
+      token: string;
+      new_password: string;
+      re_new_password?: string;
+    }) => portfolioService.confirmPasswordReset(payload),
+  });
+};
+
