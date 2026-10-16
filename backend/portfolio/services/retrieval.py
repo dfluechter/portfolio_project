@@ -5,6 +5,7 @@ from django.db import connection
 from django.db.models import Q
 
 from portfolio.models import KnowledgeChunk
+
 from .embeddings import generate_embedding
 
 logger = logging.getLogger(__name__)
@@ -24,20 +25,22 @@ def retrieve_relevant_chunks(
     """Führt ein Hybrid-Retrieval aus:
 
     1. Semantische Suche via pgvector CosineDistance (auf PostgreSQL/Neon)
-    2. Heuristisches Keyword-Retrieval als Fallback/Ergänzung (auf SQLite oder ohne Embeddings).
+    2. Heuristisches Keyword-Retrieval als Fallback/Ergänzung.
     """
     clean_query = (query or "").strip()
     if not clean_query:
         return []
 
-    # 1. Prüfen, ob Chunks existieren
     if not KnowledgeChunk.objects.exists():
         return []
 
     results: list[KnowledgeChunk] = []
 
-    # 2. Vektorsuche auf PostgreSQL
-    if is_pgvector_active():
+    # Vektorsuche auf PostgreSQL nur ausführen, wenn auch Vektoren vorliegen
+    if (
+        is_pgvector_active()
+        and KnowledgeChunk.objects.filter(embedding__isnull=False).exists()
+    ):
         try:
             from pgvector.django import CosineDistance
 
@@ -51,9 +54,11 @@ def retrieve_relevant_chunks(
                 if vector_chunks:
                     return vector_chunks
         except Exception as exc:  # noqa: BLE001
-            logger.warning("Vektorsuche fehlgeschlagen, nutze Keyword-Fallback: %s", exc)
+            logger.warning(
+                "Vektorsuche fehlgeschlagen, nutze Keyword-Fallback: %s", exc
+            )
 
-    # 3. Keyword-Fallback (z. B. auf SQLite oder bei API-Budget-Überschreitung)
+    # Keyword-Fallback (auf SQLite oder ohne Embeddings)
     words = [w.lower() for w in clean_query.split() if len(w) > 2]
     if words:
         q_filter = Q()
@@ -62,19 +67,22 @@ def retrieve_relevant_chunks(
 
         results = list(KnowledgeChunk.objects.filter(q_filter)[:limit])
 
-    # 4. Falls keine spezifischen Treffer, die neuesten Chunks als Basis
     if not results:
-        results = list(KnowledgeChunk.objects.all().order_by("-updated_at")[:limit])
+        results = list(
+            KnowledgeChunk.objects.all().order_by("-updated_at")[:limit]
+        )
 
     return results
 
 
 def format_chunks_for_grounding(chunks: list[KnowledgeChunk]) -> str:
-    """Formatiert die abgerufenen Chunks in einen strukturierten Wissenskontext für Gemini."""
+    """Formatiert die abgerufenen Chunks in einen Wissenskontext für Gemini."""
     if not chunks:
         return ""
 
-    parts = ["--- RELEVANTE AUSZÜGE AUS DEM PORTFOLIO (HYBRID RETRIEVAL) ---"]
+    parts = [
+        "--- RELEVANTE AUSZÜGE AUS DEM PORTFOLIO (HYBRID RETRIEVAL) ---"
+    ]
     for i, c in enumerate(chunks, 1):
         target = c.metadata.get("target_id", "")
         target_info = f" [Referenz: #{target}]" if target else ""
@@ -83,8 +91,10 @@ def format_chunks_for_grounding(chunks: list[KnowledgeChunk]) -> str:
     return "\n".join(parts)
 
 
-def extract_chunk_sources(chunks: list[KnowledgeChunk]) -> list[dict[str, Any]]:
-    """Extrahiert strukturierte Zitate aus den abgerufenen Chunks für das Frontend."""
+def extract_chunk_sources(
+    chunks: list[KnowledgeChunk],
+) -> list[dict[str, Any]]:
+    """Extrahiert strukturierte Zitate aus den Chunks für das Frontend."""
     sources: list[dict[str, Any]] = []
     seen: set[str] = set()
 

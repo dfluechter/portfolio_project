@@ -10,11 +10,6 @@ from google import genai
 from google.genai import types
 
 from portfolio.models import Certificate, Project, Skill, TimelineEntry
-from .retrieval import (
-    extract_chunk_sources,
-    format_chunks_for_grounding,
-    retrieve_relevant_chunks,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -501,6 +496,12 @@ def answer_portfolio_query(
         }
 
     # 2. Gecachter Wissenskontext & Hybrid Retrieval
+    from .retrieval import (
+        extract_chunk_sources,
+        format_chunks_for_grounding,
+        retrieve_relevant_chunks,
+    )
+
     retrieved_chunks = retrieve_relevant_chunks(cleaned_query)
     if retrieved_chunks:
         grounding_data = format_chunks_for_grounding(retrieved_chunks)[

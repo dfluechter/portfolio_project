@@ -1,3 +1,4 @@
+import datetime
 import logging
 from typing import Any
 
@@ -8,11 +9,27 @@ from portfolio.models import (
     Skill,
     TimelineEntry,
 )
+
 from .embeddings import generate_embedding
 
 logger = logging.getLogger(__name__)
 
 MAX_CHUNK_TEXT_CHARS = 1200
+
+
+def _format_date(value: Any, fmt: str) -> str:
+    """Formatiert ein Datum sicher (unterstützt date, datetime sowie ISO-Strings)."""
+    if not value:
+        return ""
+    if hasattr(value, "strftime"):
+        return str(value.strftime(fmt))
+    if isinstance(value, str):
+        try:
+            parsed = datetime.date.fromisoformat(value[:10])
+            return parsed.strftime(fmt)
+        except ValueError:
+            return value
+    return str(value)
 
 
 def build_chunks_for_project(project: Project) -> list[dict[str, Any]]:
@@ -21,15 +38,21 @@ def build_chunks_for_project(project: Project) -> list[dict[str, Any]]:
         return []
 
     skills_list = [s.name for s in project.skills.all()] if project.pk else []
-    skills_str = ", ".join(skills_list) if skills_list else "Keine spezifischen Skills verknüpft"
+    skills_str = (
+        ", ".join(skills_list)
+        if skills_list
+        else "Keine spezifischen Skills verknüpft"
+    )
 
-    demo_info = f"Demo: {project.demo_url}" if project.demo_url else ""
+    live_url = getattr(project, "live_url", None) or getattr(
+        project, "demo_url", None
+    )
+    demo_info = f"Live-Demo: {live_url}" if live_url else ""
     github_info = f"GitHub: {project.github_url}" if project.github_url else ""
     links_str = " | ".join(filter(None, [demo_info, github_info]))
 
     content_parts = [
         f"Projekt: {project.title}",
-        f"Kurzbeschreibung: {project.short_description or project.title}",
         f"Detailbeschreibung: {project.description}",
         f"Eingesetzte Technologien & Skills: {skills_str}",
     ]
@@ -49,7 +72,7 @@ def build_chunks_for_project(project: Project) -> list[dict[str, Any]]:
                 "target_id": f"project-{project.id}",
                 "is_featured": project.is_featured,
                 "skills": skills_list,
-                "demo_url": project.demo_url or "",
+                "live_url": live_url or "",
                 "github_url": project.github_url or "",
             },
         }
@@ -61,14 +84,16 @@ def build_chunks_for_certificate(cert: Certificate) -> list[dict[str, Any]]:
     if not cert.is_published:
         return []
 
-    provider_name = cert.provider.provider if cert.provider else "Unbekannter Aussteller"
+    provider_name = (
+        cert.provider.provider
+        if getattr(cert, "provider_id", None) and cert.provider
+        else "Unbekannter Aussteller"
+    )
     tracks_list = [t.name for t in cert.tracks.all()] if cert.pk else []
     tracks_str = ", ".join(tracks_list) if tracks_list else "Allgemein"
 
-    date_str = (
-        cert.issued_date.strftime("%d.%m.%Y")
-        if cert.issued_date
-        else cert.uploaded_at.strftime("%d.%m.%Y")
+    date_str = _format_date(
+        cert.issued_date or getattr(cert, "uploaded_at", None), "%d.%m.%Y"
     )
     cred_id = cert.credential_id or "Keine ID"
 
@@ -95,13 +120,17 @@ def build_chunks_for_certificate(cert: Certificate) -> list[dict[str, Any]]:
         }
     ]
 
-    # Falls ausführlicher OCR-Text vorhanden ist, diesen in Zusatz-Chunks aufteilen
-    extracted = (cert.extracted_text or "").strip()
-    if extracted:
-        # Säubere Whitespaces
-        cleaned_ocr = " ".join(extracted.split())
+    # OCR-Text direkt vom Attribut oder aus verknüpftem PendingCertificate beziehen
+    extracted = getattr(cert, "extracted_text", None)
+    if not extracted:
+        pending = getattr(cert, "source_pending", None)
+        if pending:
+            extracted = getattr(pending, "extracted_text", None)
+
+    extracted_str = (extracted or "").strip()
+    if extracted_str:
+        cleaned_ocr = " ".join(extracted_str.split())
         if len(cleaned_ocr) > 100:
-            # Segmentiere in Blöcke von max. MAX_CHUNK_TEXT_CHARS
             words = cleaned_ocr.split()
             current_words: list[str] = []
             current_len = 0
@@ -112,13 +141,18 @@ def build_chunks_for_certificate(cert: Certificate) -> list[dict[str, Any]]:
                 current_len += len(w) + 1
                 if current_len >= MAX_CHUNK_TEXT_CHARS:
                     sub_text = " ".join(current_words)
+                    part_title = (
+                        f"{cert.title} (Inhalt / Transkript Teil {sub_index})"
+                    )
                     chunks.append(
                         {
                             "source_type": KnowledgeChunk.SOURCE_CERTIFICATE,
                             "source_id": cert.id,
                             "chunk_index": sub_index,
-                            "title": f"{cert.title} (Inhalt / Transkript Teil {sub_index})",
-                            "content": f"Zertifikatsinhalt ({cert.title}):\n{sub_text}",
+                            "title": part_title,
+                            "content": (
+                                f"Zertifikatsinhalt ({cert.title}):\n{sub_text}"
+                            ),
                             "metadata": {
                                 "target_id": f"cert-{cert.id}",
                                 "provider": provider_name,
@@ -132,13 +166,18 @@ def build_chunks_for_certificate(cert: Certificate) -> list[dict[str, Any]]:
 
             if current_words:
                 sub_text = " ".join(current_words)
+                part_title = (
+                    f"{cert.title} (Inhalt / Transkript Teil {sub_index})"
+                )
                 chunks.append(
                     {
                         "source_type": KnowledgeChunk.SOURCE_CERTIFICATE,
                         "source_id": cert.id,
                         "chunk_index": sub_index,
-                        "title": f"{cert.title} (Inhalt / Transkript Teil {sub_index})",
-                        "content": f"Zertifikatsinhalt ({cert.title}):\n{sub_text}",
+                        "title": part_title,
+                        "content": (
+                            f"Zertifikatsinhalt ({cert.title}):\n{sub_text}"
+                        ),
                         "metadata": {
                             "target_id": f"cert-{cert.id}",
                             "provider": provider_name,
@@ -176,11 +215,11 @@ def build_chunks_for_skill(skill: Skill) -> list[dict[str, Any]]:
 
 def build_chunks_for_timeline(entry: TimelineEntry) -> list[dict[str, Any]]:
     """Erzeugt einen Wissens-Chunk für eine Timeline-Station."""
-    start = entry.start_date.strftime("%m/%Y")
+    start = _format_date(entry.start_date, "%m/%Y")
     end = (
         "Aktuell"
         if entry.is_current
-        else (entry.end_date.strftime("%m/%Y") if entry.end_date else "")
+        else _format_date(entry.end_date, "%m/%Y")
     )
     period = f"{start} - {end}".strip(" -")
     content = (
@@ -204,7 +243,9 @@ def build_chunks_for_timeline(entry: TimelineEntry) -> list[dict[str, Any]]:
     ]
 
 
-def sync_chunks_for_instance(instance: Any, generate_embeddings: bool = True) -> int:
+def sync_chunks_for_instance(
+    instance: Any, generate_embeddings: bool = True
+) -> int:
     """Synchronisiert alle Chunks für eine gegebene Model-Instanz."""
     chunk_data_list: list[dict[str, Any]] = []
     source_type = ""
@@ -229,7 +270,9 @@ def sync_chunks_for_instance(instance: Any, generate_embeddings: bool = True) ->
         return 0
 
     # Alte Chunks für diese Instanz entfernen
-    KnowledgeChunk.objects.filter(source_type=source_type, source_id=source_id).delete()
+    KnowledgeChunk.objects.filter(
+        source_type=source_type, source_id=source_id
+    ).delete()
 
     created_count = 0
     for data in chunk_data_list:

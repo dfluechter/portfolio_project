@@ -1,6 +1,6 @@
+import hashlib
 import logging
 import os
-from typing import Any
 
 from django.core.cache import cache
 
@@ -40,12 +40,14 @@ def generate_embedding(
         return None
 
     # Cache-Lookup für identischen Text (spart API-Calls)
-    import hashlib
-
     text_hash = hashlib.sha256(clean_text.encode("utf-8")).hexdigest()
     cache_key = f"portfolio_emb_v1_{text_hash}"
     cached_vec = cache.get(cache_key)
-    if cached_vec and isinstance(cached_vec, list) and len(cached_vec) == EMBEDDING_DIMENSIONS:
+    if (
+        cached_vec
+        and isinstance(cached_vec, list)
+        and len(cached_vec) == EMBEDDING_DIMENSIONS
+    ):
         return cached_vec
 
     # Budgetierung prüfen
@@ -55,7 +57,9 @@ def generate_embedding(
         logger.warning("Embedding-Budgetprüfung fehlgeschlagen: %s", reason)
         return None
 
-    active_model = model_name or os.getenv("GEMINI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
+    active_model = model_name or os.getenv(
+        "GEMINI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL
+    )
 
     try:
         client = get_genai_client(api_key)
@@ -65,16 +69,17 @@ def generate_embedding(
         )
 
         vector: list[float] | None = None
-        # SDK Rückgabe auswerten
         if hasattr(response, "embeddings") and response.embeddings:
             first_emb = response.embeddings[0]
             if hasattr(first_emb, "values") and first_emb.values:
                 vector = [float(v) for v in first_emb.values]
-        elif hasattr(response, "embedding") and hasattr(response.embedding, "values"):
+        elif hasattr(response, "embedding") and hasattr(
+            response.embedding, "values"
+        ):
             vector = [float(v) for v in response.embedding.values]
 
         if vector and len(vector) == EMBEDDING_DIMENSIONS:
-            cache.set(cache_key, vector, timeout=86400 * 7)  # 7 Tage TTL
+            cache.set(cache_key, vector, timeout=86400 * 7)
             record_actual_ai_tokens(est_tokens, est_tokens)
             return vector
 
