@@ -57,8 +57,8 @@ graph TB
 | Backend | Python 3.13 / Django 5.2 / DRF | REST-API und Geschäftslogik |
 | Paketmanagement | `uv` | Reproduzierbare Abhängigkeiten |
 | Frontend | React 19 / TypeScript / Vite / Tailwind CSS v4 | Öffentliche Seite, Chatbot & Admin-Dashboard |
-| Datenbank | Neon Serverless PostgreSQL (Prod) / SQLite (Dev) | Relationale Daten |
-| KI / LLM | Google Gemini 3.8 Flash via `google-genai` | RAG Portfolio-Copilot (`/api/ai/chat/`) & OCR |
+| Datenbank | Neon Serverless PostgreSQL + `pgvector` (Prod) / SQLite (Dev) | Relationale Daten & 768-dim. Vektorspeicher (HNSW) |
+| KI / LLM | Google Gemini & `text-embedding-004` via `google-genai` | RAG Portfolio-Copilot (`/api/ai/chat/`), Hybrid Retrieval & OCR |
 | Media | Supabase Storage (S3-kompatibel, `django-storages` + `boto3`) | Zertifikatsdokumente |
 | Statische Dateien | WhiteNoise | Auslieferung der Django-Static-Files (Swagger-UI, Admin) |
 | OCR | `pypdf`, `pytesseract`, Gemini (optional) | Metadaten-Extraktion |
@@ -138,8 +138,8 @@ sequenceDiagram
     API-->>SPA: 201 Created (is_published=false)
 ```
 
-> [!WARNING]
-> Weg B führt aktuell **keine** serverseitige Magic-Byte-, Größen- oder Existenzprüfung des hochgeladenen Objekts durch, und der Client darf `sha256_hash` mitsenden. Die Härtung ist als [User Story 10.2](backlog.md#user-story-102-härtung-des-direct-to-storage-uploads) geplant.
+> [!NOTE]
+> **Serverseitige Härtung für Weg B (User Story 10.2):** Bei Registrierung eines per Direct-to-Storage hochgeladenen Zertifikats (`storage_key`) verifiziert das Backend das Objekt in Supabase S3 via `head_object` (Existenz & Max. 10 MB), prüft per Range-Request (`bytes=0-2047`) die echten Magic Bytes (`%PDF`, `\x89PNG`, `\xFF\xD8\xFF`) und berechnet bzw. validiert den SHA-256-Hash serverseitig.
 
 **Validierung (Wege A und C):**
 - `validate_file_extension`: Endungen `.pdf`, `.png`, `.jpg`, `.jpeg` **und** Prüfung der Magic Bytes (`%PDF`, `\x89PNG`, `\xFF\xD8\xFF`) gegen Endungs-Spoofing.
@@ -161,15 +161,16 @@ sequenceDiagram
 - Migrationen nutzen bevorzugt `DIRECT_DATABASE_URL` (PgBouncer-Bypass), Details siehe [deployment.md §2.3](deployment.md#23-neon-postgresql-trennung-von-pooled--und-direct-connection).
 - Tests laufen mit `core.settings_test` (gesetzt in `backend/pytest.ini`).
 
-### 2.5 RAG Portfolio-Copilot, Signals Caching & Deep-Linking
+### 2.5 RAG Portfolio-Copilot, Native `pgvector` Hybrid Retrieval, Signals Caching & Deep-Linking
 
 Für interaktive Besucherfragen steht der Portfolio-Copilot bereit (`POST /api/ai/chat/`).
-- **LLM**: Google Gemini 3.8 Flash via `google-genai` SDK.
-- **RAG & Query-Pruning**: Der Prompt erhält ausschließlich veröffentlichte Datensätze (`is_published=True`). Über heuristisches Query-Pruning werden je nach Intention (z. B. "Projekte", "Zertifikate") bis zu 50 % der Kontext-Tokens eingespart.
-- **$O(1)$ Signal-basierte Cache-Invalidierung**: Django Signals (`post_save`, `post_delete` in `portfolio/signals.py`) invalidieren den Rohkontext und inkrementieren atomar die Version `portfolio_rag_context_version_v1`. Alle Response-Caches verfallen dadurch instantan ohne teure Pattern-Scans.
-- **Guardrails**: Pre-Flight Input-Limitierung auf 500 Zeichen und Regex-Filter zur Erkennung von Prompt Injections/Jailbreaks (0-Token Drop ohne LLM-Aufruf).
+- **LLM & Embeddings**: Google Gemini & `text-embedding-004` (768 Dimensionen) via `google-genai` SDK.
+- **Vektorspeicher & Hybrid Retrieval (`KnowledgeChunk`)**: Alle veröffentlichten Entitäten (`Project`, `Certificate` inkl. OCR-Volltexten, `Skill`, `TimelineEntry`) werden als semantische Chunks in `KnowledgeChunk` gespeichert und auf Neon PostgreSQL über einen `pgvector` HNSW-Index (`vector_cosine_ops`) via `CosineDistance` durchsucht (mit automatischem Keyword-Fallback auf SQLite).
+- **Query-Pruning**: Zusätzlich werden irrelevante Sektionen im Basis-Kontext anhand der Frage-Intention herausgefiltert, wodurch bis zu 50 % der Kontext-Tokens eingespart werden.
+- **$O(1)$ Signal-basierte Cache-Invalidierung & Live-Sync**: Django Signals (`post_save`, `post_delete` in `portfolio/signals.py`) synchronisieren die `KnowledgeChunk`-Einträge in Echtzeit, invalidieren den Rohkontext und inkrementieren atomar die Version `portfolio_rag_context_version_v1`.
+- **Guardrails & Zero-Cost Circuit-Breaker**: Pre-Flight Input-Limitierung auf 500 Zeichen, Regex-Filter zur Erkennung von Prompt Injections/Jailbreaks (0-Token Drop ohne LLM-Aufruf) und tägliche Token-/Request-Budgetierung.
 - **Deep-Linking**: Generierte Antworten enthalten Quellhinweise, die vom Frontend in klickbare Badges umgewandelt werden (`#project-<id>`, `#cert-<id>`) und das Ziel für 2 Sekunden optisch hervorheben.
-- Ausführliche Dokumentation: siehe [docs/ai-assistant-rag.md](ai-assistant-rag.md).
+- Ausführliche Dokumentation: siehe [docs/ai-assistant-rag.md](ai-assistant-rag.md) und [ADR-007](adrs/007-rag-copilot-caching-guardrails.md).
 
 ---
 
@@ -188,7 +189,7 @@ Standard-CRUD (`GET` Liste/Detail, `POST`, `PUT`, `PATCH`, `DELETE`) über den `
 | `/api/certificates/` | Öffentlich (nur `is_published`) | Auth | Paginierung & Filter, siehe 3.2 |
 | `/api/skills/` | Öffentlich | Auth | – |
 | `/api/timeline/` | Öffentlich | Auth | – |
-| `/api/tracks/` | Öffentlich | Auth | Liefert verknüpfte Zertifikate (öffentlich nur veröffentlichte) |
+| `/api/tracks/` | Öffentlich | Auth | Liefert verknüpfte Zertifikate sowie `icon` & lokale `icon_url` (FontAwesome Solid SVG) |
 | `/api/pending-certificates/` | Nur Staff (`IsAdminUser`) | Nur Staff | Detail enthält `extracted_text`, Liste nicht |
 
 **Custom Actions:**
@@ -197,7 +198,7 @@ Standard-CRUD (`GET` Liste/Detail, `POST`, `PUT`, `PATCH`, `DELETE`) über den `
 |---|---|---|---|
 | `/api/ai/chat/` | `POST` | Öffentlich | RAG Portfolio-Copilot (Gemini 3.8 Flash mit Guardrails & Deep-Link Zitaten) |
 | `/api/certificates/presigned_upload/` | `POST` | Auth | Signierte S3-Upload-URL für Direct-to-Storage (Weg B) |
-| `/api/certificates/<id>/publish/` | `POST` | Auth | Stellt Datei im Storage sicher und setzt `is_published=true` |
+| `/api/certificates/<id>/publish/` | `POST` | Auth | Prüft Track-Pflicht ($\ge 1$ Track), stellt Datei im Storage sicher und setzt `is_published=true` |
 | `/api/certificates/<id>/unpublish/` | `POST` | Auth | Setzt `is_published=false` |
 | `/api/certificates/<id>/extract_metadata/` | `POST` | Auth | On-Demand-OCR, liefert Vorschläge (überschreibt nichts) |
 | `/api/pending-certificates/<id>/approve/` | `POST` | Staff | Überführt Inbox-Eintrag in ein `Certificate` |
@@ -276,6 +277,7 @@ Seit [ADR-006](adrs/006-resolving-technical-debt-and-security.md) gibt es **eine
 | [ADR-004](adrs/004-state-management-frontend.md) | State Management im Frontend | Accepted |
 | [ADR-005](adrs/005-certificate-lifecycle-and-review.md) | Zertifikats-Lifecycle, Einzel-Review, Pagination | Accepted (OCR-Teil durch ADR-006 abgelöst) |
 | [ADR-006](adrs/006-resolving-technical-debt-and-security.md) | Technische Schulden, Headless, Sicherheit | Accepted |
+| [ADR-007](adrs/007-rag-copilot-caching-guardrails.md) | RAG Copilot, Native `pgvector` Hybrid Retrieval, Signals Caching & Deep Linking | Accepted |
 
 ---
 

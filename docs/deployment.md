@@ -92,17 +92,18 @@ In `core/settings.py` prüft Django automatisch, ob ein Migrationsbefehl aktiv i
 
 ## 3. GitHub Actions CI/CD Pipeline
 
-Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_project/.github/workflows/ci.yml) definiert und umfasst 4 Jobs:
+Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_project/.github/workflows/ci.yml) definiert, nutzt eine `concurrency`-Gruppe (`cancel-in-progress: true`) zur Vermeidung überlappender Läufe und umfasst 4 Jobs:
 
 1. **`backend-lint-test`**:
-   - Startet ephemeren Neon DB-Branch via `neondatabase/create-branch-action@v5`.
-   - Führt Ruff Linter (`check`), Ruff Formatter Check (`format --diff`), Mypy und Pytest mit Coverage ($\ge 95\%$) aus.
-   - Bereinigt den Neon-Branch nach Testende (`always()`).
+   - Startet einen pro Run eindeutigen ephemeren Neon DB-Branch (`ci-${{ github.run_id }}-${{ github.run_attempt }}`) via `neondatabase/create-branch-action@v5`, damit parallele Läufe sich niemals gegenseitig den Test-Branch löschen.
+   - Nutzt die direkte Neon-Compute-Verbindung (`steps.create-branch.outputs.db_url`) für `pytest`, um PgBouncer-Locks bei `CREATE DATABASE` und Schema-Migrationen (inkl. `pgvector` HNSW-Index) auszuschließen.
+   - Führt Ruff Linter (`check`), Ruff Formatter Check (`format --diff`), Mypy und Pytest mit Coverage ($\ge 95\%$, 314 Tests) aus.
+   - Bereinigt den eindeutigen Neon-Branch nach Testende (`always()`).
 2. **`frontend-lint-test`**:
-   - Führt `npm ci`, Oxlint, Vitest und `npm run build` aus.
+   - Führt `npm ci`, Oxlint, Vitest (82 Tests) und `npm run build` aus.
 3. **`backend-build`**:
    - Validiert, dass Python 3.13 und Abhängigkeiten mit `uv` fehlerfrei auflösen.
-   - Führt `python manage.py check` und `python manage.py collectstatic` im Produktionsmodus (`DEBUG=False`) durch.
+   - Führt `python manage.py check`, `python manage.py makemigrations --check --dry-run` und `python manage.py collectstatic` im Produktionsmodus (`DEBUG=False`) durch.
    - **Wichtig**: Benötigt `defaults: run: working-directory: backend`.
 4. **`deploy`**:
    - Triggert bei erfolgreichem Push auf `main` den Render Deploy Hook via `curl`.

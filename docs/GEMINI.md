@@ -24,14 +24,14 @@ Detaillierte Systemarchitektur, Konfigurationen und API-Spezifikationen befinden
 
 ### Tech Stack & Standards
 - **Backend:** Python 3.13, Django 5.2, Django REST Framework, Djoser (Headless Token Auth)
-- **KI & LLM:** Google Gemini 3.8 Flash (`google-genai`), RAG Portfolio-Copilot (`/api/ai/chat/`), Signals Caching & multimodale OCR
+- **KI, Embeddings & Vektorsuche:** Google Gemini & `text-embedding-004` (`google-genai`), RAG Portfolio-Copilot (`/api/ai/chat/`), `pgvector` HNSW-Index (`KnowledgeChunk`) mit Hybrid Retrieval, Signals Caching & multimodale OCR
 - **Frontend:** React 19, TypeScript 5.8, Vite 8, Tailwind CSS v4, TanStack Query v5, Lucide React
 - **Package Manager:** Backend `uv` (niemals direkt `pip`), Frontend `npm`
-- **Linter & Formatter:** Backend `ruff check .` und `ruff format .`, Frontend `npm run lint`
+- **Linter & Formatter:** Backend `ruff check .` und `ruff format --diff .`, Frontend `npm run lint`
 - **Type Checking:** Backend `mypy .`, Frontend `npm run build` (`tsc -b`)
-- **Tests:** Backend `uv run pytest --cov=portfolio --cov-fail-under=95` (236 Tests, 96% Coverage), Frontend `npm run test` (Vitest, 58 Tests)
-- **Media Storage:** S3-kompatibler Supabase Storage (Presigned Uploads & Downloads)
-- **Primary Database:** SQLite (lokal), Neon PostgreSQL (Produktion)
+- **Tests:** Backend `uv run pytest --cov=core --cov=portfolio --cov-fail-under=95` (314 Tests, >95% Coverage), Frontend `npm run test` (Vitest, 82 Tests)
+- **Media Storage:** S3-kompatibler Supabase Storage (Presigned Uploads & Downloads inkl. Magic-Byte Range-Validierung)
+- **Primary Database:** SQLite (lokal), Neon Serverless PostgreSQL + `pgvector` (Produktion)
 
 ### Working Rules for Code Changes
 1. Nach Modelländerungen immer Migrationen erzeugen (`uv run python manage.py makemigrations`) und prüfen.

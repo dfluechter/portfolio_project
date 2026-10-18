@@ -16,10 +16,10 @@ This file provides guidance to agents when working with code in this repository.
 ## Stack & Deployment
 
 Django 5.2 + Python 3.13, managed with **uv** (never use `pip` or `poetry`).
-- **Database**: Neon PostgreSQL in production (via `DATABASE_URL`), local SQLite fallback. No explicit `ENVIRONMENT` flag exists.
+- **Database**: Neon PostgreSQL in production (via `DATABASE_URL` / `DIRECT_DATABASE_URL` with `pgvector` extension and HNSW index on `KnowledgeChunk`), local SQLite fallback. No explicit `ENVIRONMENT` flag exists.
 - **Media Storage**: Supabase S3-compatible storage (`USE_SUPABASE_S3=True`) / local `FileSystemStorage` (`MEDIA_ROOT=media/`).
 - **Static Files**: WhiteNoise (`CompressedManifestStaticFilesStorage`) in production.
-- **Deployment**: Deployed on Render (`rootDir: backend`). `backend/build.sh` is the Render deployment hook (`buildCommand: bash build.sh`), running `uv sync --frozen --no-dev`, `collectstatic`, and `migrate`. Environment variables are documented in `render.yaml`.
+- **Deployment**: Deployed on Render (`rootDir: backend`). `backend/build.sh` is the Render deployment hook (`buildCommand: bash build.sh`), running `uv sync --frozen --no-dev`, `collectstatic`, `migrate`, and `index_rag_chunks`. Environment variables are documented in `render.yaml`.
 - **Auth**: Djoser + DRF + SimpleJWT (`api/auth/`).
 
 ## Commands
@@ -72,6 +72,8 @@ bash build.sh
 - `certificate_upload_path()` in `portfolio/models.py` uses `slugify(instance.provider.provider)` for directory names and falls back to `"unsorted"` if slugify returns an empty string (e.g. `"??? ***"` → `"unsorted"`).
 - `Certificate.provider` is a `ForeignKey(Provider, on_delete=models.PROTECT, related_name="certificates")`.
 - File upload validators (`validate_file_extension`, `validate_file_size`: `.pdf`, `.png`, `.jpg`, `.jpeg` ≤ 5 MB) are applied at model field and serializer level. `validate_file_extension` validates header magic bytes (`%PDF`, `\x89PNG`, `\xFF\xD8\xFF`) to prevent file extension spoofing.
+- Direct-to-Storage uploads (`storage_key`) are verified server-side via S3 `head_object`, range-request magic byte inspection (`bytes=0-2047`), and SHA-256 checksum validation.
+- Publishing a certificate (`is_published=True` or `POST /api/certificates/<id>/publish/`) requires at least one assigned `Track` (`tracks.count() >= 1`).
 
 ## REST API & Serializers
 
@@ -80,14 +82,15 @@ bash build.sh
 - Serializer `Meta.fields` must always be declared as a **tuple** (e.g. `fields = ("id", "title")`), not a mutable list, to comply with Ruff rule `RUF012`.
 - `POST api/ai/chat/` — Public endpoint for the RAG Portfolio Copilot (Gemini 3.8 Flash, input capped at 500 characters, pre-flight regex filtering against prompt injections, structured source citations).
 
-## Signals & Cache Invalidation
+## Signals, RAG Chunk Sync & Cache Invalidation
 
 - `portfolio/signals.py` attaches `post_save` and `post_delete` handlers to `Project`, `Certificate`, `Skill`, and `TimelineEntry`.
-- On change, signals clear `portfolio_rag_grounding_context` and atomically increment `portfolio_rag_context_version_v1`.
+- On change, signals synchronize semantic `KnowledgeChunk` records (`sync_chunks_for_instance`, `delete_chunks_for_instance`), clear `portfolio_rag_grounding_context`, and atomically increment `portfolio_rag_context_version_v1`.
 - Any new model that contributes to public portfolio grounding MUST be wired to this signal invalidator.
 
 ## Management Commands
 
+- `index_rag_chunks [--with-embeddings]` — synchronizes all published portfolio entities (`Project`, `Certificate`, `Skill`, `TimelineEntry`) into `KnowledgeChunk` records (and optionally generates 768-dim `text-embedding-004` vectors).
 - `scan_certificates` — scans local certificates path (configured via `CERTIFICATES_PATH` in `.env`), creates `Provider` objects.
 - `import_certificates` — imports files from `CERTIFICATES_PATH` with rate-limit workaround; skips already-existing entries by `(title, provider)` uniqueness check.
 - `scan_inbox` — scans incoming files from `CERTIFICATES_INBOX_PATH` into `PendingCertificate` staging records.

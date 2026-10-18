@@ -9,7 +9,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Render](https://img.shields.io/badge/Render-Deployed-46E3B7?style=for-the-badge&logo=render&logoColor=white)
 
-Django REST API (Backend) und React SPA (Frontend) für mein persönliches Portfolio. Verwaltet Zertifikate, Projekte, Skills, Timeline und Zertifikatsanbieter über ein geschütztes Dashboard. Enthält einen integrierten RAG Portfolio-Copiloten (Google Gemini 3.8 Flash) mit Signals-gestützter $O(1)$ Cache-Invalidierung, Guardrail-Pipeline und interaktivem UI Deep-Linking.
+Django REST API (Backend) und React SPA (Frontend) für mein persönliches Portfolio. Verwaltet Zertifikate, Projekte, Skills, Timeline und Zertifikatsanbieter über ein geschütztes Dashboard. Enthält einen integrierten RAG Portfolio-Copiloten (Google Gemini + `pgvector` Hybrid Retrieval mit `text-embedding-004`), Signals-gestützte $O(1)$ Cache-Invalidierung & Chunk-Synchronisation, Guardrail-Pipeline und interaktives UI Deep-Linking.
 
 > 📚 **Architektur-Details**: Eine tiefere Analyse der Entscheidungen und Infrastruktur findest du unter [`/docs/architecture.md`](docs/architecture.md) sowie in den [Architectural Decision Records (ADRs)](docs/adrs/).
 
@@ -37,9 +37,9 @@ Django REST API (Backend) und React SPA (Frontend) für mein persönliches Portf
 | **REST API** | Django REST Framework (DRF) |
 | **Backend Sprache** | Python 3.13 |
 | **Package Manager** | uv (Python) & npm (Node.js) |
-| **Datenbank (lokal)** | SQLite |
-| **Datenbank (Produktion)**| Neon PostgreSQL |
-| **KI / LLM** | Google Gemini 3.8 Flash (`google-genai`) |
+| **Datenbank (lokal)** | SQLite (mit automatischem Keyword-Retrieval-Fallback) |
+| **Datenbank (Produktion)**| Neon Serverless PostgreSQL + `pgvector` (HNSW-Index) |
+| **KI / LLM & Embeddings** | Google Gemini (`google-genai`) & `text-embedding-004` (768 Dim.) |
 | **Media Storage** | Supabase (S3-kompatibel) |
 | **Static Files** | WhiteNoise (`CompressedManifestStaticFilesStorage`) |
 | **Auth** | Djoser + JWT (`api/auth/`) |
@@ -108,10 +108,11 @@ npm run dev
 
 ### Backend (im Verzeichnis `backend/`)
 ```bash
-uv run pytest --cov=portfolio        # Tests & Coverage Report
+uv run pytest --cov=core --cov=portfolio --cov-fail-under=95  # Tests & Coverage Gate (>= 95%)
 uv run ruff check .                  # Linter
-uv run ruff format .                 # Formatter
+uv run ruff format --diff .          # Formatter Check
 uv run mypy .                        # Statische Typüberprüfung
+uv run python manage.py index_rag_chunks  # RAG KnowledgeChunks synchronisieren
 uv run python manage.py collectstatic --noinput
 ```
 
@@ -127,8 +128,8 @@ npm run test                         # Vitest
 
 Sowohl Backend als auch Frontend werden kontinuierlich via GitHub Actions getestet (Linting, Type Checks, Pytest/Vitest).
 
-* **Backend Coverage:** **$\ge$ 95%** (aktuell 96% getestet mit 236 Pytest-Tests: Djoser Auth, JWT, DRF ViewSets, Models, Permissions, RAG Assistant & Presigned Uploads)
-* **Frontend Tests:** 58 Tests via Vitest & React Testing Library (Komponenten, Routing, Modal-A11y, API-Client Interceptors & Chat-Widget)
+* **Backend Coverage:** **$\ge$ 95%** (aktuell >95% getestet mit 314 Pytest-Tests: Djoser Auth, JWT, DRF ViewSets, Models, Permissions, RAG Hybrid Retrieval & `pgvector`, Track-Validierung, Icon-Service & Presigned Uploads)
+* **Frontend Tests:** 82 Tests via Vitest & React Testing Library (Komponenten, Routing, Passwort-Reset-Flow, Modal-A11y, API-Client Interceptors, Track-Icons & Chat-Widget)
 
 ## 📁 Projektstruktur
 
@@ -137,23 +138,24 @@ portfolio_project/
 ├── .github/workflows/       # CI-Pipelines für Frontend & Backend (Neon Branch Testing)
 ├── backend/                 # Django 5.2 Headless REST API
 │   ├── core/                # Django Projekt-Konfiguration (Settings, URLs, WSGI)
-│   ├── portfolio/           # Portfolio Django-App (Models, Serializers, Views, Tests)
-│   ├── build.sh             # Render Build-Hook (uv sync, collectstatic, migrate)
+│   ├── portfolio/           # Portfolio Django-App (Models, Serializers, Views, Services, Tests)
+│   │   └── services/        # RAG (ai_assistant, chunking, embeddings, retrieval), OCR & S3-Storage
+│   ├── build.sh             # Render Build-Hook (uv sync, collectstatic, migrate, index_rag_chunks)
 │   ├── manage.py            # Django Management CLI
-│   ├── pyproject.toml       # Python Abhängigkeiten & Tools (uv, ruff, mypy, pytest)
+│   ├── pyproject.toml       # Python Abhängigkeiten & Tools (uv, ruff, mypy, pytest, pgvector)
 │   └── pytest.ini           # Pytest Konfiguration
 ├── frontend/                # React 19 SPA (Vite 8 + TypeScript + Tailwind CSS v4)
 │   ├── src/
-│   │   ├── components/      # UI-Komponenten, Modale, ErrorBoundary & Dashboard
+│   │   ├── components/      # UI-Komponenten, Modale, TrackIcon, ErrorBoundary & Dashboard
 │   │   ├── context/         # React Context (AuthContext mit JWT Sync, ThemeContext)
 │   │   ├── hooks/           # Custom Hooks (usePortfolio mit TanStack Query)
-│   │   ├── pages/           # Pages (PortfolioPage, LoginPage, DashboardPage via React.lazy)
+│   │   ├── pages/           # Pages (PortfolioPage, LoginPage, DashboardPage, PasswordResetConfirmPage)
 │   │   ├── services/        # API- und S3-Storage-Services (portfolioService)
 │   │   └── App.tsx          # React Router Setup mit ColdStartBanner & Suspense
 │   ├── package.json         # Node Abhängigkeiten & Scripts
 │   └── vite.config.ts       # Vite, Vitest & Rollup Chunking Konfiguration
 ├── docs/                    # Technische Dokumentation & ADRs
-│   ├── adrs/                # Architectural Decision Records (ADR-001 bis ADR-006)
+│   ├── adrs/                # Architectural Decision Records (ADR-001 bis ADR-007)
 │   ├── architecture.md      # Gesamtsystem- und Architektur-Dokumentation
 │   ├── ai-assistant-rag.md  # RAG Portfolio-Copilot, Signals Caching & Guardrails
 │   ├── deployment.md        # Deployment-Leitfaden, Neon Connections & Render Config

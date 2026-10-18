@@ -23,7 +23,8 @@ Die Ausstellerorganisation des Zertifikats (z. B. AWS, Coursera, IBM, Microsoft,
 
 ### Track (Themenschwerpunkt / Fachdomäne)
 Eine thematische Gruppierung von Kompetenzen und Zertifikaten (z. B. *Python & Django Backend*, *Data & KI*, *Cloud & DevOps*, *Frontend & React*, *Security & Compliance*).
-* **Beziehung:** n:m zu `Certificate`.
+* **Beziehung:** n:m zu `Certificate`. Ein Zertifikat muss vor der Veröffentlichung (`is_published=True`) zwingend mindestens einem Track zugeordnet sein (Epic 12).
+* **Icons:** Jeder Track kann ein FontAwesome Solid Icon (`icon`) referenzieren, das über den `icon_service` beim ersten Abruf validiert und lokal unter `/static/img/icons/<icon>.svg` gecacht wird (`icon_url`).
 * **Zweck:** Ermöglicht interaktive Mehrfach-Filterung (OR-Logik) und themenspezifische Qualifikationsdarstellung auf der Startseite und im Admin-Dashboard.
 
 ---
@@ -99,5 +100,14 @@ Strukturierte Quellverweise in KI-Antworten (z. B. `[Projekt: ...]` oder `[Zerti
 
 ### 0-Token Injection Drop (Pre-Flight Filter)
 Sicherheitsmechanismus in `AIChatView`: Eingehende Fragen werden vor dem LLM-Aufruf via Regex auf typische Prompt-Injection-Muster und Jailbreak-Versuche untersucht. Bei Treffern antwortet das Backend sofort mit einer statischen Schutzmeldung, ohne ein einziges Token bei externen KI-Providern zu verbrauchen.
+
+### KnowledgeChunk (Semantischer Wissens-Chunk)
+Persistente Datenbank-Entität (`portfolio_knowledgechunk`), die veröffentlichte Projekte, Zertifikate (inkl. mehrseitiger OCR-Volltexte aus `source_pending`), Skills und Werdegangs-Stationen in semantisch abgegrenzte Textblöcke zerlegt. Jeder Chunk speichert neben Titel, Text und Ziel-Metadaten (`target_id`) ein 768-dimensionales Vektor-Embedding (`text-embedding-004`).
+
+### pgvector & HNSW-Index
+PostgreSQL-Erweiterung (`vector`) auf Neon Serverless PostgreSQL zur nativen Speicherung und Distanzberechnung hochdimensionaler Vektoren. Über einen HNSW-Index (`Hierarchical Navigable Small World`, `vector_cosine_ops`) werden Kosinus-Ähnlichkeitssuchen (`CosineDistance`) in $O(\log N)$ ausgeführt.
+
+### Hybrid Retrieval
+Zweistufiges Suchverfahren in `portfolio/services/retrieval.py`: Auf PostgreSQL/Neon wird primär per Vektor-Ähnlichkeit (`CosineDistance`) nach den semantisch passendsten `KnowledgeChunk`-Einträgen gesucht; auf SQLite (lokale Entwicklung) oder bei fehlendem API-Kontingent greift automatisch ein deterministischer Keyword-Fallback.
 
 

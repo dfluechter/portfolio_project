@@ -51,7 +51,8 @@ frontend/src/
 │   ├── SectionEmptyState.tsx     # Benutzerfreundliche Leeransicht bei Filtern
 │   ├── SkillsSection.tsx         # Skill-Kategorien & Fortschrittsbalken
 │   ├── ThemeToggle.tsx           # Dark-/Light-Mode Umschalter
-│   └── TimelineSection.tsx       # Werdegang & Karriere-Stationen
+│   ├── TimelineSection.tsx       # Werdegang & Karriere-Stationen
+│   └── TrackIcon.tsx             # FontAwesome Solid SVG-Icon-Komponente mit Fallback
 ├── context/
 │   ├── AuthContext.tsx           # Globaler Auth-Status (Token-Persistenz, Login/Logout)
 │   └── ThemeContext.tsx          # Dark-/Light-Mode State
@@ -61,7 +62,8 @@ frontend/src/
 │   └── usePortfolioSearch.ts     # Client-seitige Volltextsuche und Filterung
 ├── pages/
 │   ├── PortfolioPage.tsx         # Öffentliche Portfolio-Startseite (Home)
-│   ├── LoginPage.tsx             # JWT-Login für das Management-Interface (lazy)
+│   ├── LoginPage.tsx             # JWT-Login & Passwort-Reset-Anforderung (lazy)
+│   ├── PasswordResetConfirmPage.tsx # Passwort-Reset-Bestätigung via E-Mail-Token (lazy)
 │   └── DashboardPage.tsx         # Geschütztes Dashboard mit Review-Drawer (lazy)
 ├── services/
 │   └── portfolioService.ts       # Zentraler Service für API-Calls & direkten S3-Upload
@@ -213,7 +215,7 @@ npm run lint
 npm run build
 ```
 
-- **Vitest**: Ausführung aller 58 Komponenten-, Hook- und Interceptor-Tests in isolierten Umgebungen.
+- **Vitest**: Ausführung aller 82 Komponenten-, Hook-, Seiten- und Interceptor-Tests in isolierten Umgebungen.
 - **React Testing Library**: Nutzerzentrierte Tests basierend auf Accessibility-Rollen (`getByRole`, `findByText`).
 - **Oxlint**: Extrem schneller Rust-basierter Linter zur Einhaltung von Code-Standards.
 
