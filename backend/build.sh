@@ -20,3 +20,7 @@ else
     echo "==> Führe Migrationen mit Standard-Verbindung aus..."
     uv run python manage.py migrate --noinput
 fi
+
+echo "==> Synchronisiere RAG Knowledge Chunks (Initial- & Delta-Indizierung)..."
+uv run python manage.py index_rag_chunks
+

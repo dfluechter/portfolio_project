@@ -39,7 +39,7 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 8** | Neon Connection Separation & DDL-Stabilität | Abgeschlossen | US 8.1 |
 | **Epic 9** | Gemini Vision Fallback & Magic-Byte Validation | Abgeschlossen | US 9.1, US 9.2 |
 | **Epic 10** | Supabase S3 Presigned Uploads & Security | Abgeschlossen | US 10.1, US 10.2 |
-| **Epic 11** | RAG Portfolio-Copilot, Guardrails & UI-Skills Polish | Abgeschlossen | US 11.1, US 11.2, US 11.3, US 11.4 |
+| **Epic 11** | RAG Portfolio-Copilot, pgvector Hybrid Retrieval, Guardrails & UI-Skills Polish | Abgeschlossen | US 11.1, US 11.2, US 11.3, US 11.4, US 11.5 |
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
 
 ---
@@ -344,6 +344,25 @@ In US 10.1 wurde der Presigned Upload umgesetzt. Aktuell vertraut das Backend be
   - **Given** das Chat-Widget ist auf der Startseite eingebunden
   - **When** der Benutzer interagiert
   - **Then** bietet die Oberfläche Glassmorphism (`backdrop-blur-2xl`), Radar-Ping am Trigger-Button, Bouncing Wave Thinking State und Copy-to-Clipboard mit Morphing Checkmark.
+
+#### User Story 11.5: Native pgvector Vektordatenbank & Hybrid Retrieval (Option A)
+> **Als** Systemarchitekt und Portfolio-Besucher  
+> **möchte ich**, dass Portfolio-Inhalte und OCR-Zertifikatstexte als granulare Wissens-Chunks (`KnowledgeChunk`) mit 768-dimensionalen Embeddings (`text-embedding-004`) in Neon PostgreSQL (`pgvector`) indiziert und per Hybrid Retrieval durchsucht werden,  
+> **damit** auch spezifische Detailfragen über große Textmengen hinweg mit höchster semantischer Präzision beantwortet werden.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (Modell & HNSW-Migration):**
+  - **Given** die Migration `0014_knowledgechunk_pgvector`
+  - **When** `python manage.py migrate` auf PostgreSQL ausgeführt wird
+  - **Then** wird die Extension `vector` aktiviert und die Tabelle `portfolio_knowledgechunk` mit einem HNSW-Index (`vector_cosine_ops`) angelegt (auf SQLite erfolgt ein transparenter Fallback).
+- [x] **Szenario 2 (Chunking, Signal-Sync & CLI):**
+  - **Given** veröffentlichte `Project`-, `Certificate`-, `Skill`- und `TimelineEntry`-Instanzen
+  - **When** Daten gespeichert/gelöscht werden oder `python manage.py index_rag_chunks` ausgeführt wird
+  - **Then** werden die Chunks automatisch synchronisiert und im Render-Build (`build.sh`) initial indiziert.
+- [x] **Szenario 3 (Hybrid Retrieval & Test-Coverage $\ge 95\%$):**
+  - **Given** eine Suchanfrage im KI-Assistenten
+  - **When** `retrieve_relevant_chunks()` aufgerufen wird
+  - **Then** nutzt das System auf PostgreSQL `CosineDistance` und fällt bei fehlendem Embedding oder auf SQLite nahtlos auf Keyword-Retrieval zurück, abgesichert durch $\ge 95\%$ Backend-Testabdeckung.
 
 ---
 

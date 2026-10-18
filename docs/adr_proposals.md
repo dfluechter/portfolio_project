@@ -20,7 +20,7 @@ Das Portfolio-Projekt ist als Monorepo strukturiert:
 | [`docs/deployment.md`](deployment.md) | ✅ **Abgeschlossen** | Detaillierte Deployment-Pipeline, Neon Direct/Pooled Connections, Bucket-CORS & Render Build-Hook. |
 | [`docs/glossary.md`](glossary.md) | ✅ **Abgeschlossen** | Fachbegriffe, Domänen-Glossar und Definitionen für einheitliche Terminologie. |
 | [`docs/backlog.md`](backlog.md) | ✅ **Abgeschlossen** | Agiles Backlog mit Epics, User Stories, DoR und DoD für Entwickler. |
-| [`docs/adrs/`](adrs/) | ✅ **Abgeschlossen** | ADR-001 bis ADR-006 vollständig dokumentiert. |
+| [`docs/adrs/`](adrs/) | ✅ **Abgeschlossen** | ADR-001 bis ADR-007 vollständig dokumentiert. |
 
 ---
 
@@ -34,4 +34,4 @@ Das Portfolio-Projekt ist als Monorepo strukturiert:
 | **ADR-004** | [ADR-004: Frontend State Management](adrs/004-state-management-frontend.md) | `Accepted` | Hybrider Ansatz mit TanStack Query & React Context. |
 | **ADR-005** | [ADR-005: Zertifikats-Lifecycle, Einzel-Review und Pagination](adrs/005-certificate-lifecycle-and-review.md) | `Accepted` | Selektiver Review-Drawer, Server-Pagination und Entwurfs-Lifecycle. |
 | **ADR-006** | [ADR-006: Technische Schulden, Cloud-Architektur und Sicherheit](adrs/006-resolving-technical-debt-and-security.md) | `Accepted` | Headless Cleanup, Neon Connection Separation, 3-Stufen OCR & Magic Bytes. |
-| **ADR-007** | [ADR-007: RAG Copilot, Signals Cache Invalidation & Deep Linking](adrs/007-rag-copilot-caching-guardrails.md) | `Proposed` / `In Progress` | Gemini 3.8 Flash RAG, heuristisches Query-Pruning, $O(1)$ Signal-Cache-Invalidierung und UI Deep-Linking. |
+| **ADR-007** | [ADR-007: RAG Copilot, Native pgvector Hybrid Retrieval, Signals Cache Invalidation & Deep Linking](adrs/007-rag-copilot-caching-guardrails.md) | `Accepted` | Gemini RAG, `pgvector` (`KnowledgeChunk` & HNSW-Index), $O(1)$ Signal-Cache-Invalidierung und UI Deep-Linking. |
