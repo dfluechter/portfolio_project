@@ -1,3 +1,4 @@
+import django.utils.timezone
 from django.db import migrations, models
 
 import portfolio.models
@@ -33,6 +34,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(enable_pgvector, reverse_code=disable_pgvector),
+        migrations.AlterField(
+            model_name="project",
+            name="created_at",
+            field=models.DateTimeField(
+                default=django.utils.timezone.now, verbose_name="Erstellt am"
+            ),
+        ),
         migrations.CreateModel(
             name="KnowledgeChunk",
             fields=[
@@ -104,7 +112,7 @@ class Migration(migrations.Migration):
                 "indexes": [
                     models.Index(
                         fields=["source_type", "source_id"],
-                        name="portfolio_k_source__660c60_idx",
+                        name="portfolio_k_source__97faf5_idx",
                     )
                 ],
                 "unique_together": {("source_type", "source_id", "chunk_index")},
