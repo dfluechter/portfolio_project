@@ -1,18 +1,19 @@
 from django.db import migrations, models
+
 import portfolio.models
 
 
-def enable_pgvector(apps, schema_editor):
+def enable_pgvector(apps, schema_editor):  # pragma: no cover
     if schema_editor.connection.vendor == "postgresql":
         schema_editor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
 
 
-def disable_pgvector(apps, schema_editor):
+def disable_pgvector(apps, schema_editor):  # pragma: no cover
     if schema_editor.connection.vendor == "postgresql":
         schema_editor.execute("DROP EXTENSION IF EXISTS vector;")
 
 
-def create_hnsw_index(apps, schema_editor):
+def create_hnsw_index(apps, schema_editor):  # pragma: no cover
     if schema_editor.connection.vendor == "postgresql":
         schema_editor.execute(
             "CREATE INDEX IF NOT EXISTS chunk_vector_hnsw_idx "
@@ -20,7 +21,7 @@ def create_hnsw_index(apps, schema_editor):
         )
 
 
-def drop_hnsw_index(apps, schema_editor):
+def drop_hnsw_index(apps, schema_editor):  # pragma: no cover
     if schema_editor.connection.vendor == "postgresql":
         schema_editor.execute("DROP INDEX IF EXISTS chunk_vector_hnsw_idx;")
 
@@ -90,9 +91,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "created_at",
-                    models.DateTimeField(
-                        auto_now_add=True, verbose_name="Erstellt am"
-                    ),
+                    models.DateTimeField(auto_now_add=True, verbose_name="Erstellt am"),
                 ),
                 (
                     "updated_at",

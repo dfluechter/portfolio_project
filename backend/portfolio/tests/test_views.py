@@ -30,6 +30,7 @@ class TestApiRootView:
         assert response.status_code == 404
 
 
+@pytest.mark.django_db
 class TestHealthCheckView:
     def setup_method(self):
         self.client = Client()

@@ -1,5 +1,6 @@
 import logging
 import time
+from typing import Any
 
 from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def invalidate_portfolio_cache() -> None:
-    """Invalidiert den Wissenskontext-Cache und inkrementiert atomar die RAG-Cache-Version."""
+    """Invalidiert den Wissenskontext-Cache und erhöht die RAG-Cache-Version."""
     cache.delete(GROUNDING_CACHE_KEY)
     if cache.get(RAG_VERSION_KEY) is not None:
         try:
@@ -34,10 +35,11 @@ def invalidate_portfolio_cache() -> None:
 @receiver(post_save, sender=Skill)
 @receiver(post_save, sender=Certificate)
 @receiver(post_save, sender=TimelineEntry)
-def handle_portfolio_save(sender, instance, **kwargs) -> None:
-    """Signal-Handler, der bei Erstellung/Änderung Chunks aktualisiert und Cache invalidiert."""
+def handle_portfolio_save(sender: Any, instance: Any, **kwargs: Any) -> None:
+    """Aktualisiert Chunks und invalidiert den Cache bei Änderungen."""
     logger.info(
-        "Portfolio-Daten gespeichert (Sender: %s, ID: %s). Aktualisiere Chunks & invalidiere Cache.",
+        "Portfolio-Daten gespeichert (Sender: %s, ID: %s). "
+        "Aktualisiere Chunks & invalidiere Cache.",
         sender.__name__,
         getattr(instance, "id", None),
     )
@@ -45,17 +47,22 @@ def handle_portfolio_save(sender, instance, **kwargs) -> None:
     try:
         sync_chunks_for_instance(instance, generate_embeddings=False)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Fehler beim Synchronisieren von Chunks für %s: %s", sender.__name__, exc)
+        logger.warning(
+            "Fehler beim Synchronisieren von Chunks für %s: %s",
+            sender.__name__,
+            exc,
+        )
 
 
 @receiver(post_delete, sender=Project)
 @receiver(post_delete, sender=Skill)
 @receiver(post_delete, sender=Certificate)
 @receiver(post_delete, sender=TimelineEntry)
-def handle_portfolio_delete(sender, instance, **kwargs) -> None:
-    """Signal-Handler, der bei Löschung Chunks entfernt und Cache invalidiert."""
+def handle_portfolio_delete(sender: Any, instance: Any, **kwargs: Any) -> None:
+    """Entfernt Chunks und invalidiert den Cache bei Löschungen."""
     logger.info(
-        "Portfolio-Daten gelöscht (Sender: %s, ID: %s). Entferne Chunks & invalidiere Cache.",
+        "Portfolio-Daten gelöscht (Sender: %s, ID: %s). "
+        "Entferne Chunks & invalidiere Cache.",
         sender.__name__,
         getattr(instance, "id", None),
     )
@@ -68,7 +75,11 @@ def handle_portfolio_delete(sender, instance, **kwargs) -> None:
     }
     src_type = type_map.get(sender.__name__, sender.__name__.lower())
     try:
-        delete_chunks_for_instance(src_type, instance.id)
+        if getattr(instance, "id", None) is not None:
+            delete_chunks_for_instance(src_type, instance.id)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Fehler beim Löschen von Chunks für %s: %s", sender.__name__, exc)
-
+        logger.warning(
+            "Fehler beim Löschen von Chunks für %s: %s",
+            sender.__name__,
+            exc,
+        )

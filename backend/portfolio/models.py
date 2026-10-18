@@ -14,7 +14,7 @@ from django.utils.text import slugify
 
 try:
     from pgvector.django import VectorField
-except ImportError:
+except ImportError:  # pragma: no cover
     # Graceful fallback für Umgebungen ohne vorinstalliertes pgvector
     class VectorField(models.Field):  # type: ignore[no-redef]
         def __init__(
@@ -33,6 +33,7 @@ except ImportError:
             if connection.vendor == "postgresql":
                 return f"vector({self.dimensions})" if self.dimensions else "vector"
             return "text"
+
 
 # ==============================================================================
 # VALIDATOREN (Security & Limits)

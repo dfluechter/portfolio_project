@@ -46,7 +46,7 @@ def retrieve_relevant_chunks(
 
             query_vec = generate_embedding(clean_query)
             if query_vec:
-                vector_chunks = list(
+                vector_chunks: list[KnowledgeChunk] = list(
                     KnowledgeChunk.objects.filter(embedding__isnull=False)
                     .annotate(distance=CosineDistance("embedding", query_vec))
                     .order_by("distance")[:limit]
@@ -68,9 +68,7 @@ def retrieve_relevant_chunks(
         results = list(KnowledgeChunk.objects.filter(q_filter)[:limit])
 
     if not results:
-        results = list(
-            KnowledgeChunk.objects.all().order_by("-updated_at")[:limit]
-        )
+        results = list(KnowledgeChunk.objects.all().order_by("-updated_at")[:limit])
 
     return results
 
@@ -80,9 +78,7 @@ def format_chunks_for_grounding(chunks: list[KnowledgeChunk]) -> str:
     if not chunks:
         return ""
 
-    parts = [
-        "--- RELEVANTE AUSZÜGE AUS DEM PORTFOLIO (HYBRID RETRIEVAL) ---"
-    ]
+    parts = ["--- RELEVANTE AUSZÜGE AUS DEM PORTFOLIO (HYBRID RETRIEVAL) ---"]
     for i, c in enumerate(chunks, 1):
         target = c.metadata.get("target_id", "")
         target_info = f" [Referenz: #{target}]" if target else ""

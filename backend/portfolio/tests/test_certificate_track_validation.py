@@ -190,9 +190,15 @@ def test_icon_service_security_and_download(tmp_path):
     assert ensure_track_icon("") is None
 
     # 2. Erfolgreicher Download gemockt
-    with patch(
-        "portfolio.services.icon_service.settings.BASE_DIR",
-        tmp_path,
+    with (
+        patch(
+            "portfolio.services.icon_service.settings.BASE_DIR",
+            tmp_path,
+        ),
+        patch(
+            "portfolio.services.icon_service.settings.STATICFILES_DIRS",
+            [],
+        ),
     ):
         mock_response = MagicMock()
         mock_response.status = 200

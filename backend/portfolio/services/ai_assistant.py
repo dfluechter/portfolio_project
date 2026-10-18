@@ -595,12 +595,15 @@ def answer_portfolio_query(
 
         reply_text = response.text or "Keine Antwort generiert."
         extracted_text_sources = extract_sources(reply_text)
-        chunk_sources = extract_chunk_sources(retrieved_chunks) if retrieved_chunks else []
+        chunk_sources = (
+            extract_chunk_sources(retrieved_chunks) if retrieved_chunks else []
+        )
 
         # Zusammenführen und Duplikate anhand target_id eliminieren
         combined_sources: list[dict[str, Any] | str] = []
         seen_targets: set[str] = set()
-        for s in chunk_sources + [s for s in extracted_text_sources if isinstance(s, dict)]:
+        dict_sources = [s for s in extracted_text_sources if isinstance(s, dict)]
+        for s in chunk_sources + dict_sources:
             target = s.get("target_id")
             if target and target not in seen_targets:
                 seen_targets.add(target)

@@ -39,14 +39,10 @@ def build_chunks_for_project(project: Project) -> list[dict[str, Any]]:
 
     skills_list = [s.name for s in project.skills.all()] if project.pk else []
     skills_str = (
-        ", ".join(skills_list)
-        if skills_list
-        else "Keine spezifischen Skills verknüpft"
+        ", ".join(skills_list) if skills_list else "Keine spezifischen Skills verknüpft"
     )
 
-    live_url = getattr(project, "live_url", None) or getattr(
-        project, "demo_url", None
-    )
+    live_url = getattr(project, "live_url", None) or getattr(project, "demo_url", None)
     demo_info = f"Live-Demo: {live_url}" if live_url else ""
     github_info = f"GitHub: {project.github_url}" if project.github_url else ""
     links_str = " | ".join(filter(None, [demo_info, github_info]))
@@ -141,9 +137,7 @@ def build_chunks_for_certificate(cert: Certificate) -> list[dict[str, Any]]:
                 current_len += len(w) + 1
                 if current_len >= MAX_CHUNK_TEXT_CHARS:
                     sub_text = " ".join(current_words)
-                    part_title = (
-                        f"{cert.title} (Inhalt / Transkript Teil {sub_index})"
-                    )
+                    part_title = f"{cert.title} (Inhalt / Transkript Teil {sub_index})"
                     chunks.append(
                         {
                             "source_type": KnowledgeChunk.SOURCE_CERTIFICATE,
@@ -166,18 +160,14 @@ def build_chunks_for_certificate(cert: Certificate) -> list[dict[str, Any]]:
 
             if current_words:
                 sub_text = " ".join(current_words)
-                part_title = (
-                    f"{cert.title} (Inhalt / Transkript Teil {sub_index})"
-                )
+                part_title = f"{cert.title} (Inhalt / Transkript Teil {sub_index})"
                 chunks.append(
                     {
                         "source_type": KnowledgeChunk.SOURCE_CERTIFICATE,
                         "source_id": cert.id,
                         "chunk_index": sub_index,
                         "title": part_title,
-                        "content": (
-                            f"Zertifikatsinhalt ({cert.title}):\n{sub_text}"
-                        ),
+                        "content": (f"Zertifikatsinhalt ({cert.title}):\n{sub_text}"),
                         "metadata": {
                             "target_id": f"cert-{cert.id}",
                             "provider": provider_name,
@@ -216,11 +206,7 @@ def build_chunks_for_skill(skill: Skill) -> list[dict[str, Any]]:
 def build_chunks_for_timeline(entry: TimelineEntry) -> list[dict[str, Any]]:
     """Erzeugt einen Wissens-Chunk für eine Timeline-Station."""
     start = _format_date(entry.start_date, "%m/%Y")
-    end = (
-        "Aktuell"
-        if entry.is_current
-        else _format_date(entry.end_date, "%m/%Y")
-    )
+    end = "Aktuell" if entry.is_current else _format_date(entry.end_date, "%m/%Y")
     period = f"{start} - {end}".strip(" -")
     content = (
         f"Beruflicher Werdegang: {entry.title} bei {entry.organization}\n"
@@ -243,9 +229,7 @@ def build_chunks_for_timeline(entry: TimelineEntry) -> list[dict[str, Any]]:
     ]
 
 
-def sync_chunks_for_instance(
-    instance: Any, generate_embeddings: bool = True
-) -> int:
+def sync_chunks_for_instance(instance: Any, generate_embeddings: bool = True) -> int:
     """Synchronisiert alle Chunks für eine gegebene Model-Instanz."""
     chunk_data_list: list[dict[str, Any]] = []
     source_type = ""
@@ -270,9 +254,7 @@ def sync_chunks_for_instance(
         return 0
 
     # Alte Chunks für diese Instanz entfernen
-    KnowledgeChunk.objects.filter(
-        source_type=source_type, source_id=source_id
-    ).delete()
+    KnowledgeChunk.objects.filter(source_type=source_type, source_id=source_id).delete()
 
     created_count = 0
     for data in chunk_data_list:

@@ -18,9 +18,7 @@ DEFAULT_EMBEDDING_MODEL = "text-embedding-004"
 EMBEDDING_DIMENSIONS = 768
 
 
-def generate_embedding(
-    text: str, model_name: str | None = None
-) -> list[float] | None:
+def generate_embedding(text: str, model_name: str | None = None) -> list[float] | None:
     """Erzeugt eine 768-dimensionale Vektoreinbettung für den übergebenen Text.
 
     Nutzt das Google GenAI SDK (text-embedding-004) unter Einhaltung des
@@ -57,8 +55,8 @@ def generate_embedding(
         logger.warning("Embedding-Budgetprüfung fehlgeschlagen: %s", reason)
         return None
 
-    active_model = model_name or os.getenv(
-        "GEMINI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL
+    active_model: str = (
+        model_name or os.getenv("GEMINI_EMBEDDING_MODEL") or DEFAULT_EMBEDDING_MODEL
     )
 
     try:
@@ -73,9 +71,7 @@ def generate_embedding(
             first_emb = response.embeddings[0]
             if hasattr(first_emb, "values") and first_emb.values:
                 vector = [float(v) for v in first_emb.values]
-        elif hasattr(response, "embedding") and hasattr(
-            response.embedding, "values"
-        ):
+        elif hasattr(response, "embedding") and hasattr(response.embedding, "values"):
             vector = [float(v) for v in response.embedding.values]
 
         if vector and len(vector) == EMBEDDING_DIMENSIONS:

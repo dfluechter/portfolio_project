@@ -89,7 +89,7 @@ def health_check_view(request):
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.exception("Health-Check fehlgeschlagen: Datenbank nicht erreichbar.")
         return JsonResponse(
             {"status": "error", "database": "unavailable"},
@@ -282,7 +282,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
                     )
                 try:
                     ensure_certificate_in_storage(instance or serializer.instance)
-                except Exception as err:  # noqa: BLE001
+                except Exception as err:
                     logger.exception(
                         "Fehler beim Übertragen des Zertifikats in den S3-Storage bei Veröffentlichung."
                     )
@@ -348,7 +348,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
                 {"detail": str(err)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("Fehler bei der Generierung der Presigned-Upload-URL.")
             return Response(
                 {"detail": "S3-Presigned-URL konnte nicht erzeugt werden."},
@@ -374,7 +374,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
             )
         try:
             ensure_certificate_in_storage(cert)
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception(
                 "Fehler beim Übertragen des Zertifikats ID %s in den S3-Storage bei Veröffentlichung.",
                 cert.pk,
@@ -384,7 +384,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         cert.is_published = True
-        cert.save(update_fields=["is_published"])
+        cert.save(update_fields=["is_published", "pdf_file", "storage_key"])
         return Response({"status": "published", "is_published": True})
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
@@ -473,7 +473,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
                     "source_type": result.source_type,
                 }
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("Fehler bei der On-Demand-Metadatenextraktion.")
             return Response(
                 {"detail": "Fehler bei der Metadatenanalyse des Dokuments."},
@@ -583,7 +583,7 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
                 {"detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception(
                 "Unerwarteter Fehler beim Freigeben des Pending-Zertifikats."
             )
@@ -610,7 +610,7 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
                 {"detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception(
                 "Unerwarteter Fehler beim Ablehnen des Pending-Zertifikats."
             )
@@ -688,7 +688,7 @@ class AIChatView(APIView):
         try:
             result = answer_portfolio_query(message, history)
             return Response(result, status=status.HTTP_200_OK)
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception(
                 "Unerwarteter Fehler bei der Anfrage an den KI-Assistenten."
             )
@@ -753,7 +753,7 @@ class PasswordResetRequestView(APIView):
                 to = [recipient]
                 try:
                     djoser_settings.EMAIL.password_reset(request, context).send(to)
-                except Exception:  # noqa: BLE001
+                except Exception:
                     logger.exception(
                         "Fehler beim Versenden der Passwort-Reset-Mail an %s", recipient
                     )
