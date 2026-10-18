@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ── 1. BACKEND QUALITY & TESTS ──
   backend-lint-test:
@@ -37,7 +41,7 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: 'ci-testing'
+          branch_name: ci-${{ github.run_id }}-${{ github.run_attempt }}
           username: neondb_owner
           database: neondb
 
@@ -75,7 +79,7 @@ jobs:
 
       - name: Run API & Unit Tests with Coverage
         env:
-          DATABASE_URL: ${{ steps.create-branch.outputs.db_url_with_pooler }}
+          DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
           DIRECT_DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
           SECRET_KEY: "django-insecure-ci-test-secret-key-at-least-32-chars-long-for-jwt"
           DEBUG: "False"
