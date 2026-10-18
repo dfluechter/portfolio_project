@@ -174,7 +174,9 @@ class TestChunkingService:
     def test_sync_and_delete_chunks_for_instance_and_edge_cases(self):
         # Unsaved / unsupported instance returns 0
         assert sync_chunks_for_instance(object(), generate_embeddings=False) == 0
-        assert sync_chunks_for_instance(Skill(name="NoPK"), generate_embeddings=False) == 0
+        assert (
+            sync_chunks_for_instance(Skill(name="NoPK"), generate_embeddings=False) == 0
+        )
 
         skill = Skill.objects.create(name="Python", category=SkillCategory.BACKEND)
         with patch(

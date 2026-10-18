@@ -195,7 +195,7 @@ describe('CertificateEditModal Component', () => {
       provider: 1,
       pdf_file: 'https://example.com/cert.pdf',
       tracks: [],
-      is_published: false,
+      is_published: true,
     });
 
     renderWithProviders(
@@ -209,7 +209,15 @@ describe('CertificateEditModal Component', () => {
     const publishBtn = screen.getByRole('button', {
       name: /Speichern & Veröffentlichen/i,
     });
-    fireEvent.click(publishBtn);
+    expect(publishBtn).toBeDisabled();
+    expect(
+      screen.getByText('* Min. 1 Track für Veröffentlichung erforderlich')
+    ).toBeInTheDocument();
+
+    const saveBtn = screen.getByRole('button', {
+      name: /^Speichern$/i,
+    });
+    fireEvent.click(saveBtn);
 
     expect(
       screen.getByText(
