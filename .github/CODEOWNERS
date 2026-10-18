@@ -1,0 +1,46 @@
+# ==============================================================================
+# CODEOWNERS — Verbindliche Pull-Request-Reviews für kritische Systempfade
+# ==============================================================================
+# Syntax: <Pfad-Pattern> <GitHub-User oder @org/team-slug>
+# Letzte passende Regel gewinnt (Reihenfolge: von allgemein zu spezifisch).
+# Bei Nutzung einer GitHub Organization können hier zusätzlich Teams wie
+# @org/devops, @org/backend, @org/frontend oder @org/security ergänzt werden.
+# ==============================================================================
+
+# 1. Globaler Fallback (Standard-Verantwortlicher für das gesamte Monorepo)
+*                                           @dfluechter
+
+# 2. Kritische CI/CD-Workflows, Build-Hooks & Cloud-Deployment (DevOps / Infra)
+/.github/                                   @dfluechter
+/.github/workflows/                         @dfluechter
+/.github/dependabot.yml                     @dfluechter
+/render.yaml                                @dfluechter
+/build.sh                                   @dfluechter
+/backend/build.sh                           @dfluechter
+
+# 3. Backend Core, Security-Settings, Datenbank-Migrationen & Dependencies
+/backend/core/                              @dfluechter
+/backend/core/settings.py                   @dfluechter
+/backend/core/settings_test.py              @dfluechter
+/backend/portfolio/migrations/              @dfluechter
+/backend/portfolio/permissions.py           @dfluechter
+/backend/portfolio/throttles.py             @dfluechter
+/backend/pyproject.toml                     @dfluechter
+/backend/uv.lock                            @dfluechter
+
+# 4. RAG Portfolio-Copilot, S3-Storage & OCR-Pipelines
+/backend/portfolio/services/                @dfluechter
+/backend/portfolio/signals.py               @dfluechter
+
+# 5. Frontend Auth-Lifecycle, API-Interceptors & Build-Konfiguration
+/frontend/src/api/                          @dfluechter
+/frontend/src/context/                      @dfluechter
+/frontend/package.json                      @dfluechter
+/frontend/package-lock.json                 @dfluechter
+/frontend/vite.config.ts                    @dfluechter
+
+# 6. Architektur-Dokumentation, ADRs & Agenten-Schutzregeln
+/AGENTS.md                                  @dfluechter
+/.agents/                                   @dfluechter
+/docs/                                      @dfluechter
+/docs/adrs/                                 @dfluechter

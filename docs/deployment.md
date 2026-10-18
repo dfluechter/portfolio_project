@@ -108,6 +108,15 @@ Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_projec
 4. **`deploy`**:
    - Triggert bei erfolgreichem Push auf `main` den Render Deploy Hook via `curl`.
 
+### 3.1 Code Ownership & PR-Governance (`.github/CODEOWNERS`)
+Über [`.github/CODEOWNERS`](file:///d:/dev/portfolio_project/.github/CODEOWNERS) sind kritische Pfade im Repository explizit geschützt (`@dfluechter` bzw. erweiterbar auf GitHub-Teams wie `@org/devops` oder `@org/security`):
+- **CI/CD & Deployment:** `/.github/workflows/`, `/render.yaml`, `/build.sh`, `/backend/build.sh`
+- **Backend Security & Schema:** `/backend/core/settings.py`, `/backend/portfolio/migrations/`, `/backend/portfolio/services/`, `/backend/pyproject.toml`
+- **Frontend Auth & Build:** `/frontend/src/api/`, `/frontend/src/context/`, `/frontend/vite.config.ts`
+- **Governance & Schutzregeln:** `/AGENTS.md`, `/.agents/`, `/docs/adrs/`
+
+In Kombination mit der GitHub Branch-Protection-Regel *"Require review from Code Owners"* auf `main` erzwingt dies automatische Review-Zuweisungen bei Pull Requests auf kritischen Infrastruktur- und Sicherheitspfaden.
+
 ---
 
 ## 4. Benötigte Secrets & Umgebungsvariablen
