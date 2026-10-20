@@ -45,6 +45,7 @@ omit = [
     "core/asgi.py",
     "core/wsgi.py",
     "portfolio/management/commands/*",
+    "portfolio/migrations/*",
 ]
 
 [tool.ruff]

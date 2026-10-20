@@ -15,8 +15,14 @@ staticfiles/
 .pytest_cache/
 .mypy_cache/
 .coverage
+.coverage.*
+htmlcov/
 test_media/
 .DS_Store
+
+# Frontend Build & Dependencies
+frontend/node_modules/
+frontend/dist/
 
 *.egg-info/
 

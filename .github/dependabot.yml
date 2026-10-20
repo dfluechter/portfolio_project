@@ -1,19 +1,25 @@
 version: 2
 updates:
-  # Maintain dependencies for pip / uv
-  - package-ecosystem: "pip"
-    directory: "/"
+  # Maintain Python dependencies via uv in /backend
+  - package-ecosystem: "uv"
+    directory: "/backend"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "chore(deps-backend)"
 
-  # Maintain dependencies for npm
+  # Maintain Node.js dependencies via npm in /frontend
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "chore(deps-frontend)"
 
-  # Maintain dependencies for GitHub Actions
+  # Maintain GitHub Actions workflows
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "chore(deps-ci)"

@@ -1,5 +1,10 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 from django.test import Client
+from rest_framework.test import APIClient
+
+from portfolio.models import PendingCertificate, Track, User
 
 
 @pytest.mark.django_db
@@ -39,3 +44,82 @@ class TestHealthCheckView:
         response = self.client.get("/health_check")
         assert response.status_code == 200
         assert response.json() == {"status": "ok"}
+
+    def test_health_check_returns_503_on_db_failure(self):
+        with patch(
+            "portfolio.views.connection.cursor",
+            side_effect=RuntimeError("DB down"),
+        ):
+            response = self.client.get("/health_check")
+        assert response.status_code == 503
+        assert response.json()["status"] == "error"
+
+
+@pytest.mark.django_db
+class TestPendingCertificateActionsView:
+    def setup_method(self):
+        self.api_client = APIClient()
+        self.admin = User.objects.create_superuser(
+            email="admin-views@example.com", password="password123"
+        )
+        self.api_client.force_authenticate(user=self.admin)
+        self.track = Track.objects.create(name="Cloud", slug="cloud")
+        self.pending = PendingCertificate.objects.create(
+            original_file_name="cert.pdf",
+            file_path="/tmp/cert.pdf",
+            extracted_text="Extracted text",
+            guessed_title="AWS Cert",
+            guessed_provider="AWS",
+        )
+
+    def test_retrieve_uses_detail_serializer(self):
+        res = self.api_client.get(f"/api/pending-certificates/{self.pending.id}/")
+        assert res.status_code == 200
+        assert "extracted_text" in res.json()
+
+    def test_approve_validates_track_ids_and_promotes(self):
+        # 1. Ungültiger Typ für track_ids
+        res_bad_type = self.api_client.post(
+            f"/api/pending-certificates/{self.pending.id}/approve/",
+            {"track_ids": "not-a-list"},
+            format="json",
+        )
+        assert res_bad_type.status_code == 400
+
+        # 2. Nicht-numerische Track-ID
+        res_nan = self.api_client.post(
+            f"/api/pending-certificates/{self.pending.id}/approve/",
+            {"track_ids": ["abc"]},
+            format="json",
+        )
+        assert res_nan.status_code == 400
+
+        # 3. Nicht existierende Track-ID
+        res_missing = self.api_client.post(
+            f"/api/pending-certificates/{self.pending.id}/approve/",
+            {"track_ids": [999999]},
+            format="json",
+        )
+        assert res_missing.status_code == 400
+
+        # 4. Erfolgreiche Freigabe mit gültiger Track-ID
+        fake_cert = MagicMock()
+        fake_cert.id = 77
+        with patch(
+            "portfolio.views.promote_pending_certificate", return_value=fake_cert
+        ):
+            res_ok = self.api_client.post(
+                f"/api/pending-certificates/{self.pending.id}/approve/",
+                {"track_ids": [self.track.id]},
+                format="json",
+            )
+        assert res_ok.status_code == 200
+        assert res_ok.json()["certificate_id"] == 77
+
+    def test_reject_pending_certificate(self):
+        with patch("portfolio.views.reject_pending_certificate"):
+            res = self.api_client.post(
+                f"/api/pending-certificates/{self.pending.id}/reject/"
+            )
+        assert res.status_code == 200
+        assert res.json()["detail"] == "Abgelehnt."

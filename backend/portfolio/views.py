@@ -561,15 +561,25 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            tracks = []
+            valid_pks = []
             for track_id in track_ids:
                 try:
-                    tracks.append(Track.objects.get(pk=track_id))
-                except (Track.DoesNotExist, ValueError, TypeError):
+                    valid_pks.append(int(track_id))
+                except (ValueError, TypeError):
                     return Response(
                         {"detail": f"Track {track_id} nicht gefunden."},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+            track_map = Track.objects.in_bulk(valid_pks)
+            tracks = []
+            for raw_id, pk_val in zip(track_ids, valid_pks, strict=False):
+                track_obj = track_map.get(pk_val)
+                if track_obj is None:
+                    return Response(
+                        {"detail": f"Track {raw_id} nicht gefunden."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                tracks.append(track_obj)
 
         try:
             cert = promote_pending_certificate(
@@ -661,7 +671,17 @@ class AIChatView(APIView):
                 "type": "object",
                 "properties": {
                     "reply": {"type": "string"},
-                    "sources": {"type": "array", "items": {"type": "string"}},
+                    "sources": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "title": {"type": "string"},
+                                "target_id": {"type": "string"},
+                                "type": {"type": "string"},
+                            },
+                        },
+                    },
                 },
             },
             400: {"type": "object", "properties": {"detail": {"type": "string"}}},
