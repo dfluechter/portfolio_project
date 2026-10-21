@@ -1,0 +1,27 @@
+# <type>(<scope>): <subject>
+# |<----  Verwende imperative Präsensform (z. B. "add", nicht "added")  ---->|
+#
+# Erlaubte Typen:
+#   feat:     Ein neues Feature für das Portfolio oder Admin-Dashboard
+#   fix:      Behebung eines Bugs
+#   docs:     Ausschließliche Änderungen an der Dokumentation
+#   style:    Code-Formatierung, Whitespace, Semikolons (keine Logikänderung)
+#   refactor: Code-Umstrukturierung ohne Feature- oder Bug-Änderung
+#   perf:     Performance-Optimierung
+#   test:     Hinzufügen oder Anpassen von Tests
+#   build:    Änderungen am Build-System (z. B. Vite, npm, uv)
+#   ci:       Änderungen an CI/CD-Pipelines (z. B. GitHub Actions, Render)
+#   chore:    Sonstige Aufgaben ohne Produktions-Code-Änderung
+#   revert:   Zurücksetzen eines früheren Commits
+#
+# Beispiel:
+#   feat(auth): add caps lock indicator on login password field
+#   fix(deploy): ensure uv availability in render build container
+#   docs(deployment): add build skip criteria for docs and style commits
+#
+# ----------------------------------------------------------------------
+# Längere Beschreibung (optional, Details zum Warum und Wie):
+#
+# ----------------------------------------------------------------------
+# Referenzen auf Issues (optional):
+# Closes #123
