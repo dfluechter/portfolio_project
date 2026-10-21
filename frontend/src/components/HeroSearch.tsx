@@ -36,7 +36,6 @@ export const HeroSearch: React.FC = () => {
   const { data: certificates = [] } = usePublishedCertificates();
   const { data: timeline = [] } = useTimeline();
 
-
   // Gefilterte Ergebnisse über alle Datensätze hinweg (priorisiert deferred query)
   const results = useMemo(() => {
     const query = deferredSearchTerm.trim().toLowerCase();
@@ -175,12 +174,10 @@ export const HeroSearch: React.FC = () => {
 
   return (
     <div ref={containerRef} className="relative w-full max-w-2xl mx-auto z-30">
-      {/* Search Input Container mit animiertem Glow */}
+      {/* Search Input Container mit gestochen scharfem Command-Bar-Rahmen */}
       <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-500 rounded-2xl blur-md opacity-25 group-focus-within:opacity-60 transition duration-500" />
-
-        <div className="relative flex items-center bg-white dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-indigo-950/20 px-4 py-3">
-          <Search className="w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors mr-3 shrink-0" />
+        <div className="relative flex items-center bg-white dark:bg-slate-900/90 backdrop-blur-xl border border-slate-300/90 dark:border-slate-800 group-focus-within:border-indigo-600 dark:group-focus-within:border-indigo-400 group-focus-within:ring-4 group-focus-within:ring-indigo-500/10 rounded-2xl shadow-lg shadow-slate-200/40 dark:shadow-indigo-950/20 px-4 py-3 transition-all duration-200">
+          <Search className="w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors mr-3 shrink-0" aria-hidden="true" />
 
           <input
             ref={inputRef}
@@ -204,13 +201,13 @@ export const HeroSearch: React.FC = () => {
                 inputRef.current?.focus();
               }}
               aria-label="Suchbegriff löschen"
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mr-2 shrink-0"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mr-2 shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           )}
 
-          <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-mono text-slate-400 shrink-0">
+          <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-mono text-slate-400 shrink-0 select-none">
             <span>ESC</span>
           </div>
         </div>
@@ -229,7 +226,7 @@ export const HeroSearch: React.FC = () => {
           >
             {results.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-400 space-y-2">
-                <Sparkles className="w-5 h-5 mx-auto text-slate-400/80" />
+                <Sparkles className="w-5 h-5 mx-auto text-slate-400/80" aria-hidden="true" />
                 <p>Keine direkten Treffer für „{searchTerm}“ gefunden.</p>
                 <p className="text-[11px] text-slate-500">
                   Die Sektionen unten werden trotzdem weiterhin gefiltert.
@@ -237,7 +234,7 @@ export const HeroSearch: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-1">
-                <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                   <span>Suchergebnisse</span>
                   <span className="font-mono text-indigo-500">{results.length} Treffer</span>
                 </div>
@@ -253,7 +250,7 @@ export const HeroSearch: React.FC = () => {
                       type="button"
                       onClick={() => handleSelectItem(item)}
                       onMouseEnter={() => setActiveIndex(index)}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between gap-3 transition-colors ${
+                      className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between gap-3 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                         isSelected
                           ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-900 dark:text-indigo-200'
                           : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
@@ -263,7 +260,7 @@ export const HeroSearch: React.FC = () => {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`p-2 rounded-lg shrink-0 ${meta.color}`}>
-                          <Icon className="w-4 h-4" />
+                          <Icon className="w-4 h-4" aria-hidden="true" />
                         </div>
                         <div className="min-w-0">
                           <p className="text-xs font-semibold truncate text-slate-900 dark:text-white">
@@ -281,7 +278,7 @@ export const HeroSearch: React.FC = () => {
                         <span className="text-[10px] px-2 py-0.5 rounded-md font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                           {meta.label}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                        <ChevronRight className="w-4 h-4 text-slate-400" aria-hidden="true" />
                       </div>
                     </button>
                   );

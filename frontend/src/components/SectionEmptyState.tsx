@@ -22,7 +22,7 @@ export const SectionEmptyState: React.FC<SectionEmptyStateProps> = ({
       className="p-8 my-6 text-center rounded-2xl bg-slate-50/80 dark:bg-slate-900/50 border border-dashed border-slate-300 dark:border-slate-800 max-w-xl mx-auto space-y-4"
     >
       <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto border border-indigo-100 dark:border-indigo-500/20 shadow-sm">
-        <SearchX className="w-6 h-6" />
+        <SearchX className="w-6 h-6" aria-hidden="true" />
       </div>
 
       <div className="space-y-1">
@@ -42,9 +42,9 @@ export const SectionEmptyState: React.FC<SectionEmptyStateProps> = ({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm hover:-translate-y-0.5 active:translate-y-0"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200 shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
           Suchfilter zurücksetzen
         </button>
       </div>

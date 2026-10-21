@@ -20,21 +20,21 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
     return (
       <div
         id={`cert-${cert.id}`}
-        className="group rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-5 hover:border-violet-500/50 hover:shadow-lg dark:hover:bg-slate-900/70 transition-all duration-300 flex flex-col justify-between shadow-sm hover:-translate-y-0.5 h-full"
+        className="group rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-5 hover:border-indigo-500/50 hover:shadow-lg dark:hover:bg-slate-900/70 transition-all duration-200 flex flex-col justify-between shadow-sm h-full"
       >
         <div>
           <div className="flex items-center justify-between gap-2 mb-3">
-            <span className="px-2.5 py-1 rounded-md bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 text-violet-600 dark:text-violet-400 text-[11px] font-semibold">
+            <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-mono font-medium">
               {issuerName}
             </span>
-            <span className="text-[11px] text-slate-500 font-medium">
+            <span className="text-[11px] text-slate-500 font-medium font-mono">
               {cert.issued_date
                 ? new Date(cert.issued_date).toLocaleDateString('de-DE')
                 : new Date(cert.uploaded_at).toLocaleDateString('de-DE')}
             </span>
           </div>
 
-          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors line-clamp-2">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200 line-clamp-2">
             {cert.title}
           </h3>
 
@@ -57,13 +57,13 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
                     type="button"
                     onClick={() => onToggleTrack(trackId)}
                     aria-label={`Zertifikat-Track: ${trackObj.name}`}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors inline-flex items-center gap-1.5 ${isSelected
-                      ? 'bg-violet-600 text-white shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400'
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors duration-200 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isSelected
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600 dark:hover:text-indigo-400'
                       }`}
                     title={`Nach Track "${trackObj.name}" filtern`}
                   >
-                    <TrackIcon track={trackObj} className={`w-6 h-6 ${isSelected ? 'text-white' : 'text-violet-600 dark:text-violet-400'}`} />
+                    <TrackIcon track={trackObj} className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`} />
                     <span>{trackObj.name}</span>
                   </button>
                 );
@@ -74,8 +74,8 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
 
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Verifiziert
+            <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Verifiziert</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -84,11 +84,11 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
                 href={cert.credential_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
                 title="Online verifizieren"
               >
-                Online prüfen
-                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Online prüfen</span>
+                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
               </a>
             )}
             {cert.pdf_file ? (
@@ -96,10 +96,10 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
                 href={cert.pdf_file}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
               >
-                PDF
-                <ExternalLink className="w-3.5 h-3.5" />
+                <span>PDF</span>
+                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
               </a>
             ) : (
               <span className="text-xs text-slate-400 font-medium">Im Admin hinterlegt</span>
@@ -222,20 +222,33 @@ export const CertificatesSection: React.FC = () => {
     selectedTrackIds.length === 1 ? trackMap.get(selectedTrackIds[0]) : null;
 
   return (
-    <section id="certificates" className="py-20 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/80 transition-colors">
+    <section id="certificates" className="py-20 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/80 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+        {/* Section Header im Swiss/Architectural Style */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs font-semibold mb-3">
-              <Award className="w-3.5 h-3.5" />
-              Verifizierte Nachweise ({certificates.length}) {isAnyFilterActive && `• ${filteredCertificates.length} gefiltert`}
+            <div className="flex items-center gap-2 mb-2 text-xs font-mono text-indigo-600 dark:text-indigo-400">
+              <span>03 // Credentials & Verification</span>
+              <span className="text-slate-300 dark:text-slate-700">/</span>
+              <span className="inline-flex items-center gap-1.5">
+                <Award className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Verifizierte Nachweise ({certificates.length})</span>
+              </span>
+              {isAnyFilterActive && (
+                <span
+                  role="status"
+                  aria-atomic="true"
+                  className="text-slate-500 dark:text-slate-400 font-sans font-normal"
+                >
+                  • {filteredCertificates.length} gefiltert
+                </span>
+              )}
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
               Zertifikate & Qualifikationen
             </h2>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 max-w-md text-sm">
+          <p className="text-slate-600 dark:text-slate-400 max-w-md text-sm leading-relaxed">
             Offizielle Zertifizierungen aus den Bereichen Backend-Engineering, Cloud-Architektur und Full-Stack Development.
           </p>
         </div>
@@ -246,7 +259,7 @@ export const CertificatesSection: React.FC = () => {
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3">
               {/* Search Input */}
               <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
                 <input
                   type="text"
                   placeholder="Titel, Aussteller suchen..."
@@ -259,9 +272,9 @@ export const CertificatesSection: React.FC = () => {
                     type="button"
                     onClick={clearSearch}
                     aria-label="Suche zurücksetzen"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-0.5"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -274,7 +287,7 @@ export const CertificatesSection: React.FC = () => {
                   key={issuer}
                   type="button"
                   onClick={() => setSelectedIssuer(issuer)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors shadow-sm ${selectedIssuer === issuer
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors duration-200 shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${selectedIssuer === issuer
                     ? 'bg-indigo-600 text-white'
                     : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
                     }`}
@@ -290,16 +303,16 @@ export const CertificatesSection: React.FC = () => {
             <div className="flex flex-col gap-2 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-violet-500" />
+                  <Layers className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
                   Themenpfade / Tracks filtern:
                 </span>
                 {selectedTrackIds.length > 0 && (
                   <button
                     type="button"
                     onClick={resetTracks}
-                    className="text-[11px] font-medium text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1"
+                    className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
                   >
-                    <RotateCcw className="w-3 h-3" />
+                    <RotateCcw className="w-3 h-3" aria-hidden="true" />
                     Alle Tracks anzeigen
                   </button>
                 )}
@@ -310,8 +323,8 @@ export const CertificatesSection: React.FC = () => {
                   type="button"
                   onClick={resetTracks}
                   aria-label={`Alle Zertifikate (${certificates.length})`}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors shadow-sm ${selectedTrackIds.length === 0
-                    ? 'bg-violet-600 text-white shadow-violet-600/30'
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors duration-200 shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${selectedTrackIds.length === 0
+                    ? 'bg-indigo-600 text-white shadow-sm'
                     : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
                     }`}
                 >
@@ -327,16 +340,16 @@ export const CertificatesSection: React.FC = () => {
                       onClick={() => toggleTrack(t.id)}
                       aria-label={`Track-Filter: ${t.name} (${count})`}
                       aria-pressed={isSelected}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-2 shadow-sm border ${isSelected
-                        ? 'bg-violet-600 text-white border-violet-500 shadow-violet-600/30'
-                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-slate-800 hover:border-violet-300 dark:hover:border-violet-700'
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 flex items-center gap-2 shadow-sm border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isSelected
+                        ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                     >
-                      <TrackIcon track={t} className={`w-6 h-6 ${isSelected ? 'text-white' : 'text-violet-600 dark:text-violet-400'}`} />
+                      <TrackIcon track={t} className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`} />
                       <span>{t.name}</span>
                       <span
                         className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${isSelected
-                          ? 'bg-violet-700/60 text-violet-100'
+                          ? 'bg-indigo-700 text-indigo-100'
                           : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                           }`}
                       >
@@ -350,15 +363,15 @@ export const CertificatesSection: React.FC = () => {
           )}
         </div>
 
-        {/* Active Track Banner: Single or Multi-Track */}
+        {/* Active Track Banner im klaren Slate/Indigo-Architekturschema (kein violet/pink gradient) */}
         {selectedTrackIds.length > 0 && (
-          <div className="mb-8 p-4 rounded-2xl bg-gradient-to-r from-violet-500/10 via-indigo-500/5 to-transparent border border-violet-500/20 flex items-start justify-between gap-4">
+          <div className="mb-8 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-indigo-200/80 dark:border-indigo-900/60 flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 shrink-0">
+              <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 shrink-0">
                 {singleActiveTrack ? (
-                  <TrackIcon track={singleActiveTrack} className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                  <TrackIcon track={singleActiveTrack} className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                 ) : (
-                  <Layers className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                  <Layers className="w-6 h-6 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                 )}
               </div>
               <div>
@@ -368,7 +381,7 @@ export const CertificatesSection: React.FC = () => {
                       ? `Lernpfad: ${singleActiveTrack.name}`
                       : `Ausgewählte Lernpfade (${selectedTrackIds.length}): ${activeTrackNames.join(', ')}`}
                   </h3>
-                  <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-2.5 py-0.5 rounded-full">
+                  <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 px-2.5 py-0.5 rounded-full">
                     {filteredCertificates.length} Zertifikat(e)
                   </span>
                 </div>
@@ -382,11 +395,11 @@ export const CertificatesSection: React.FC = () => {
             <button
               type="button"
               onClick={resetTracks}
-              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-white shrink-0 p-1"
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-white shrink-0 p-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
               title="Track-Filter zurücksetzen"
               aria-label="Track-Filter zurücksetzen"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         )}
@@ -395,7 +408,7 @@ export const CertificatesSection: React.FC = () => {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-44 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
+              <div key={n} className="h-44 rounded-xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
             ))}
           </div>
         ) : filteredCertificates.length === 0 ? (
