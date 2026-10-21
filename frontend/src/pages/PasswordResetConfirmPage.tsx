@@ -219,8 +219,10 @@ export const PasswordResetConfirmPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center text-xs text-slate-600 font-mono">
-        &copy; {new Date().getFullYear()} {PORTFOLIO_OWNER_NAME} • All Rights Reserved
+        &copy; {CURRENT_YEAR} {PORTFOLIO_OWNER_NAME} • All Rights Reserved
       </footer>
     </div>
   );
 };
+
+const CURRENT_YEAR = new Date().getFullYear();

@@ -22,6 +22,13 @@ interface ChatHistoryEntry {
   text: string;
 }
 
+let chatMessageSequence = 0;
+
+const createChatMessageId = (prefix: string): string => {
+  chatMessageSequence += 1;
+  return `${prefix}-${chatMessageSequence}`;
+};
+
 const formatChatTimestamp = (date: Date = new Date()): string => {
   return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 };
@@ -351,7 +358,7 @@ export const PortfolioChatWidget: FC = () => {
       setMessages((prev) => [
         ...prev,
         {
-          id: `limit-${Date.now()}`,
+          id: createChatMessageId('limit'),
           role: 'model',
           text: 'Das Sitzungs-Limit für kostenfreie KI-Anfragen wurde erreicht. Zum Schutz vor Token-Überschreitungen wurde der Chat für diese Sitzung deaktiviert.',
           timestamp: formatChatTimestamp(),
@@ -361,7 +368,7 @@ export const PortfolioChatWidget: FC = () => {
     }
 
     const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
+      id: createChatMessageId('user'),
       role: 'user',
       text,
       timestamp: formatChatTimestamp(),
@@ -384,7 +391,7 @@ export const PortfolioChatWidget: FC = () => {
       }
 
       const modelMsg: ChatMessage = {
-        id: `model-${Date.now()}`,
+        id: createChatMessageId('model'),
         role: 'model',
         text: response.reply,
         timestamp: formatChatTimestamp(),
@@ -401,7 +408,7 @@ export const PortfolioChatWidget: FC = () => {
         setIsDisabled(true);
       }
       const errorMsg: ChatMessage = {
-        id: `error-${Date.now()}`,
+        id: createChatMessageId('error'),
         role: 'model',
         text:
           status === 429

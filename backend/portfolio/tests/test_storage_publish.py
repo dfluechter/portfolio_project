@@ -88,3 +88,72 @@ class TestCertificatePublishStorage:
             assert cert.is_published is True
             assert cert.pdf_file and cert.pdf_file.name
             assert default_storage.exists(cert.pdf_file.name)
+
+    def test_find_local_certificate_file_edge_cases(self, tmp_path):
+        cert = Certificate.objects.create(
+            title="nested-cert",
+            provider=self.provider,
+            sha256_hash="edgehash1234567890",
+            is_published=False,
+        )
+        with patch.dict("os.environ", {"CERTIFICATES_PATH": ""}):
+            assert find_local_certificate_file(cert) is None
+
+        with patch.dict(
+            "os.environ", {"CERTIFICATES_PATH": str(tmp_path / "nonexistent")}
+        ):
+            assert find_local_certificate_file(cert) is None
+
+        # Case-insensitive provider dir & recursive fallback
+        other_dir = tmp_path / "udemy"
+        other_dir.mkdir(parents=True)
+        nested_dir = tmp_path / "archive" / "2025"
+        nested_dir.mkdir(parents=True)
+        nested_file = nested_dir / "nested-cert.pdf"
+        nested_file.write_bytes(b"%PDF-nested")
+
+        with patch.dict("os.environ", {"CERTIFICATES_PATH": str(tmp_path)}):
+            found = find_local_certificate_file(cert)
+            assert found == nested_file
+
+    def test_ensure_certificate_in_storage_missing_and_error_paths(self, tmp_path):
+        cert = Certificate.objects.create(
+            title="missing-local-cert",
+            provider=self.provider,
+            sha256_hash="missinghash123456",
+            is_published=False,
+        )
+        with patch.dict("os.environ", {"CERTIFICATES_PATH": str(tmp_path)}):
+            assert ensure_certificate_in_storage(cert) is False
+
+        # Exception in default_storage.exists falls back gracefully
+        cert.pdf_file.name = "certificates/broken.pdf"
+        with (
+            patch(
+                "portfolio.services.storage.default_storage.exists",
+                side_effect=OSError("S3 timeout"),
+            ),
+            patch.dict("os.environ", {"CERTIFICATES_PATH": str(tmp_path)}),
+        ):
+            assert ensure_certificate_in_storage(cert) is False
+
+    def test_get_s3_client_uses_path_style_and_env(self):
+        from portfolio.services.storage import get_s3_client
+
+        with (
+            patch.dict(
+                "os.environ",
+                {
+                    "AWS_S3_ENDPOINT_URL": "https://example.supabase.co/storage/v1/s3",
+                    "AWS_ACCESS_KEY_ID": "key-id",
+                    "AWS_SECRET_ACCESS_KEY": "secret-key",
+                    "AWS_S3_REGION_NAME": "eu-central-1",
+                },
+            ),
+            patch("portfolio.services.storage.boto3.client") as mock_boto,
+        ):
+            get_s3_client()
+            assert mock_boto.called
+            _, kwargs = mock_boto.call_args
+            assert kwargs["endpoint_url"] == "https://example.supabase.co/storage/v1/s3"
+            assert kwargs["aws_access_key_id"] == "key-id"

@@ -31,3 +31,5 @@ PASSWORD_HASHERS = [
 ]
 
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+STATIC_ROOT.mkdir(parents=True, exist_ok=True)

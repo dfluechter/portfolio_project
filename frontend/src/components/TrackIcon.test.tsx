@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { resolveTrackIconUrl, TrackIcon } from './TrackIcon';
+import { resolveTrackIconUrl } from '../utils/mediaUrl';
+import { TrackIcon } from './TrackIcon';
 import type { Track } from '../types';
 
 describe('TrackIcon Component', () => {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Calendar,
   ExternalLink,
@@ -55,6 +55,15 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
 
   // Confirm Modal State
   const [projectToDelete, setProjectToDelete] = useState<{ id: number; title: string } | null>(null);
+
+  // Blob-URLs bei Änderung oder Unmount freigeben, um Browser-Speicherlecks zu vermeiden
+  useEffect(() => {
+    return () => {
+      if (imagePreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const resetForm = () => {
     setEditingProject(null);

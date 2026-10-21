@@ -34,14 +34,14 @@ def build_typed_content_file(data: bytes, suffix: str) -> ContentFile:
     return content_file
 
 
-def _is_s3_configured() -> bool:
+def _is_s3_configured(*, allow_endpoint_fallback: bool = False) -> bool:
     """Prüft, ob S3-Storage über Django-Settings oder Umgebungsvariablen aktiv ist."""
-    env_use_s3 = os.getenv("USE_SUPABASE_S3", "").lower()
-    if env_use_s3 in ("false", "0"):
-        return False
-    if bool(getattr(settings, "USE_SUPABASE_S3", False)) or env_use_s3 in ("true", "1"):
+    if bool(getattr(settings, "USE_SUPABASE_S3", False)):
         return True
-    return bool(os.getenv("AWS_S3_ENDPOINT_URL"))
+    if allow_endpoint_fallback and bool(os.getenv("AWS_S3_ENDPOINT_URL")):
+        return True
+    env_use_s3 = os.getenv("USE_SUPABASE_S3", "").lower()
+    return env_use_s3 in ("true", "1")
 
 
 def find_local_certificate_file(cert: Certificate) -> Path | None:
@@ -197,7 +197,7 @@ def generate_presigned_upload(
     final_content_type = content_type or CONTENT_TYPES[ext]
     bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "portfolio-media")
 
-    if _is_s3_configured():
+    if _is_s3_configured(allow_endpoint_fallback=True):
         try:
             s3_client = get_s3_client()
             url = s3_client.generate_presigned_url(

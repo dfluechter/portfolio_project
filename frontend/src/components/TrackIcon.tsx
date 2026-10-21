@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Layers } from 'lucide-react';
+import { resolveTrackIconUrl } from '../utils/mediaUrl';
 import type { Track } from '../types';
 
 interface TrackIconProps {
@@ -8,23 +9,6 @@ interface TrackIconProps {
   className?: string;
   fallback?: React.ReactNode;
 }
-
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
-
-/**
- * Löst relative Backend-URLs (/static/...) in vollständige Pfade auf.
- */
-export const resolveTrackIconUrl = (iconUrl?: string | null): string => {
-  if (!iconUrl) return '';
-  if (iconUrl.startsWith('http://') || iconUrl.startsWith('https://')) {
-    return iconUrl;
-  }
-  // Im Development-Modus nutzen wir den Vite-Proxy für /static/ (CORS-frei)
-  if (import.meta.env.DEV) {
-    return iconUrl.startsWith('/') ? iconUrl : `/${iconUrl}`;
-  }
-  return `${API_BASE_URL}${iconUrl.startsWith('/') ? '' : '/'}${iconUrl}`;
-};
 
 export const TrackIcon: React.FC<TrackIconProps> = ({
   track,

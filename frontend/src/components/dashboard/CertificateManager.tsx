@@ -31,6 +31,21 @@ interface CertificateManagerProps {
   onNotify: (msg: { type: 'success' | 'error'; text: string }) => void;
 }
 
+const RAW_FILENAME_TITLE_REGEX = /^(1[67][0-9]{10}|share[0-9]+|UC-[a-f0-9-]+|\.trashed-|cert_)/i;
+const FILE_EXTENSION_TITLE_REGEX = /\.(pdf|jpg|png)$/i;
+
+/**
+ * Prüft synchron zur Backend-Filterung (`incomplete=true`), ob ein Zertifikat unvollständige Metadaten aufweist.
+ */
+function isIncompleteCertificate(cert: Certificate): boolean {
+  return (
+    !cert.issued_date ||
+    RAW_FILENAME_TITLE_REGEX.test(cert.title) ||
+    FILE_EXTENSION_TITLE_REGEX.test(cert.title) ||
+    cert.title.includes('certificate')
+  );
+}
+
 export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify }) => {
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -265,7 +280,7 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
             {certificates.map((cert) => {
               const providerName = cert.provider_details?.provider || 'Anbieter';
               const isActionPending = pendingActionId === cert.id;
-              const isIncomplete = !cert.issued_date || cert.title.startsWith('cert_') || cert.title.includes('certificate');
+              const isIncomplete = isIncompleteCertificate(cert);
 
               return (
                 <div
