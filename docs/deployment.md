@@ -92,8 +92,13 @@ In `core/settings.py` prüft Django automatisch, ob ein Migrationsbefehl aktiv i
 
 ## 3. GitHub Actions CI/CD Pipeline
 
-Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_project/.github/workflows/ci.yml) definiert, nutzt eine `concurrency`-Gruppe (`cancel-in-progress: true`) zur Vermeidung überlappender Läufe und umfasst 4 Jobs:
+Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_project/.github/workflows/ci.yml) definiert, nutzt eine `concurrency`-Gruppe (`cancel-in-progress: true`) zur Vermeidung überlappender Läufe und umfasst folgende Jobs:
 
+0. **`evaluate-commit` (Erkennung & Skip unnötiger Builds)**:
+   - Prüft die HEAD-Commit-Message bzw. den PR-Titel auf Conventional-Commit-Typen (`docs:` oder `style:`, optional mit Scope z. B. `docs(readme):` oder `style(css):`).
+   - Wenn der Commit ausschließlich Dokumentation oder Code-Formatting/Styles betrifft, setzt der Job `skip_build_and_deploy=true`.
+   - Dadurch werden nachfolgend der Produktions-Artefakt-Build (`backend-build`) und das automatische Server-Deployment (`deploy`) übersprungen.
+   - Tests und Linter (`backend-lint-test`, `frontend-lint-test`) laufen dennoch, um Format- und Qualitätskriterien sicherzustellen.
 1. **`backend-lint-test`**:
    - Startet einen pro Run eindeutigen ephemeren Neon DB-Branch (`ci-${{ github.run_id }}-${{ github.run_attempt }}`) via `neondatabase/create-branch-action@v5`, damit parallele Läufe sich niemals gegenseitig den Test-Branch löschen.
    - Nutzt die direkte Neon-Compute-Verbindung (`steps.create-branch.outputs.db_url`) für `pytest`, um PgBouncer-Locks bei `CREATE DATABASE` und Schema-Migrationen (inkl. `pgvector` HNSW-Index) auszuschließen.
@@ -101,12 +106,15 @@ Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_projec
    - Bereinigt den eindeutigen Neon-Branch nach Testende (`always()`).
 2. **`frontend-lint-test`**:
    - Führt `npm ci`, Oxlint, Vitest (82 Tests) und `npm run build` aus.
-3. **`backend-build`**:
+3. **`backend-build` (Produktions-Artefakt-Verifikation)**:
+   - Läuft nur, wenn `evaluate-commit.outputs.skip_build_and_deploy != 'true'`.
    - Validiert, dass Python 3.13 und Abhängigkeiten mit `uv` fehlerfrei auflösen.
    - Führt `python manage.py check`, `python manage.py makemigrations --check --dry-run` und `python manage.py collectstatic` im Produktionsmodus (`DEBUG=False`) durch.
    - **Wichtig**: Benötigt `defaults: run: working-directory: backend`.
-4. **`deploy`**:
-   - Triggert bei erfolgreichem Push auf `main` den Render Deploy Hook via `curl`.
+4. **`deploy` (Zero-Downtime Server-Deployment)**:
+   - Läuft nur bei erfolgreichem Push auf `main` und wenn `evaluate-commit.outputs.skip_build_and_deploy != 'true'`.
+   - Triggert den Render Deploy Hook via `curl` mit Retry-Logik.
+   - In [render.yaml](file:///d:/dev/portfolio_project/render.yaml) sind `autoDeployTrigger: off` und `buildFilter` (ignoriert `*.md`, `docs/**`) hinterlegt, sodass Render nicht bei jedem Git-Push unkoordiniert neu baut, sondern strikt dem GitHub Actions Freigabe-Signal folgt.
 
 ### 3.1 Code Ownership & PR-Governance (`.github/CODEOWNERS`)
 Über [`.github/CODEOWNERS`](file:///d:/dev/portfolio_project/.github/CODEOWNERS) sind kritische Pfade im Repository explizit geschützt (`@dfluechter` bzw. erweiterbar auf GitHub-Teams wie `@org/devops` oder `@org/security`):

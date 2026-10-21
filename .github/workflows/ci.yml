@@ -14,6 +14,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── 0. EVALUATE COMMIT & WORKFLOW SKIP ──
+  evaluate-commit:
+    name: 🔍 Check Commit Type
+    runs-on: ubuntu-latest
+    outputs:
+      skip_build_and_deploy: ${{ steps.check.outputs.skip }}
+      commit_type: ${{ steps.check.outputs.type }}
+    steps:
+      - name: Inspect Commit Message
+        id: check
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message || github.event.pull_request.title || '' }}
+        run: |
+          set -euo pipefail
+          FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
+          echo "Prüfe Commit: $FIRST_LINE"
+
+          # Erkennung von Conventional Commits mit Typ docs oder style (z. B. "docs:", "docs(readme):", "style:", "style(css):")
+          if echo "$FIRST_LINE" | grep -Eq '^(docs|style)(\([a-zA-Z0-9_.-]+\))?!?:'; then
+            MATCHED_TYPE=$(echo "$FIRST_LINE" | sed -E 's/^([a-z]+).*/\1/')
+            echo "::notice::Commit-Typ '$MATCHED_TYPE' erkannt. Produktions-Artefakt-Build und Server-Deployment werden übersprungen."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "type=$MATCHED_TYPE" >> "$GITHUB_OUTPUT"
+          else
+            echo "Commit erfordert regulären Build & Deployment-Zyklus."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "type=standard" >> "$GITHUB_OUTPUT"
+          fi
+
   # ── 1. BACKEND QUALITY & TESTS ──
   backend-lint-test:
     name: 🐍 Backend Lint & Test
@@ -135,7 +164,8 @@ jobs:
   # ── 3. BUILD VERIFICATION (BACKEND) ──
   backend-build:
     name: 📦 Verify Backend Build
-    needs: [backend-lint-test]
+    needs: [backend-lint-test, evaluate-commit]
+    if: needs.evaluate-commit.outputs.skip_build_and_deploy != 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -177,8 +207,8 @@ jobs:
   # ── 4. DEPLOY TO RENDER ──
   deploy:
     name: 🚀 Deploy to Render
-    needs: [backend-build, frontend-lint-test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [backend-build, frontend-lint-test, evaluate-commit]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.evaluate-commit.outputs.skip_build_and_deploy != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render Deploy Hook
