@@ -55,8 +55,7 @@ jobs:
       - name: Set up Python 3.13
         uses: actions/setup-python@v7
         with:
-          # Liest die Python-Version direkt aus der pyproject.toml im Backend
-          python-version-file: "backend/pyproject.toml"
+          python-version: "3.13"
 
       - name: Install dependencies
         run: uv sync --frozen --all-groups
@@ -161,7 +160,7 @@ jobs:
       - name: Set up Python 3.13
         uses: actions/setup-python@v7
         with:
-          python-version-file: "backend/pyproject.toml"
+          python-version: "3.13"
 
       - name: Install production dependencies
         run: uv sync --frozen --no-dev

@@ -32,4 +32,7 @@ PASSWORD_HASHERS = [
 
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
+# Verhindert redundante SELECT-1-Roundtrips vor jedem APIClient-Request in Tests (insb. gegen Remote-Neon in CI)
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = False
+
 STATIC_ROOT.mkdir(parents=True, exist_ok=True)

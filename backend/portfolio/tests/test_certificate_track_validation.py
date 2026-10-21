@@ -221,3 +221,25 @@ def test_icon_service_security_and_download(tmp_path):
                 result_cached = ensure_track_icon("database")
                 assert result_cached == "/static/img/icons/database.svg"
                 mock_url.assert_not_called()
+
+            # 4. STATICFILES_DIRS gesetzt & HTTPError / generische Exception beim Download
+            with patch(
+                "portfolio.services.icon_service.settings.STATICFILES_DIRS",
+                [tmp_path / "custom_static"],
+            ):
+                import urllib.error
+
+                http_err = urllib.error.HTTPError(
+                    url="https://example.com",
+                    code=404,
+                    msg="Not Found",
+                    hdrs=None,  # type: ignore[arg-type]
+                    fp=None,
+                )
+                with patch("urllib.request.urlopen", side_effect=http_err):
+                    assert ensure_track_icon("missing-icon") is None
+
+                with patch(
+                    "urllib.request.urlopen", side_effect=OSError("Network down")
+                ):
+                    assert ensure_track_icon("timeout-icon") is None

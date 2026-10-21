@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -5,10 +6,23 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from rest_framework.test import APIClient
 
-from portfolio.models import Certificate, Provider, Track, User
+from portfolio.models import (
+    Certificate,
+    PendingCertificate,
+    PendingCertificateStatus,
+    Provider,
+    Track,
+    User,
+)
+from portfolio.services.promotion import (
+    PromotionError,
+    promote_pending_certificate,
+    reject_pending_certificate,
+)
 from portfolio.services.storage import (
     ensure_certificate_in_storage,
     find_local_certificate_file,
+    get_s3_client,
 )
 
 
@@ -138,8 +152,6 @@ class TestCertificatePublishStorage:
             assert ensure_certificate_in_storage(cert) is False
 
     def test_get_s3_client_uses_path_style_and_env(self):
-        from portfolio.services.storage import get_s3_client
-
         with (
             patch.dict(
                 "os.environ",
@@ -157,3 +169,48 @@ class TestCertificatePublishStorage:
             _, kwargs = mock_boto.call_args
             assert kwargs["endpoint_url"] == "https://example.supabase.co/storage/v1/s3"
             assert kwargs["aws_access_key_id"] == "key-id"
+
+    def test_promotion_error_branches(self, tmp_path):
+        cert_file = tmp_path / "promo.pdf"
+        cert_file.write_bytes(b"%PDF-1.4 promo")
+
+        pending = PendingCertificate.objects.create(
+            file_path=str(cert_file),
+            original_file_name="promo.pdf",
+            guessed_title="Promo Title",
+            guessed_provider="Udemy",
+            status=PendingCertificateStatus.PENDING,
+        )
+
+        # Symlink check
+        with (
+            patch.object(Path, "is_symlink", return_value=True),
+            pytest.raises(PromotionError, match="Symlink"),
+        ):
+            promote_pending_certificate(pending)
+
+        # Hash computation failure
+        with (
+            patch(
+                "portfolio.services.promotion.compute_file_hash",
+                side_effect=OSError("Disk error"),
+            ),
+            pytest.raises(PromotionError, match="Hash-Berechnung"),
+        ):
+            promote_pending_certificate(pending)
+
+        # Storage upload failure
+        with (
+            patch(
+                "django.db.models.fields.files.FieldFile.save",
+                side_effect=OSError("S3 down"),
+            ),
+            pytest.raises(PromotionError, match="Upload der Dateikopie"),
+        ):
+            promote_pending_certificate(pending)
+
+        # Reject and re-reject
+        reject_pending_certificate(pending)
+        assert pending.status == PendingCertificateStatus.REJECTED
+        with pytest.raises(PromotionError, match="bereits verarbeitet"):
+            reject_pending_certificate(pending)

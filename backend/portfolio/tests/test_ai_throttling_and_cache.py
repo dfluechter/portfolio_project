@@ -84,3 +84,15 @@ class TestAIChatThrottlingAndCaching:
 
         assert key1 is not None
         assert key1 == key2
+
+    def test_global_budget_throttle_exempts_staff_users(self, test_user):
+        """Authentifizierte Staff-Nutzer im Dashboard sind vom globalen Budget-Cap ausgenommen."""
+        test_user.is_staff = True
+        test_user.save()
+        throttle = AIChatGlobalBudgetThrottle()
+        client = APIClient()
+
+        req = client.post("/api/chat/").wsgi_request
+        req.user = test_user
+
+        assert throttle.get_cache_key(req, None) is None
