@@ -51,7 +51,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
             }`}
           >
-            <AlertTriangle className="w-5 h-5" />
+            <AlertTriangle className="w-5 h-5" aria-hidden="true" />
           </div>
           <h3 id="confirm-modal-title" className="text-base font-bold text-white">
             {title}
@@ -66,14 +66,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-colors"
+            className="cursor-pointer px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
             {cancelText}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${
+            className={`cursor-pointer px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-200 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
               isDestructive
                 ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/20'
                 : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20'

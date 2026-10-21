@@ -15,7 +15,7 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 });
 
-// JSDOM Mock für window.scrollTo & Element.prototype.scrollIntoView (verhindert JSDOM-Warnungen)
+// JSDOM Mock für window.scrollTo & Element.prototype.scrollIntoView
 Object.defineProperty(window, 'scrollTo', {
   writable: true,
   value: () => {},
@@ -23,4 +23,13 @@ Object.defineProperty(window, 'scrollTo', {
 
 if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
+}
+
+// JSDOM Mock für ResizeObserver (benötigt von react-use-measure)
+if (typeof window !== 'undefined' && !window.ResizeObserver) {
+  window.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof window.ResizeObserver;
 }

@@ -1,7 +1,19 @@
-import React from 'react';
-import { ExternalLink, Mail, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Copy, ExternalLink, Mail, MapPin } from 'lucide-react';
 
 export const ContactSection: React.FC = () => {
+  const [copied, setCopied] = useState(false);
+  const emailAddress = 'kontakt@dfluechter.de';
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(emailAddress).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   return (
     <section
       id="contact"
@@ -11,6 +23,9 @@ export const ContactSection: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Left Column: Direct editorial heading & copy */}
           <div className="lg:col-span-5 space-y-4">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-indigo-600 dark:text-indigo-400 font-semibold">
+              05 // Direct Communication
+            </span>
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
               Lass uns in Verbindung treten
             </h2>
@@ -21,27 +36,53 @@ export const ContactSection: React.FC = () => {
 
           {/* Right Column: Structured Contact Ledger */}
           <div className="lg:col-span-7 rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200/90 dark:border-slate-800/90 divide-y divide-slate-200/80 dark:divide-slate-800/80 overflow-hidden shadow-xs">
-            <a
-              href="mailto:kontakt@dfluechter.de"
-              className="group flex items-center justify-between gap-4 p-6 hover:bg-slate-50/80 dark:hover:bg-slate-900 transition-colors"
-            >
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 hover:bg-slate-50/80 dark:hover:bg-slate-900 transition-colors">
+              <a
+                href={`mailto:${emailAddress}`}
+                className="group flex items-center gap-4 focus:outline-none"
+              >
                 <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 flex items-center justify-center transition-colors">
-                  <Mail className="w-5 h-5" />
+                  <Mail className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900 dark:text-white text-sm">
+                  <h3 className="font-semibold text-slate-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     E-Mail schreiben
                   </h3>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    kontakt@dfluechter.de
+                    {emailAddress}
                   </p>
                 </div>
+              </a>
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                  title="E-Mail-Adresse kopieren"
+                  aria-label={copied ? 'E-Mail kopiert' : 'E-Mail kopieren'}
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" />
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Kopiert!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
+                      <span>Kopieren</span>
+                    </>
+                  )}
+                </button>
+                <a
+                  href={`mailto:${emailAddress}`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer shadow-xs"
+                >
+                  <span>Öffnen</span>
+                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                </a>
               </div>
-              <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">
-                Nachricht verfassen
-              </span>
-            </a>
+            </div>
 
             <a
               href="https://github.com/DominikFluechter"
@@ -66,14 +107,14 @@ export const ContactSection: React.FC = () => {
               </div>
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">
                 Repositories ansehen
-                <ExternalLink className="w-3.5 h-3.5" />
+                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
               </span>
             </a>
 
             <div className="flex items-center justify-between gap-4 p-6">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 flex items-center justify-center">
-                  <MapPin className="w-5 h-5" />
+                  <MapPin className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-slate-900 dark:text-white text-sm">

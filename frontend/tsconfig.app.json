@@ -17,6 +17,12 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Path aliases (TypeScript 7+) */
+    "paths": {
+      "@/*": ["./src/*"],
+      "next/link": ["./src/shims/next-link.tsx"]
+    },
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
