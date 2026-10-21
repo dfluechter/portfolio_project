@@ -3,12 +3,25 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def ensure_default_provider(apps, schema_editor):
+    Provider = apps.get_model("portfolio", "Provider")
+    Provider.objects.get_or_create(
+        id=1, defaults={"provider": "Unsortiert (Legacy)", "aktiv": True}
+    )
+    if schema_editor.connection.vendor == "postgresql":
+        with schema_editor.connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT setval(pg_get_serial_sequence('portfolio_provider', 'id'), coalesce(max(id), 1), max(id) IS NOT null) FROM portfolio_provider;"
+            )
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("portfolio", "0002_provider"),
     ]
 
     operations = [
+        migrations.RunPython(ensure_default_provider, migrations.RunPython.noop),
         migrations.CreateModel(
             name="Skill",
             fields=[
