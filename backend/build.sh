@@ -3,6 +3,13 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# Sicherstellen, dass uv verfügbar und lauffähig ist
+if ! command -v uv >/dev/null 2>&1 || ! uv --version >/dev/null 2>&1; then
+    echo "==> uv ist nicht im PATH verfügbar. Installiere Astral uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+fi
+
 echo "==> Installiere Produktionsabhängigkeiten via uv..."
 uv sync --frozen --no-dev
 

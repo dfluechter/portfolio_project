@@ -19,6 +19,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.0
+      - key: UV_VERSION
+        value: "0.5.29"
       - key: DEBUG
         value: "False"
       - key: SECRET_KEY
