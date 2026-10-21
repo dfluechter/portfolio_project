@@ -577,7 +577,7 @@ wheels = [
 
 [[package]]
 name = "djoser"
-version = "2.3.3"
+version = "2.3.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
@@ -585,9 +585,9 @@ dependencies = [
     { name = "djangorestframework-simplejwt" },
     { name = "social-auth-app-django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/35/bc/8931752c12ddc987fc0c729e9b675e2f72e37ebd82f7ca31a10f287de045/djoser-2.3.3.tar.gz", hash = "sha256:6ceeea9898cbdd585f1daa1ee9d46270600c0401dcd2d1db6f7894782006f6a6", size = 35032, upload-time = "2025-07-13T14:36:03.38Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0e/0c/776b9501f04f34fbf87018c4f9b13e0076c54e47be1804a057ae217edb57/djoser-2.3.5.tar.gz", hash = "sha256:861487c21da73563da5c81ea61c3790f433d3e6ea80f4b2c2e9783ea9016c298", size = 33811, upload-time = "2026-10-12T11:20:36.77Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/01/b3/f51273281172ff233a8c16df916282d75502dbc6a06b9b5d01ed3039f8ed/djoser-2.3.3-py3-none-any.whl", hash = "sha256:b97d233b626c26ebccb09f5614420873ad78b8b1fb1459c76475b05319bae567", size = 71905, upload-time = "2025-07-13T14:36:02.385Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/b7/0d8ab682dea33a92caf83f55eb689028c0ba15cbc448b65446a5f213aeed/djoser-2.3.5-py3-none-any.whl", hash = "sha256:4c662040702840f10ed74f5938d13025e177331994c52f7b9fb03cfd32cdaa57", size = 73048, upload-time = "2026-10-12T11:20:35.694Z" },
 ]
 
 [[package]]
