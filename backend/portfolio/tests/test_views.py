@@ -5,6 +5,7 @@ from django.test import Client
 from rest_framework.test import APIClient
 
 from portfolio.models import PendingCertificate, Track, User
+from portfolio.services.promotion import PromotionError
 
 
 @pytest.mark.django_db
@@ -116,6 +117,19 @@ class TestPendingCertificateActionsView:
         assert res_ok.status_code == 200
         assert res_ok.json()["certificate_id"] == 77
 
+    def test_approve_returns_400_on_promotion_error(self):
+        with patch(
+            "portfolio.views.promote_pending_certificate",
+            side_effect=PromotionError("Quelldatei existiert nicht mehr lokal"),
+        ):
+            res = self.api_client.post(
+                f"/api/pending-certificates/{self.pending.id}/approve/",
+                {"track_ids": [self.track.id]},
+                format="json",
+            )
+        assert res.status_code == 400
+        assert res.json()["detail"] == "Quelldatei existiert nicht mehr lokal"
+
     def test_reject_pending_certificate(self):
         with patch("portfolio.views.reject_pending_certificate"):
             res = self.api_client.post(
@@ -123,3 +137,66 @@ class TestPendingCertificateActionsView:
             )
         assert res.status_code == 200
         assert res.json()["detail"] == "Abgelehnt."
+
+    def test_reject_returns_400_on_promotion_error(self):
+        with patch(
+            "portfolio.views.reject_pending_certificate",
+            side_effect=PromotionError("Zertifikat wurde bereits verarbeitet."),
+        ):
+            res = self.api_client.post(
+                f"/api/pending-certificates/{self.pending.id}/reject/"
+            )
+        assert res.status_code == 400
+        assert res.json()["detail"] == "Zertifikat wurde bereits verarbeitet."
+
+
+@pytest.mark.django_db
+class TestTrackViewSet:
+    def setup_method(self):
+        self.api_client = APIClient()
+        self.admin = User.objects.create_superuser(
+            email="admin-tracks@example.com", password="password123"
+        )
+        self.api_client.force_authenticate(user=self.admin)
+
+    def test_perform_create_succeeds_when_ensure_track_icon_fails(self):
+        with patch(
+            "portfolio.views.ensure_track_icon",
+            side_effect=RuntimeError("Icon-Download fehlgeschlagen"),
+        ):
+            response = self.api_client.post(
+                "/api/tracks/",
+                {
+                    "name": "Cloud Architecture",
+                    "slug": "cloud-architecture",
+                    "icon": "cloud",
+                },
+                format="json",
+            )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["name"] == "Cloud Architecture"
+        assert data["slug"] == "cloud-architecture"
+        assert data["icon"] == "cloud"
+        assert Track.objects.filter(slug="cloud-architecture").exists()
+
+    def test_perform_update_succeeds_when_ensure_track_icon_fails(self):
+        track = Track.objects.create(
+            name="DevOps Engineering",
+            slug="devops-engineering",
+            icon="server",
+        )
+        with patch(
+            "portfolio.views.ensure_track_icon",
+            side_effect=RuntimeError("Icon-Download fehlgeschlagen"),
+        ):
+            response = self.api_client.patch(
+                f"/api/tracks/{track.id}/",
+                {"icon": "terminal"},
+                format="json",
+            )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["icon"] == "terminal"
+        track.refresh_from_db()
+        assert track.icon == "terminal"

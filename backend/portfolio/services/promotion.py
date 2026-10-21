@@ -2,11 +2,8 @@ import logging
 import os
 from pathlib import Path
 
-from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils.text import slugify
-
-logger = logging.getLogger(__name__)
 
 from portfolio.models import (
     Certificate,
@@ -19,13 +16,11 @@ from portfolio.services.extractor import (
     compute_file_hash,
     safe_storage_key,
 )
+from portfolio.services.storage import (
+    build_typed_content_file,
+)
 
-CONTENT_TYPES = {
-    ".pdf": "application/pdf",
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-}
+logger = logging.getLogger(__name__)
 
 
 class PromotionError(Exception):
@@ -110,11 +105,7 @@ def promote_pending_certificate(
     except Exception as exc:
         raise PromotionError(f"Quelldatei konnte nicht gelesen werden: {exc}") from exc
 
-    file_content = ContentFile(file_bytes)
-    ext = file_path.suffix.lower()
-    file_content.content_type = CONTENT_TYPES.get(  # type: ignore[attr-defined]
-        ext, "application/octet-stream"
-    )
+    file_content = build_typed_content_file(file_bytes, file_path.suffix)
 
     cert = Certificate(
         title=final_title,

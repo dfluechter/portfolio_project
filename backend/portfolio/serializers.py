@@ -1,3 +1,5 @@
+from typing import Any
+
 from rest_framework import serializers
 
 from .models import (
@@ -69,7 +71,7 @@ class CertificateSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("sha256_hash", "is_published", "uploaded_at")
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         pdf_file = attrs.get("pdf_file") or (
             getattr(self.instance, "pdf_file", None) if self.instance else None
         )
@@ -138,7 +140,7 @@ class TimelineEntrySerializer(serializers.ModelSerializer):
             "created_at",
         )
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         start_date = attrs.get("start_date", getattr(self.instance, "start_date", None))
         end_date = attrs.get("end_date", getattr(self.instance, "end_date", None))
         is_current = attrs.get(
@@ -173,14 +175,15 @@ class TrackSerializer(serializers.ModelSerializer):
             "created_at",
         )
 
-    def get_certificates(self, obj):
+    def get_certificates(self, obj: Track) -> list[dict[str, Any]]:
         request = self.context.get("request")
         user = getattr(request, "user", None)
-        certificates = obj.certificates.all()
+        certificates = list(obj.certificates.all())
         if not (user and user.is_authenticated):
             # In Python filtern, damit das Prefetch des ViewSets genutzt wird
             certificates = [c for c in certificates if c.is_published]
-        return CertificateSerializer(certificates, many=True, context=self.context).data
+        data = CertificateSerializer(certificates, many=True, context=self.context).data
+        return list(data)
 
 
 class PendingCertificateSerializer(serializers.ModelSerializer):

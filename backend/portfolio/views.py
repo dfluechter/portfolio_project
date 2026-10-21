@@ -3,10 +3,11 @@ import logging
 import os
 import tempfile
 from pathlib import Path
+from typing import Any
 
 from django.db import connection
-from django.db.models import Prefetch, ProtectedError, Q
-from django.http import JsonResponse
+from django.db.models import Prefetch, ProtectedError, Q, QuerySet
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status, viewsets
@@ -17,6 +18,7 @@ from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
 )
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
@@ -59,8 +61,29 @@ from .services.storage import (
 
 logger = logging.getLogger(__name__)
 
+PUBLISH_TRACK_REQUIRED_MESSAGE = "Ein Zertifikat kann nur veröffentlicht werden, wenn mindestens ein Track zugewiesen ist."
 
-def api_root_view(request):
+
+def _parse_bool_param(value: object) -> bool | None:
+    """
+    Parst boolesche Query- und Request-Parameter sauber.
+
+    Unterstützt native bool (True/False) und Strings ('true', '1' -> True; 'false', '0' -> False,
+    jeweils case-insensitive). Gibt None zurück, wenn der Wert nicht eindeutig als bool
+    interpretiert werden kann.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        val = value.strip().lower()
+        if val in ("true", "1"):
+            return True
+        if val in ("false", "0"):
+            return False
+    return None
+
+
+def api_root_view(request: HttpRequest) -> HttpResponse:
     """
     Einstiegspunkt für das Headless-Backend:
     Leitet Browser auf Swagger-UI weiter oder liefert JSON-Metadaten.
@@ -81,7 +104,7 @@ def api_root_view(request):
     )
 
 
-def health_check_view(request):
+def health_check_view(request: HttpRequest) -> JsonResponse:
     """
     Health-Check-Endpunkt für Render, Load-Balancer und Monitoring.
     Führt einen Datenbank-Konnektivitäts-Check durch und liefert Status 503 bei DB-Ausfall.
@@ -105,7 +128,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Project]:
         qs = Project.objects.all().prefetch_related("skills")
         if not self.request.user.is_authenticated:
             qs = qs.filter(is_published=True)
@@ -116,14 +139,14 @@ class ProviderViewSet(viewsets.ModelViewSet):
     serializer_class = ProviderSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Provider]:
         qs = Provider.objects.all()
-        has_certs = self.request.query_params.get("has_certificates")
-        if has_certs is not None and has_certs.lower() in ("true", "1"):
+        has_certs = _parse_bool_param(self.request.query_params.get("has_certificates"))
+        if has_certs is True:
             qs = qs.filter(certificates__isnull=False).distinct()
         return qs
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         try:
             return super().destroy(request, *args, **kwargs)
         except ProtectedError:
@@ -141,7 +164,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly,)
     pagination_class = StandardResultsSetPagination
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Certificate]:
         qs = (
             Certificate.objects.all()
             .select_related("provider")
@@ -153,21 +176,18 @@ class CertificateViewSet(viewsets.ModelViewSet):
         if not self.request.user.is_authenticated:
             qs = qs.filter(is_published=True)
             # Falls ein anonymer Nutzer explizit unpublished anfordert: leere Menge zurückgeben
-            is_pub_param = params.get("is_published")
-            if is_pub_param is not None and is_pub_param.lower() in ("false", "0"):
+            is_pub_param = _parse_bool_param(params.get("is_published"))
+            if is_pub_param is False:
                 return qs.none()
+        # 2. Filter nach is_published (nur für eingeloggte Admins/Staff)
         else:
-            # 2. Filter nach is_published (nur für eingeloggte Admins/Staff)
-            is_pub_param = params.get("is_published")
+            is_pub_param = _parse_bool_param(params.get("is_published"))
             if is_pub_param is not None:
-                if is_pub_param.lower() in ("true", "1"):
-                    qs = qs.filter(is_published=True)
-                elif is_pub_param.lower() in ("false", "0"):
-                    qs = qs.filter(is_published=False)
+                qs = qs.filter(is_published=is_pub_param)
 
         # 3. Filter nach unvollständigen Metadaten (Review-Modus)
         # Unvollständig = fehlendes Ausstellungsdatum ODER generierter/roher Dateiname als Titel
-        if params.get("incomplete", "").lower() in ("true", "1"):
+        if _parse_bool_param(params.get("incomplete")) is True:
             qs = qs.filter(
                 Q(issued_date__isnull=True)
                 | Q(
@@ -205,7 +225,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
 
         return qs.distinct()
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         try:
             return super().create(request, *args, **kwargs)
         except S3StorageNotConfiguredError as err:
@@ -214,7 +234,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_501_NOT_IMPLEMENTED,
             )
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: serializers.BaseSerializer) -> None:
         """Berechnet SHA-256 aus der Datei oder verifiziert Direct-S3-Uploads (US 10.2)."""
         pdf_file = self.request.FILES.get("pdf_file")
         storage_key = self.request.data.get("storage_key")
@@ -248,19 +268,20 @@ class CertificateViewSet(viewsets.ModelViewSet):
         else:
             serializer.save(is_published=False)
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: serializers.BaseSerializer) -> None:
         """Erlaubt autorisierten Nutzern das Ändern von Status und Datei bei Updates."""
-        update_kwargs = {}
+        update_kwargs: dict[str, Any] = {}
         storage_key = self.request.data.get("storage_key")
         if storage_key and not self.request.FILES.get("pdf_file"):
             update_kwargs["pdf_file"] = storage_key
             update_kwargs["storage_key"] = storage_key
 
         if "is_published" in self.request.data:
-            is_pub = self.request.data.get("is_published")
-            if isinstance(is_pub, str):
-                is_pub = is_pub.lower() in ("true", "1")
-            is_pub_bool = bool(is_pub)
+            raw_is_published = self.request.data.get("is_published")
+            parsed_is_pub = _parse_bool_param(raw_is_published)
+            is_pub_bool = (
+                parsed_is_pub if parsed_is_pub is not None else bool(raw_is_published)
+            )
             instance = serializer.instance
 
             # Track-Pflicht greift NUR bei Neu-Veröffentlichung (Statuswechsel von False -> True):
@@ -270,15 +291,12 @@ class CertificateViewSet(viewsets.ModelViewSet):
                 has_tracks = (
                     len(tracks_data) > 0
                     if tracks_data is not None
+                    and isinstance(tracks_data, (list, tuple))
                     else (instance and instance.tracks.exists())
                 )
                 if not has_tracks:
                     raise serializers.ValidationError(
-                        {
-                            "detail": (
-                                "Ein Zertifikat kann nur veröffentlicht werden, wenn mindestens ein Track zugewiesen ist."
-                            )
-                        }
+                        {"tracks": PUBLISH_TRACK_REQUIRED_MESSAGE}
                     )
                 try:
                     ensure_certificate_in_storage(instance or serializer.instance)
@@ -326,7 +344,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
         url_path="presigned_upload",
     )
-    def presigned_upload(self, request):
+    def presigned_upload(self, request: Request) -> Response:
         """Erzeugt eine signierte S3-Upload-URL für Direct-to-Storage Uploads zu Supabase S3."""
         filename = (
             request.data.get("filename") if isinstance(request.data, dict) else None
@@ -356,7 +374,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
             )
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
-    def publish(self, request, pk=None):
+    def publish(self, request: Request, pk: str | None = None) -> Response:
         """Dedizierter Endpoint zur Veröffentlichung eines geprüften Zertifikats.
 
         Stellt sicher, dass das Zertifikat im S3-Storage abgelegt wird und bei
@@ -365,11 +383,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
         cert = self.get_object()
         if not cert.is_published and not cert.tracks.exists():
             return Response(
-                {
-                    "detail": (
-                        "Ein Zertifikat kann nur veröffentlicht werden, wenn mindestens ein Track zugewiesen ist."
-                    )
-                },
+                {"detail": PUBLISH_TRACK_REQUIRED_MESSAGE},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
@@ -388,7 +402,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
         return Response({"status": "published", "is_published": True})
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
-    def unpublish(self, request, pk=None):
+    def unpublish(self, request: Request, pk: str | None = None) -> Response:
         """Dedizierter Endpoint zum Zurückziehen eines Zertifikats."""
         cert = self.get_object()
         cert.is_published = False
@@ -396,7 +410,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
         return Response({"status": "unpublished", "is_published": False})
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
-    def extract_metadata(self, request, pk=None):
+    def extract_metadata(self, request: Request, pk: str | None = None) -> Response:
         """Zweistufige On-Demand Extraktion (Textschicht + OCR) für Zertifikat."""
         cert = self.get_object()
         if not cert.pdf_file:
@@ -505,8 +519,8 @@ class TrackViewSet(viewsets.ModelViewSet):
     serializer_class = TrackSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
-    def perform_create(self, serializer):
-        track = serializer.save()
+    def _sync_track_icon(self, track: Track) -> None:
+        """Synchronisiert und sichert das Track-Icon lokal über ensure_track_icon."""
         if track.icon:
             try:
                 ensure_track_icon(track.icon)
@@ -516,16 +530,13 @@ class TrackViewSet(viewsets.ModelViewSet):
                     track.icon,
                 )
 
-    def perform_update(self, serializer):
+    def perform_create(self, serializer: serializers.BaseSerializer) -> None:
         track = serializer.save()
-        if track.icon:
-            try:
-                ensure_track_icon(track.icon)
-            except Exception:  # noqa: BLE001
-                logger.warning(
-                    "Track-Icon '%s' konnte nicht heruntergeladen/gesichert werden.",
-                    track.icon,
-                )
+        self._sync_track_icon(track)
+
+    def perform_update(self, serializer: serializers.BaseSerializer) -> None:
+        track = serializer.save()
+        self._sync_track_icon(track)
 
 
 class PendingCertificateViewSet(viewsets.ModelViewSet):
@@ -535,14 +546,53 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
     serializer_class = PendingCertificateSerializer
     permission_classes = (IsAdminUser,)
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type[serializers.BaseSerializer]:
         """Detail-Ansicht liefert extracted_text mit, Liste nicht."""
         if self.action == "retrieve":
             return PendingCertificateDetailSerializer
         return PendingCertificateSerializer
 
+    def _resolve_tracks(
+        self, track_ids: object
+    ) -> tuple[list[Track] | None, Response | None]:
+        """
+        Validiert und löst eine Liste von Track-IDs in Track-Instanzen auf.
+        Liefert (tracks, None) bei Erfolg oder (None, error_response) bei Validierungsfehlern.
+        """
+        if track_ids is None:
+            return None, None
+
+        if not isinstance(track_ids, (list, tuple)):
+            return None, Response(
+                {"detail": "Der Parameter 'track_ids' muss eine Liste von IDs sein."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        valid_pks: list[int] = []
+        for track_id in track_ids:
+            try:
+                valid_pks.append(int(track_id))
+            except (ValueError, TypeError):
+                return None, Response(
+                    {"detail": f"Track {track_id} nicht gefunden."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        track_map = Track.objects.in_bulk(valid_pks)
+        tracks: list[Track] = []
+        for raw_id, pk_val in zip(track_ids, valid_pks, strict=False):
+            track_obj = track_map.get(pk_val)
+            if track_obj is None:
+                return None, Response(
+                    {"detail": f"Track {raw_id} nicht gefunden."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            tracks.append(track_obj)
+
+        return tracks, None
+
     @action(detail=True, methods=["post"])
-    def approve(self, request, pk=None):
+    def approve(self, request: Request, pk: str | None = None) -> Response:
         pending = self.get_object()
         title = request.data.get("title") if isinstance(request.data, dict) else None
         provider_name = (
@@ -552,34 +602,9 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
             request.data.get("track_ids") if isinstance(request.data, dict) else None
         )
 
-        tracks = None
-        if track_ids is not None:
-            if not isinstance(track_ids, (list, tuple)):
-                return Response(
-                    {
-                        "detail": "Der Parameter 'track_ids' muss eine Liste von IDs sein."
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            valid_pks = []
-            for track_id in track_ids:
-                try:
-                    valid_pks.append(int(track_id))
-                except (ValueError, TypeError):
-                    return Response(
-                        {"detail": f"Track {track_id} nicht gefunden."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-            track_map = Track.objects.in_bulk(valid_pks)
-            tracks = []
-            for raw_id, pk_val in zip(track_ids, valid_pks, strict=False):
-                track_obj = track_map.get(pk_val)
-                if track_obj is None:
-                    return Response(
-                        {"detail": f"Track {raw_id} nicht gefunden."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                tracks.append(track_obj)
+        tracks, error_response = self._resolve_tracks(track_ids)
+        if error_response is not None:
+            return error_response
 
         try:
             cert = promote_pending_certificate(
@@ -611,7 +636,7 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
         )
 
     @action(detail=True, methods=["post"])
-    def reject(self, request, pk=None):
+    def reject(self, request: Request, pk: str | None = None) -> Response:
         pending = self.get_object()
         try:
             reject_pending_certificate(pending)
@@ -687,7 +712,7 @@ class AIChatView(APIView):
             400: {"type": "object", "properties": {"detail": {"type": "string"}}},
         },
     )
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         if not isinstance(request.data, dict):
             return Response(
                 {"detail": "Der Parameter 'message' ist erforderlich."},
@@ -747,7 +772,7 @@ class PasswordResetRequestView(APIView):
             200: {"type": "object", "properties": {"detail": {"type": "string"}}}
         },
     )
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         from django.contrib.auth import get_user_model
         from djoser.compat import get_user_email
         from djoser.conf import settings as djoser_settings

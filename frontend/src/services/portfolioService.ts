@@ -15,15 +15,27 @@ import type {
   Track,
 } from '../types';
 
+/**
+ * Generische, strikt typisierte Hilfsfunktion zum Entpacken von Listen-Antworten der DRF-API.
+ * Unterstützt direkte Arrays (T[]) sowie paginierte Antworten (PaginatedResponse<T> mit .results).
+ */
+export function unwrapListResponse<T>(
+  data: T[] | PaginatedResponse<T> | undefined | null
+): T[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+    return data.results;
+  }
+  return [];
+}
+
 export const portfolioService = {
   // Projekte abrufen
   async getProjects(): Promise<Project[]> {
     const { data } = await apiClient.get<Project[] | PaginatedResponse<Project>>('/api/projects/');
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray((data as PaginatedResponse<Project>).results)) {
-      return (data as PaginatedResponse<Project>).results;
-    }
-    return [];
+    return unwrapListResponse(data);
   },
 
   // Projekt erstellen (Admin)
@@ -61,13 +73,7 @@ export const portfolioService = {
         params: { all: true, ...params },
       },
     );
-    if (Array.isArray(data)) {
-      return data;
-    }
-    if (data && Array.isArray((data as PaginatedResponse<Certificate>).results)) {
-      return (data as PaginatedResponse<Certificate>).results;
-    }
-    return [];
+    return unwrapListResponse(data);
   },
 
   // Paginierte Zertifikate abrufen (z. B. für skalierte Tabellen im Dashboard)
@@ -176,11 +182,7 @@ export const portfolioService = {
     const { data } = await apiClient.get<PendingCertificate[] | PaginatedResponse<PendingCertificate>>(
       '/api/pending-certificates/',
     );
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray((data as PaginatedResponse<PendingCertificate>).results)) {
-      return (data as PaginatedResponse<PendingCertificate>).results;
-    }
-    return [];
+    return unwrapListResponse(data);
   },
 
   // Ausstehendes Zertifikat freigeben und übertragen (Admin)
@@ -208,21 +210,13 @@ export const portfolioService = {
     const { data } = await apiClient.get<Provider[] | PaginatedResponse<Provider>>('/api/providers/', {
       params,
     });
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray((data as PaginatedResponse<Provider>).results)) {
-      return (data as PaginatedResponse<Provider>).results;
-    }
-    return [];
+    return unwrapListResponse(data);
   },
 
   // Tracks abrufen
   async getTracks(): Promise<Track[]> {
     const { data } = await apiClient.get<Track[] | PaginatedResponse<Track>>('/api/tracks/');
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray((data as PaginatedResponse<Track>).results)) {
-      return (data as PaginatedResponse<Track>).results;
-    }
-    return [];
+    return unwrapListResponse(data);
   },
 
   // Anbieter erstellen (Admin)
@@ -237,21 +231,13 @@ export const portfolioService = {
   // Skills abrufen
   async getSkills(): Promise<Skill[]> {
     const { data } = await apiClient.get<Skill[] | PaginatedResponse<Skill>>('/api/skills/');
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray((data as PaginatedResponse<Skill>).results)) {
-      return (data as PaginatedResponse<Skill>).results;
-    }
-    return [];
+    return unwrapListResponse(data);
   },
 
   // Werdegang / Timeline abrufen
   async getTimeline(): Promise<TimelineEntry[]> {
     const { data } = await apiClient.get<TimelineEntry[] | PaginatedResponse<TimelineEntry>>('/api/timeline/');
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray((data as PaginatedResponse<TimelineEntry>).results)) {
-      return (data as PaginatedResponse<TimelineEntry>).results;
-    }
-    return [];
+    return unwrapListResponse(data);
   },
 
   // Portfolio AI Copilot Chat
@@ -289,4 +275,3 @@ export const portfolioService = {
     });
   },
 };
-

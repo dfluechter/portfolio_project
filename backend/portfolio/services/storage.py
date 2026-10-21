@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 import uuid
@@ -11,7 +12,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.utils.text import slugify
 
-from portfolio.models import Certificate
+from portfolio.models import MAGIC_BYTE_SIGNATURES, Certificate
 from portfolio.services.extractor import safe_storage_key
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,25 @@ CONTENT_TYPES = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
 }
+
+
+def build_typed_content_file(data: bytes, suffix: str) -> ContentFile:
+    """Erzeugt ein ContentFile mit gesetztem content_type basierend auf der Dateiendung."""
+    content_file = ContentFile(data)
+    content_file.content_type = CONTENT_TYPES.get(  # type: ignore[attr-defined]
+        suffix.lower(), "application/octet-stream"
+    )
+    return content_file
+
+
+def _is_s3_configured() -> bool:
+    """Prüft, ob S3-Storage über Django-Settings oder Umgebungsvariablen aktiv ist."""
+    env_use_s3 = os.getenv("USE_SUPABASE_S3", "").lower()
+    if env_use_s3 in ("false", "0"):
+        return False
+    if bool(getattr(settings, "USE_SUPABASE_S3", False)) or env_use_s3 in ("true", "1"):
+        return True
+    return bool(os.getenv("AWS_S3_ENDPOINT_URL"))
 
 
 def find_local_certificate_file(cert: Certificate) -> Path | None:
@@ -113,9 +133,7 @@ def ensure_certificate_in_storage(cert: Certificate) -> bool:
         with open(local_file, "rb") as f:
             file_bytes = f.read()
 
-        file_content = ContentFile(file_bytes)
-        ext = local_file.suffix.lower()
-        file_content.content_type = CONTENT_TYPES.get(ext, "application/octet-stream")  # type: ignore[attr-defined]
+        file_content = build_typed_content_file(file_bytes, local_file.suffix)
 
         provider_slug = slugify(cert.provider.provider) if cert.provider else "unsorted"
         storage_key = safe_storage_key(
@@ -179,11 +197,7 @@ def generate_presigned_upload(
     final_content_type = content_type or CONTENT_TYPES[ext]
     bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "portfolio-media")
 
-    use_s3 = getattr(settings, "USE_SUPABASE_S3", False) or bool(
-        os.getenv("AWS_S3_ENDPOINT_URL")
-    )
-
-    if use_s3:
+    if _is_s3_configured():
         try:
             s3_client = get_s3_client()
             url = s3_client.generate_presigned_url(
@@ -229,15 +243,7 @@ def verify_s3_uploaded_certificate(
     3. Liest die ersten 2048 Bytes per Range-Request ('bytes=0-2047') und validiert Magic Bytes.
     4. Berechnet den serverseitigen SHA-256-Hash und gleicht ihn gegen einen optionalen client_hash ab.
     """
-    import hashlib
-
-    from portfolio.models import MAGIC_BYTE_SIGNATURES
-
-    use_s3 = (
-        getattr(settings, "USE_SUPABASE_S3", False)
-        or os.getenv("USE_SUPABASE_S3", "").lower() == "true"
-    )
-    if not use_s3:
+    if not _is_s3_configured():
         raise S3StorageNotConfiguredError(
             "Direct-to-Storage-Uploads erfordern eine aktive S3-Konfiguration (USE_SUPABASE_S3=True)."
         )

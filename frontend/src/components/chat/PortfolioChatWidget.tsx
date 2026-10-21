@@ -6,6 +6,7 @@ import {
   Check,
   Copy,
   CornerDownLeft,
+  ExternalLink,
   FolderGit2,
   MessageSquare,
   RotateCcw,
@@ -16,27 +17,274 @@ import {
 import { useSendAIChatMessage } from '../../hooks/usePortfolio';
 import type { ChatMessage, ChatSourceItem } from '../../types';
 
-const INITIAL_MESSAGE: ChatMessage = {
+interface ChatHistoryEntry {
+  role: 'user' | 'model';
+  text: string;
+}
+
+const formatChatTimestamp = (date: Date = new Date()): string => {
+  return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+};
+
+const SECTION_ID_MAP: Record<string, string> = {
+  project: 'projects',
+  certificate: 'certificates',
+};
+
+const scrollToAndHighlightSource = (
+  source: ChatSourceItem,
+  block: ScrollLogicalPosition = 'center'
+): void => {
+  if (typeof source === 'string') return;
+
+  let targetElement: HTMLElement | null = null;
+
+  if (source.target_id) {
+    targetElement = document.getElementById(source.target_id);
+  }
+
+  // Fallback: Wenn Element mit target_id nicht existiert oder target_id fehlt
+  if (!targetElement && source.type && SECTION_ID_MAP[source.type]) {
+    targetElement = document.getElementById(SECTION_ID_MAP[source.type]);
+  }
+
+  if (targetElement) {
+    targetElement.scrollIntoView({ behavior: 'smooth', block });
+
+    // Visueller Highlight-Ring (2200ms)
+    const highlightClasses = [
+      'ring-2',
+      'ring-cyan-400/80',
+      'rounded-3xl',
+      'transition-all',
+      'duration-500',
+      'shadow-xl',
+      'shadow-indigo-500/20',
+    ];
+    targetElement.classList.add(...highlightClasses);
+    setTimeout(() => {
+      targetElement?.classList.remove(...highlightClasses);
+    }, 2200);
+  }
+};
+
+const MAX_INPUT_CHARS = 500;
+const MAX_SESSION_USER_MESSAGES = 10;
+
+const buildChatHistory = (
+  messages: ChatMessage[],
+  limit = 8,
+  maxChars = MAX_INPUT_CHARS
+): ChatHistoryEntry[] => {
+  return messages
+    .filter((m) => m.id !== 'welcome')
+    .slice(-limit)
+    .map((m) => ({
+      role: m.role,
+      text: m.text.slice(0, maxChars),
+    }));
+};
+
+const WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome',
   role: 'model',
   text: 'Hallo! Ich bin Dominiks Portfolio-Copilot. Frag mich gerne zu seinen Projekten, seinem Tech-Stack (Django 5, React 19, Cloud) oder verifizierten Zertifikaten.',
-  timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+  timestamp: formatChatTimestamp(),
   sources: ["Dominik's Portfolio Knowledge Base"],
 };
 
-const QUICK_PROMPTS = [
+const SUGGESTED_PROMPTS: readonly string[] = [
   '🎯 Welche Top-Skills hat Dominik?',
   '🚀 Zeige mir seine Highlight-Projekte',
   '📜 Welche Zertifikate sind verifiziert?',
   '💼 Welchen beruflichen Werdegang hat er?',
 ];
 
-const MAX_INPUT_CHARS = 500;
-const MAX_SESSION_USER_MESSAGES = 10;
+interface SourceTypeConfig {
+  label: string;
+  icon: typeof FolderGit2;
+  iconClass: string;
+}
+
+const SOURCE_TYPE_META: Record<string, SourceTypeConfig> = {
+  project: {
+    label: 'Projekt',
+    icon: FolderGit2,
+    iconClass: 'text-indigo-600 dark:text-indigo-400',
+  },
+  certificate: {
+    label: 'Zertifikat',
+    icon: Award,
+    iconClass: 'text-violet-600 dark:text-violet-400',
+  },
+};
+
+export interface ChatSourceBadgesProps {
+  sources?: ChatSourceItem[];
+  onSourceClick: (source: ChatSourceItem) => void;
+}
+
+export const ChatSourceBadges: FC<ChatSourceBadgesProps> = ({
+  sources,
+  onSourceClick,
+}) => {
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-1.5">
+      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+        Quellen:
+      </span>
+      {sources.map((source, idx) => {
+        if (typeof source === 'string') {
+          return (
+            <span
+              key={`str-${idx}`}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px]"
+            >
+              <Sparkles className="w-2.5 h-2.5 text-indigo-500" />
+              {source}
+            </span>
+          );
+        }
+
+        const meta = source.type ? SOURCE_TYPE_META[source.type] : undefined;
+        const IconComponent = meta ? meta.icon : Sparkles;
+        const iconClass = meta ? meta.iconClass : 'text-amber-500';
+
+        return (
+          <button
+            key={`source-${source.id ?? idx}`}
+            type="button"
+            onClick={() => onSourceClick(source)}
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-50/80 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 text-[10px] font-medium transition-all hover:scale-105 active:scale-95 shadow-sm group/btn cursor-pointer"
+            title={`Zu "${source.title}" springen`}
+            aria-label={`Quelle anzeigen: ${source.title}`}
+          >
+            <IconComponent className={`w-2.5 h-2.5 ${iconClass} shrink-0`} />
+            <span className="group-hover/btn:underline">{source.title}</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-60 group-hover/btn:opacity-100 shrink-0 transition-opacity" />
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+export interface ChatMessageBubbleProps {
+  message: ChatMessage;
+  copiedMessageId: string | null;
+  onCopyText: (id: string, text: string) => void;
+  onSourceClick: (source: ChatSourceItem) => void;
+}
+
+export const ChatMessageBubble: FC<ChatMessageBubbleProps> = ({
+  message,
+  copiedMessageId,
+  onCopyText,
+  onSourceClick,
+}) => {
+  const isUser = message.role === 'user';
+
+  return (
+    <div
+      className={`group/msg flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}
+    >
+      {!isUser && (
+        <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+          <Sparkles className="w-3.5 h-3.5" />
+        </div>
+      )}
+
+      <div
+        className={`relative max-w-[82%] rounded-2xl px-4 py-3 leading-relaxed whitespace-pre-wrap transition-shadow ${
+          isUser
+            ? 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-600/20 rounded-tr-xs'
+            : 'bg-white dark:bg-slate-900/90 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800/80 shadow-sm rounded-tl-xs hover:border-slate-300 dark:hover:border-slate-700'
+        }`}
+      >
+        <p>{message.text}</p>
+
+        {/* Interaktive Quellen */}
+        <ChatSourceBadges
+          sources={message.sources}
+          onSourceClick={onSourceClick}
+        />
+
+        {/* Footer & Copy-Button */}
+        <div
+          className={`flex items-center justify-between gap-3 mt-1.5 text-[10px] ${
+            isUser ? 'text-indigo-200' : 'text-slate-400 dark:text-slate-500'
+          }`}
+        >
+          <span className="font-mono tabular-nums">{message.timestamp}</span>
+
+          {!isUser && (
+            <button
+              type="button"
+              onClick={() => onCopyText(message.id, message.text)}
+              title={copiedMessageId === message.id ? 'Kopiert!' : 'Antwort kopieren'}
+              aria-label="Antwort in die Zwischenablage kopieren"
+              className="opacity-0 group-hover/msg:opacity-100 focus:opacity-100 flex items-center gap-1 p-0.5 rounded hover:text-slate-700 dark:hover:text-slate-300 active:scale-95 transition-all duration-150"
+            >
+              {copiedMessageId === message.id ? (
+                <>
+                  <Check className="w-3 h-3 text-emerald-500" />
+                  <span className="text-[9px] text-emerald-500 font-medium">Kopiert</span>
+                </>
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {isUser && (
+        <div className="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 mt-0.5">
+          <User className="w-3.5 h-3.5" />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export interface ChatThinkingIndicatorProps {
+  label?: string;
+}
+
+export const ChatThinkingIndicator: FC<ChatThinkingIndicatorProps> = ({
+  label = 'Analysiere Portfolio-Wissen...',
+}) => {
+  return (
+    <div className="flex gap-2.5 items-center text-slate-500 dark:text-slate-400 text-xs py-1">
+      <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center shrink-0">
+        <Sparkles className="w-3.5 h-3.5 animate-spin duration-1000" />
+      </div>
+      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+        <span
+          className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce"
+          style={{ animationDelay: '0ms' }}
+        />
+        <span
+          className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce"
+          style={{ animationDelay: '150ms' }}
+        />
+        <span
+          className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce"
+          style={{ animationDelay: '300ms' }}
+        />
+        <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-1.5 font-medium">
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 export const PortfolioChatWidget: FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [inputValue, setInputValue] = useState('');
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [isDisabled, setIsDisabled] = useState(false);
@@ -89,43 +337,8 @@ export const PortfolioChatWidget: FC = () => {
     }
   };
 
-  // Deep-Linking & Highlight bei Klick auf strukturierte Quellen
   const handleSourceClick = (source: ChatSourceItem) => {
-    if (typeof source === 'string') return;
-
-    let targetElement: HTMLElement | null = null;
-
-    if (source.target_id) {
-      targetElement = document.getElementById(source.target_id);
-    }
-
-    // Fallback: Wenn Element mit target_id nicht existiert oder target_id fehlt
-    if (!targetElement) {
-      if (source.type === 'project') {
-        targetElement = document.getElementById('projects');
-      } else if (source.type === 'certificate') {
-        targetElement = document.getElementById('certificates');
-      }
-    }
-
-    if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-      // Visueller Highlight-Ring für 2 Sekunden (ui-skills style)
-      const highlightClasses = [
-        'ring-4',
-        'ring-indigo-500/80',
-        'rounded-3xl',
-        'transition-all',
-        'duration-500',
-        'shadow-xl',
-        'shadow-indigo-500/20',
-      ];
-      targetElement.classList.add(...highlightClasses);
-      setTimeout(() => {
-        targetElement?.classList.remove(...highlightClasses);
-      }, 2000);
-    }
+    scrollToAndHighlightSource(source);
   };
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -141,10 +354,7 @@ export const PortfolioChatWidget: FC = () => {
           id: `limit-${Date.now()}`,
           role: 'model',
           text: 'Das Sitzungs-Limit für kostenfreie KI-Anfragen wurde erreicht. Zum Schutz vor Token-Überschreitungen wurde der Chat für diese Sitzung deaktiviert.',
-          timestamp: new Date().toLocaleTimeString('de-DE', {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
+          timestamp: formatChatTimestamp(),
         },
       ]);
       return;
@@ -154,21 +364,14 @@ export const PortfolioChatWidget: FC = () => {
       id: `user-${Date.now()}`,
       role: 'user',
       text,
-      timestamp: new Date().toLocaleTimeString('de-DE', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      timestamp: formatChatTimestamp(),
     };
 
     const nextMessages = [...messages, userMsg];
     setMessages(nextMessages);
     setInputValue('');
 
-    // Letzte 6 Nachrichten als Historie formatieren (mit Zeichenlimit pro Eintrag)
-    const history = nextMessages
-      .filter((m) => m.id !== 'welcome')
-      .slice(-6)
-      .map((m) => ({ role: m.role, text: m.text.slice(0, MAX_INPUT_CHARS) }));
+    const history = buildChatHistory(nextMessages);
 
     try {
       const response = await chatMutation.mutateAsync({
@@ -184,16 +387,16 @@ export const PortfolioChatWidget: FC = () => {
         id: `model-${Date.now()}`,
         role: 'model',
         text: response.reply,
-        timestamp: new Date().toLocaleTimeString('de-DE', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        timestamp: formatChatTimestamp(),
         sources: response.sources,
       };
 
       setMessages((prev) => [...prev, modelMsg]);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
+      const status =
+        typeof err === 'object' && err !== null && 'response' in err
+          ? (err as { response?: { status?: number } }).response?.status
+          : undefined;
       if (status === 429 || status === 503) {
         setIsDisabled(true);
       }
@@ -204,10 +407,7 @@ export const PortfolioChatWidget: FC = () => {
           status === 429
             ? 'Das kostenfreie Anfrage-Limit wurde erreicht. Die KI-Komponente wurde zum Schutz vor Kosten deaktiviert.'
             : 'Entschuldigung, der KI-Dienst ist gerade nicht erreichbar. Bitte versuche es später noch einmal.',
-        timestamp: new Date().toLocaleTimeString('de-DE', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        timestamp: formatChatTimestamp(),
       };
       setMessages((prev) => [...prev, errorMsg]);
     }
@@ -216,11 +416,8 @@ export const PortfolioChatWidget: FC = () => {
   const handleResetChat = () => {
     setMessages([
       {
-        ...INITIAL_MESSAGE,
-        timestamp: new Date().toLocaleTimeString('de-DE', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        ...WELCOME_MESSAGE,
+        timestamp: formatChatTimestamp(),
       },
     ]);
   };
@@ -231,7 +428,7 @@ export const PortfolioChatWidget: FC = () => {
       {isOpen && (
         <div
           role="dialog"
-          aria-label="Portfolio AI Copilot Chat"
+          aria-label="KI-Portfolio-Assistent"
           className="mb-3 w-[92vw] sm:w-[440px] h-[560px] max-h-[82vh] flex flex-col bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/80 rounded-3xl shadow-2xl shadow-indigo-500/10 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200"
         >
           {/* Header */}
@@ -242,7 +439,9 @@ export const PortfolioChatWidget: FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-white tracking-tight">Dominik&apos;s Copilot</h3>
+                  <h3 className="text-sm font-bold text-white tracking-tight">
+                    Portfolio KI-Assistent · Dominik&apos;s Copilot
+                  </h3>
                   {isDisabled ? (
                     <span className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
                       Deaktiviert (Token-Schutz)
@@ -257,7 +456,9 @@ export const PortfolioChatWidget: FC = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-400 font-medium">RAG via Gemini 3.8 Flash</p>
+                <p className="text-[11px] text-slate-400 font-medium">
+                  RAG · Grounded in Portfolio Data
+                </p>
               </div>
             </div>
 
@@ -265,8 +466,8 @@ export const PortfolioChatWidget: FC = () => {
               <button
                 type="button"
                 onClick={handleResetChat}
-                title="Chat zurücksetzen"
-                aria-label="Chat zurücksetzen"
+                title="Konversation zurücksetzen"
+                aria-label="Konversation zurücksetzen"
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/60 active:scale-95 transition-all duration-150"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -290,134 +491,33 @@ export const PortfolioChatWidget: FC = () => {
             className="flex-1 overflow-y-auto p-4 space-y-4 text-xs bg-slate-50/40 dark:bg-slate-950/40 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
           >
             {messages.map((msg) => (
-              <div
+              <ChatMessageBubble
                 key={msg.id}
-                className={`group/msg flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {msg.role === 'model' && (
-                  <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </div>
-                )}
-
-                <div
-                  className={`relative max-w-[82%] rounded-2xl px-4 py-3 leading-relaxed whitespace-pre-wrap transition-shadow ${
-                    msg.role === 'user'
-                      ? 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-600/20 rounded-tr-xs'
-                      : 'bg-white dark:bg-slate-900/90 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800/80 shadow-sm rounded-tl-xs hover:border-slate-300 dark:hover:border-slate-700'
-                  }`}
-                >
-                  <p>{msg.text}</p>
-
-                  {/* Interaktive Quellen (Deep-Linking & Interactive Citations) */}
-                  {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                        Quellen:
-                      </span>
-                      {msg.sources.map((source, idx) => {
-                        if (typeof source === 'string') {
-                          return (
-                            <span
-                              key={`str-${idx}`}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px]"
-                            >
-                              <Sparkles className="w-2.5 h-2.5 text-indigo-500" />
-                              {source}
-                            </span>
-                          );
-                        }
-
-                        return (
-                          <button
-                            key={`source-${source.id ?? idx}`}
-                            type="button"
-                            onClick={() => handleSourceClick(source)}
-                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-50/80 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 text-[10px] font-medium transition-all hover:scale-105 active:scale-95 shadow-sm group/btn cursor-pointer"
-                            title={`Zu "${source.title}" springen`}
-                            aria-label={`Quelle anzeigen: ${source.title}`}
-                          >
-                            {source.type === 'project' && (
-                              <FolderGit2 className="w-2.5 h-2.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                            )}
-                            {source.type === 'certificate' && (
-                              <Award className="w-2.5 h-2.5 text-violet-600 dark:text-violet-400 shrink-0" />
-                            )}
-                            {source.type !== 'project' && source.type !== 'certificate' && (
-                              <Sparkles className="w-2.5 h-2.5 text-amber-500 shrink-0" />
-                            )}
-                            <span className="group-hover/btn:underline">{source.title}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Footer & Copy-Button */}
-                  <div
-                    className={`flex items-center justify-between gap-3 mt-1.5 text-[10px] ${
-                      msg.role === 'user'
-                        ? 'text-indigo-200'
-                        : 'text-slate-400 dark:text-slate-500'
-                    }`}
-                  >
-                    <span className="font-mono tabular-nums">{msg.timestamp}</span>
-
-                    {msg.role === 'model' && (
-                      <button
-                        type="button"
-                        onClick={() => handleCopyText(msg.id, msg.text)}
-                        title={copiedMessageId === msg.id ? 'Kopiert!' : 'Antwort kopieren'}
-                        aria-label="Antwort in die Zwischenablage kopieren"
-                        className="opacity-0 group-hover/msg:opacity-100 focus:opacity-100 flex items-center gap-1 p-0.5 rounded hover:text-slate-700 dark:hover:text-slate-300 active:scale-95 transition-all duration-150"
-                      >
-                        {copiedMessageId === msg.id ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-500" />
-                            <span className="text-[9px] text-emerald-500 font-medium">Kopiert</span>
-                          </>
-                        ) : (
-                          <Copy className="w-3 h-3" />
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {msg.role === 'user' && (
-                  <div className="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 mt-0.5">
-                    <User className="w-3.5 h-3.5" />
-                  </div>
-                )}
-              </div>
+                message={msg}
+                copiedMessageId={copiedMessageId}
+                onCopyText={handleCopyText}
+                onSourceClick={handleSourceClick}
+              />
             ))}
 
-            {/* Thinking Indicator (ui-skills bouncing spark) */}
+            {/* Thinking Indicator */}
             {chatMutation.isPending && (
-              <div className="flex gap-2.5 items-center text-slate-500 dark:text-slate-400 text-xs py-1">
-                <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-3.5 h-3.5 animate-spin duration-1000" />
-                </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '300ms' }} />
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-1.5 font-medium">Copilot denkt nach...</span>
-                </div>
-              </div>
+              <ChatThinkingIndicator label="Analysiere Portfolio-Wissen..." />
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Prompts (Taktile Chips nach ui-skills) */}
+          {/* Quick Prompts */}
           {messages.length <= 2 && !isDisabled && (
             <div className="px-3.5 py-2 bg-white/95 dark:bg-slate-900/95 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
-              {QUICK_PROMPTS.map((prompt) => (
+              {SUGGESTED_PROMPTS.map((prompt) => (
                 <button
                   key={prompt}
                   type="button"
-                  onClick={() => handleSendMessage(prompt)}
+                  onClick={() => {
+                    void handleSendMessage(prompt);
+                  }}
                   disabled={chatMutation.isPending || isDisabled}
                   className="px-2.5 py-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-[11px] font-medium whitespace-nowrap border border-slate-200/60 dark:border-slate-700/60 active:scale-95 transition-all duration-150 disabled:opacity-50 cursor-pointer shadow-2xs"
                 >
@@ -431,9 +531,9 @@ export const PortfolioChatWidget: FC = () => {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleSendMessage();
+              void handleSendMessage();
             }}
-            aria-label="Nachricht an KI-Assistent senden"
+            aria-label="Nachricht an den KI-Assistenten"
             className="p-3 bg-white/95 dark:bg-slate-900/95 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center gap-2"
           >
             <input
@@ -462,11 +562,15 @@ export const PortfolioChatWidget: FC = () => {
         </div>
       )}
 
-      {/* Floating Trigger Button (UI Skills Puls & Haptik) */}
+      {/* Floating Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        aria-label={isOpen ? 'Chatbot schließen' : 'Portfolio KI-Assistent öffnen'}
+        aria-label={
+          isOpen
+            ? 'KI-Assistent schließen'
+            : 'Portfolio KI-Assistent öffnen – Frag die KI über dieses Portfolio'
+        }
         aria-expanded={isOpen}
         className="group relative flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer border border-white/10"
       >
@@ -478,13 +582,16 @@ export const PortfolioChatWidget: FC = () => {
               <MessageSquare className="w-5 h-5" />
               <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 border-2 border-indigo-600" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400 border-2 border-indigo-600" />
               </span>
             </>
           )}
         </div>
         <span className="text-xs font-bold tracking-wide">
           {isOpen ? 'Schließen' : 'Frag Dominiks KI'}
+        </span>
+        <span className="text-[10px] uppercase font-semibold bg-white/20 px-1.5 py-0.5 rounded-full tracking-wider">
+          KI-Chat
         </span>
       </button>
     </div>
