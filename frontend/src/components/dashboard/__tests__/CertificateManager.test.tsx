@@ -102,7 +102,7 @@ describe('CertificateManager Component', () => {
     expect(screen.getByText(/Vorherige/i)).toBeInTheDocument();
     expect(screen.getByText(/Nächste/i)).toBeInTheDocument();
     expect(
-      screen.getAllByText((_, element) => {
+      screen.getAllByText((_: string, element: Element | null) => {
         return element?.textContent?.includes('Zeige 1 bis 20 von 25 Zertifikaten') === true;
       }).length
     ).toBeGreaterThan(0);
