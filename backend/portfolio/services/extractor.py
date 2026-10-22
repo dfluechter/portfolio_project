@@ -286,6 +286,17 @@ def guess_provider(
         if re.search(pattern, filename):
             return p
 
+    # 1.5 Plattform-Signaturen (Kurz-URLs & Credential-Präfixe)
+    if re.search(
+        r"(?i)\bude\.my/|zertifikat-nr\.?:\s*UC-|certificate\s+no\.?:\s*UC-|\bUC-[a-f0-9-]{16,}\b",
+        text,
+    ):
+        return "Udemy"
+    if re.search(r"(?i)\bcoursera\.org\b", text):
+        return "Coursera"
+    if re.search(r"(?i)\bedx\.org\b", text):
+        return "edX"
+
     # 2. Textinhalt: Explizite Phrasen (z. B. "Offered by Coursera", "Ausgestellt von...")
     phrase_pattern = re.compile(
         r"(?i)(?:offered\s+by|authorized\s+by|issued\s+by|ausgestellt\s+von|"

@@ -43,7 +43,7 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
 | **Epic 13** | Robuste OCR-Extraktion, Dokumentenvorschau & Commitlint-Governance | Abgeschlossen | US 13.1, US 13.2, US 13.3, US 13.4 |
 | **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | Bereit zur Umsetzung (Ready) | US 14.1, US 14.2, US 14.3 |
-| **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | Bereit zur Umsetzung (Ready) | US 15.1, US 15.2, US 15.3 |
+| **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | In Umsetzung | US 15.1 (In Bearbeitung) |
 
 ---
 
@@ -500,6 +500,10 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
   - **When** der Textlayer analysiert wird
   - **Then** gilt dieser erst ab $\ge 60$ Zeichen und $\ge 8$ Wörtern als valide (vorher $\ge 20$ / $\ge 3$), um unvollständige OCR-Treffer zu vermeiden.
   - **And** Payloads sind auf 10 MB begrenzt und `max_output_tokens` auf 2048 konfiguriert.
+- [x] **Szenario 6 (Plattform-Signatur-Erkennung für Udemy, Coursera, edX):**
+  - **Given** ein Zertifikat enthält den Ausstellernamen nicht im Klartext (z. B. Udemy als Vektor-Logo), sondern nur Kurz-URLs (`ude.my/...`) oder Credential-Muster (`Zertifikat-Nr.: UC-...`)
+  - **When** `guess_provider` aufgerufen wird
+  - **Then** erkennt die Heuristik die Plattform anhand der Kurz-URL- und Signatur-Muster und ordnet den Provider zuverlässig zu (z. B. `Udemy`).
 
 ---
 
@@ -641,7 +645,9 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 
 ### Epic 15: Public Performance, HTTP-Caching & Core Web Vitals (P2 - Mittel)
 
-#### User Story 15.1: HTTP Conditional Caching (ETag & Cache-Control) für Read-Only APIs
+#### User Story 15.1: HTTP Conditional Caching (ETag & Cache-Control) für Read-Only APIs (In Umsetzung)
+> *Spezifikation & Blueprint: Siehe [`docs/specs/us-15-1-conditional-caching.md`](specs/us-15-1-conditional-caching.md)*
+>
 > **Als** Portfolio-Besucher und Betreiber
 > **möchte ich**, dass öffentliche Lese-Endpunkte (`/api/projects/`, `/api/tracks/`, `/api/skills/`, `/api/certificates/`) HTTP-Caching-Header (`ETag`, `Cache-Control`, `304 Not Modified`) unterstützen,
 > **damit** wiederkehrende Besuche blitzschnell laden und unnötige Datenbankabfragen auf Neon vermieden werden.
