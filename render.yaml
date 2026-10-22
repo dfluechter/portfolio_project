@@ -15,7 +15,6 @@ services:
 
     # Health-Check Endpunkt für Zero-Downtime Deployments
     healthCheckPath: /health_check
-    autoDeploy: true
     # Monorepo Build-Filter: Rebuilds bei reinen Dokumentations-Commits ignorieren
     buildFilter:
       paths:
