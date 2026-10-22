@@ -1126,7 +1126,7 @@ requires-dist = [
     { name = "google-genai" },
     { name = "gunicorn", specifier = ">=26.1.0" },
     { name = "pgvector", specifier = ">=0.3.6" },
-    { name = "pillow" },
+    { name = "pillow", specifier = ">=11.1.0" },
     { name = "psycopg2-binary" },
     { name = "pypdf", specifier = ">=6.19.0" },
     { name = "pytesseract", specifier = ">=0.3.13" },

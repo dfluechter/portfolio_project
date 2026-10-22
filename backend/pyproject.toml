@@ -13,7 +13,7 @@ dependencies = [
     "django-storages[boto3]",
     "psycopg2-binary",
     "python-dotenv",
-    "pillow",
+    "pillow>=11.1.0",
     "dj-database-url",
     "whitenoise",
     "djoser>=2.3.3",

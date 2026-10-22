@@ -2,12 +2,10 @@ from typing import Any
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from portfolio.models import Certificate, Project, Provider, Skill, Track
-from portfolio.services.ai_assistant import RAG_VERSION_KEY
 
 User = get_user_model()
 

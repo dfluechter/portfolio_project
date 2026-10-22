@@ -43,15 +43,23 @@ services:
       - key: DIRECT_DATABASE_URL
         sync: false
       - key: DJANGO_ALLOWED_HOSTS
+<<<<<<< HEAD
         value: "dfluechter.ipv64.de,dfluechter.onrender.com,localhost,127.0.0.1"
       - key: CSRF_TRUSTED_ORIGINS
         value: "https://dfluechter.ipv64.de"
       - key: CORS_ALLOWED_ORIGINS
         value: "https://dfluechter.ipv64.de"
+=======
+        key: "dfluechter.ipv64.de,dfluechter.onrender.com,localhost,127.0.0.1"
+      - key: CSRF_TRUSTED_ORIGINS
+        key: "https://dfluechter.ipv64.de"
+      - key: CORS_ALLOWED_ORIGINS
+        key: "https://dfluechter.ipv64.de"
+>>>>>>> 92e9546 (fix(caching): remove unused imports in test caching)
       - key: PORTFOLIO_OWNER_NAME
-        sync: false
+        key: false
       - key: PORTFOLIO_OWNER_EMAIL
-        sync: false
+        key: false
       - key: FRONTEND_DOMAIN
         sync: false
       - key: SITE_NAME

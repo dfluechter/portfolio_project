@@ -31,7 +31,7 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 |---|---|---|---|
 | **Epic 1** | CI/CD- & Build-Pipeline-Stabilität | Abgeschlossen | US 1.1 |
 | **Epic 2** | Frontend-Architektur-Dokumentation | Abgeschlossen | US 2.1 |
-| **Epic 3** | Repository-Hygiene & Dateistruktur | Abgeschlossen | US 3.1 |
+| **Epic 3** | Repository-Hygiene & Dateistruktur | In Bearbeitung | US 3.1 abgeschlossen, US 3.2 bereit |
 | **Epic 4** | Deployment & Operations Leitfaden | Abgeschlossen | US 4.1 |
 | **Epic 5** | Zertifikats-Review & Dashboard-Skalierung | Abgeschlossen | US 5.1, US 5.2 |
 | **Epic 6** | Public Track-Filterung & Cold-Start UX | Abgeschlossen | US 6.1, US 6.2 |
@@ -100,6 +100,36 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 - [x] Der versehentlich angelegte Ordner `#` im Root-Verzeichnis ist entfernt.
 - [x] Das Bild `Architektur_und_Datenstruktur_Portfolio_Backend.png` und `portfolio_architecture.html` sind in `docs/assets/` überführt und dort in der Dokumentation eingebunden.
 - [x] Die `.gitignore` schließt temporäre Ordner wie `scratch/` und Test-Skripte wie `test_s3.py` aus oder diese werden bereinigt.
+
+#### User Story 3.2: Vollständige Bereinigung historischer Root-Artefakte & Dashboard-Auth-Harmonisierung
+> *Spezifikation & Blueprint: Siehe [`docs/specs/us-3-2-root-cleanup-and-auth-harmonization.md`](specs/us-3-2-root-cleanup-and-auth-harmonization.md)*
+>
+> **Als** Fullstack-Entwickler und Maintainer  
+> **möchte ich**, dass alle verwaisten Root-Verzeichnisse (`templates/`, `core/`, `portfolio/`, `db.sqlite3`, etc.) rückstandslos aus dem Repository-Wurzelverzeichnis entfernt werden und die Single-Auth-Architektur über das React-Dashboard verbindlich dokumentiert ist,  
+> **damit** das Monorepo eine saubere, unmissverständliche Verzeichnisstruktur besitzt, keine falschen Dateien von Lintern oder Dependabot erfasst werden und die Trennung zwischen Headless Backend und React SPA transparent ist.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [ ] **Szenario 1 (Physische Löschung der verwaisten Root-Verzeichnisse):**
+  - **Given** das Repository-Wurzelverzeichnis (`/`)
+  - **When** die Bereinigung durchgeführt wird
+  - **Then** sind folgende Verzeichnisse und Dateien im Root-Verzeichnis gelöscht: `templates/`, `core/`, `portfolio/`, `db.sqlite3`, `portfolio_project.egg-info/`, `media/`, `static/`, `test_s3.py`, `.coverage`.
+- [ ] **Szenario 2 (Autarkie und Stabilität des aktiven Backends):**
+  - **Given** alle Root-Altlasten wurden entfernt
+  - **When** im Verzeichnis `backend/` die Befehle `uv run pytest`, `uv run ruff check .` und `uv run mypy .` ausgeführt werden
+  - **Then** laufen alle Tests und Checks fehlerfrei durch (Testabdeckung $\ge 95\%$), da das aktive Backend ausschließlich auf `backend/core/` und `backend/portfolio/` zugreift.
+  - **And** `backend/core/settings.py` verweist für `TEMPLATES` ausschließlich auf `BASE_DIR / "templates"` (was auf `backend/templates/` zeigt).
+- [ ] **Szenario 3 (Frontend Build & Tests):**
+  - **Given** alle Root-Altlasten wurden entfernt
+  - **When** im Verzeichnis `frontend/` die Befehle `npm run test:run`, `npm run lint` und `npm run build` ausgeführt werden
+  - **Then** kompilieren die Tests und der Vite-Production-Build ohne Fehler oder Warnungen.
+- [ ] **Szenario 4 (Root-Hygiene & .gitignore Absicherung):**
+  - **Given** die `.gitignore` im Monorepo-Root
+  - **When** neue Testläufe oder Builds stattfinden
+  - **Then** werden temporäre Dateien wie `.coverage`, `db.sqlite3`, `*.egg-info/` und Scratch-Dateien im Root zuverlässig ignoriert.
+- [ ] **Szenario 5 (Dokumentations-Konsistenz):**
+  - **Given** die Architekturdokumente `docs/architecture.md`, `docs/backlog.md` und `docs/wiki/System-Architecture.md`
+  - **When** Entwickler die Dokumentation lesen
+  - **Then** ist die Headless Single-Auth Architektur (JWT für React-Dashboard, isolierte Sessions nur für `/admin/`) einheitlich und widerspruchsfrei dokumentiert.
 
 ---
 

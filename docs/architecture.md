@@ -257,20 +257,21 @@ Standard-CRUD (`GET` Liste/Detail, `POST`, `PUT`, `PATCH`, `DELETE`) über den `
 
 ## 4. Authentifizierung & Sicherheit
 
-### 4.1 Auth-Konzept
+### 4.1 Auth-Konzept & Rollenteilung
 
-Seit [ADR-006](adrs/006-resolving-technical-debt-and-security.md) gibt es **einen** Auth-Weg für die Anwendung: **JWT** via Djoser + SimpleJWT. Die SPA hält die Tokens im `localStorage` und erneuert den Access Token bei `401` automatisch (Details in [frontend.md §4](frontend.md#4-api-client--jwt-refresh-zyklus-clientts)). Die frühere Session-basierte Dashboard-Variante ([ADR-003](adrs/003-dual-auth-strategie.md)) ist abgelöst.
+Seit [ADR-006](adrs/006-resolving-technical-debt-and-security.md) und der Harmonisierung in User Story 3.2 gibt es eine klare, rollenbasierte Funktionstrennung:
+1. **Operatives Management & Client (React 19 SPA):** 100 % zustandsloses **JWT** via Djoser + SimpleJWT (`/api/auth/jwt/create/`, `/api/auth/jwt/refresh/`). Die SPA hält Tokens im `localStorage` und erneuert den Access Token bei `401 Unauthorized` über einen Axios-Interceptor (`client.ts`). Sämtliche Fach-Workflows (Zertifikate prüfen, editieren, freigeben, hochladen, OCR-Analyse) laufen über das React-Dashboard.
+2. **Technisches Backoffice (Django-Admin):** `/admin/` bleibt für autorisierte Superuser (`is_staff` / `is_superuser`) als technisches Rettungs- und Inspektionswerkzeug erhalten und nutzt isoliert die native Django-Session-Authentifizierung.
+3. **Keine serverseitigen Dashboard-Templates:** Das Backend ist vollständig headless; historische serverseitige HTML-Templates im Root (`templates/login.html`, `templates/dashboard.html`) wurden im Rahmen von US 3.2 restlos bereinigt.
 
 ### 4.2 Sicherheitsentscheidungen
 
-1. **Django-Admin (`/admin/`)**
-   > [!CAUTION]
-   > Frühere Dokumentation gab an, `/admin/` sei entfernt. Tatsächlich ist die Route in `backend/core/urls.py` **aktiv** (Session-Login). **Offene Entscheidung:** entfernen (kleinere Angriffsfläche) oder bewusst behalten und z. B. auf einen nicht erratbaren Pfad legen. Bis zur Entscheidung gilt der Ist-Zustand.
+1. **Django-Admin (`/admin/`):** Bleibt bewusst als administratives Backoffice für technische Datenbankeingriffe, Notfall-Wartung und Admin-Actions (z. B. Show-File-Vorschau aus US 13.2) erhalten. Der Zugriff ist strikt auf Superuser mit starken Passwörtern und Session-Cookies beschränkt.
 2. **Custom User Model mit E-Mail-Login** (`portfolio.User`, `LOGIN_FIELD = "email"`, kein `username`).
 3. **Geschlossene Registrierung:** Nutzer nur via `createsuperuser`.
-4. **Datenverlust-Schutz:** `Certificate.provider` mit `on_delete=PROTECT`; API antwortet mit `409`.
-5. **Upload-Härtung:** Endungs- und Magic-Byte-Prüfung, 5-MB-Limit (Lücke bei Direct-Upload siehe 2.3).
-6. **Read-Only-Quellordner:** `CERTIFICATES_PATH` wird ausschließlich lesend verwendet (siehe [AGENTS.md](../AGENTS.md)).
+4. **Datenverlust-Schutz:** `Certificate.provider` mit `on_delete=PROTECT`; API antwortet mit `409 Conflict`.
+5. **Upload-Härtung:** Endungs- und serverseitige Magic-Byte-Prüfung (`%PDF`, `\x89PNG`, `\xFF\xD8\xFF`), 5-MB-Limit für Multipart-Uploads und 10-MB-Limit bei Direct-to-Storage (US 10.2).
+6. **Read-Only-Quellordner:** `CERTIFICATES_PATH` wird ausschließlich lesend verwendet (siehe [AGENTS.md](../AGENTS.md) und [SECURITY.md](SECURITY.md)).
 7. **Produktionshärtung bei `DEBUG=False`:** `SECURE_SSL_REDIRECT`, HSTS (1 Jahr, inkl. Subdomains, ohne Preload), sichere Cookies.
 
 ---
