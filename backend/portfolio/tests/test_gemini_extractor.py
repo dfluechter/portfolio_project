@@ -11,6 +11,17 @@ from portfolio.services.extractor import (
 )
 
 
+@pytest.fixture(autouse=True)
+def reset_ai_circuit_breaker():
+    """Stellt sicher, dass der AI-Circuit-Breaker Tests nicht gegenseitig beeinflusst."""
+    from django.core.cache import cache
+    from portfolio.services.ai_assistant import AI_CIRCUIT_BREAKER_KEY
+
+    cache.delete(AI_CIRCUIT_BREAKER_KEY)
+    yield
+    cache.delete(AI_CIRCUIT_BREAKER_KEY)
+
+
 @pytest.fixture
 def dummy_image_file(tmp_path):
     """Erstellt ein temporäres, leeres Bild ohne Text."""
@@ -225,15 +236,27 @@ def test_real_downloaded_udemy_pdf_extraction():
             r"C:\Users\domin\Downloads\data-science-datenvorbereitung-und-qualitatssicherung-excel.pdf"
         )
     if pdf_path.exists():
-        res = extract_metadata(
-            pdf_path,
-            pdf_path.parent,
-            TRACK_RULES,
-            enable_ocr=False,
-            known_providers=["Udemy"],
-        )
-        assert res is not None
-        assert "Data Science" in res.guessed_title
-        assert res.guessed_provider == "Udemy"
-        assert res.issued_date == "2023-11-28"
-        assert res.credential_id.startswith("UC-")
+        mock_gemini_udemy = {
+            "title": "Data Science - Datenvorbereitung und Qualitätssicherung Excel",
+            "provider": "Udemy",
+            "credential_id": "UC-3fOea848-5950-4fe9-ad31-7d4cb00039d3",
+            "issued_date": "2023-11-28",
+            "extracted_text": "ZERTIFIKAT ÜBER DIE ERFOLGREICHE TEILNAHME Data Science - Datenvorbereitung und Qualitätssicherung Excel",
+            "tracks": ["data-ai"],
+        }
+        with patch(
+            "portfolio.services.extractor.extract_via_gemini_vision",
+            return_value=mock_gemini_udemy,
+        ):
+            res = extract_metadata(
+                pdf_path,
+                pdf_path.parent,
+                TRACK_RULES,
+                enable_ocr=False,
+                known_providers=["Udemy"],
+            )
+            assert res is not None
+            assert "Data Science" in res.guessed_title
+            assert res.guessed_provider == "Udemy"
+            assert res.issued_date == "2023-11-28"
+            assert res.credential_id.startswith("UC-")

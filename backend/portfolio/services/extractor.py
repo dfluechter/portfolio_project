@@ -175,10 +175,10 @@ def parse_date_string(raw: str) -> str | None:
         except ValueError:
             pass
 
-    # 3. Textmonate: z.B. "October 9, 2026", "15 May 2024", "Mai 2024"
+    # 3. Textmonate: z.B. "October 9, 2026", "15 May 2024", "Mai 2024", "28. Nov. 2023"
     # Format a: "Month DD, YYYY" oder "Month DD YYYY"
     text_a = re.search(
-        r"\b([A-Za-zÄäÖöÜü]{3,12})\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b",
+        r"\b([A-Za-zÄäÖöÜü]{3,12})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b",
         raw,
     )
     if text_a:
@@ -195,8 +195,10 @@ def parse_date_string(raw: str) -> str | None:
             except ValueError:
                 pass
 
-    # Format b: "DD Month YYYY" oder "DD. Month YYYY"
-    text_b = re.search(r"\b(\d{1,2})\.?\s+([A-Za-zÄäÖöÜü]{3,12}),?\s+(\d{4})\b", raw)
+    # Format b: "DD Month YYYY", "DD. Month YYYY" oder "DD. Month. YYYY" (z.B. "28. Nov. 2023")
+    text_b = re.search(
+        r"\b(\d{1,2})\.?\s+([A-Za-zÄäÖöÜü]{3,12})\.?,?\s+(\d{4})\b", raw
+    )
     if text_b:
         d_str, m_str, y_str = (
             text_b.group(1),
@@ -212,7 +214,7 @@ def parse_date_string(raw: str) -> str | None:
                 pass
 
     # Format c: "Month YYYY" (z. B. "May 2024") -> Tag 1 als Standard
-    text_c = re.search(r"\b([A-Za-zÄäÖöÜü]{3,12})\s+(\d{4})\b", raw)
+    text_c = re.search(r"\b([A-Za-zÄäÖöÜü]{3,12})\.?\s+(\d{4})\b", raw)
     if text_c:
         m_str, y_str = text_c.group(1).lower(), text_c.group(2)
         month = MONTH_MAP.get(m_str)

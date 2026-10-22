@@ -34,6 +34,7 @@ from .models import (
     TRACK_RULES,
     Certificate,
     PendingCertificate,
+    PendingCertificateStatus,
     Project,
     Provider,
     Skill,
@@ -747,6 +748,178 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         return Response({"detail": "Abgelehnt."}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"])
+    def bulk_approve(self, request: Request) -> Response:
+        """Ermöglicht die gleichzeitige Freigabe mehrerer Pending-Zertifikate."""
+        ids = request.data.get("ids") if isinstance(request.data, dict) else None
+        if not ids or not isinstance(ids, (list, tuple)):
+            return Response(
+                {"detail": "Mindestens eine ID muss angegeben werden."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        track_ids = (
+            request.data.get("track_ids") if isinstance(request.data, dict) else None
+        )
+        explicit_tracks = None
+        if track_ids is not None:
+            explicit_tracks, error_response = self._resolve_tracks(track_ids)
+            if error_response is not None:
+                return error_response
+
+        approved_count = 0
+        failed_count = 0
+        results: list[dict[str, Any]] = []
+        errors: list[dict[str, Any]] = []
+
+        pending_items = {
+            p.id: p
+            for p in PendingCertificate.objects.filter(id__in=ids).prefetch_related(
+                "suggested_tracks"
+            )
+        }
+
+        for raw_id in ids:
+            try:
+                pk_val = int(raw_id)
+            except (ValueError, TypeError):
+                errors.append({"id": raw_id, "error": "Ungültige ID."})
+                failed_count += 1
+                continue
+
+            pending = pending_items.get(pk_val)
+            if not pending:
+                errors.append({"id": pk_val, "error": "Datensatz nicht gefunden."})
+                failed_count += 1
+                continue
+
+            if pending.status != PendingCertificateStatus.PENDING:
+                errors.append(
+                    {
+                        "id": pk_val,
+                        "error": (
+                            f"Datensatz hat Status '{pending.status}', nur 'pending' "
+                            "kann genehmigt werden."
+                        ),
+                    }
+                )
+                failed_count += 1
+                continue
+
+            tracks_to_assign = (
+                explicit_tracks
+                if explicit_tracks is not None
+                else list(pending.suggested_tracks.all())
+            )
+
+            try:
+                cert = promote_pending_certificate(
+                    pending=pending,
+                    tracks=tracks_to_assign,
+                )
+                approved_count += 1
+                results.append(
+                    {
+                        "id": pk_val,
+                        "certificate_id": cert.id,
+                        "status": "approved",
+                        "title": cert.title,
+                    }
+                )
+            except PromotionError as exc:
+                errors.append({"id": pk_val, "error": str(exc)})
+                failed_count += 1
+            except Exception:
+                logger.exception(
+                    "Unerwarteter Fehler bei bulk_approve für ID %s", pk_val
+                )
+                errors.append(
+                    {"id": pk_val, "error": "Interner Serverfehler bei der Freigabe."}
+                )
+                failed_count += 1
+
+        return Response(
+            {
+                "approved_count": approved_count,
+                "failed_count": failed_count,
+                "results": results,
+                "errors": errors,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["post"])
+    def bulk_reject(self, request: Request) -> Response:
+        """Ermöglicht das gleichzeitige Ablehnen mehrerer Pending-Zertifikate."""
+        ids = request.data.get("ids") if isinstance(request.data, dict) else None
+        if not ids or not isinstance(ids, (list, tuple)):
+            return Response(
+                {"detail": "Mindestens eine ID muss angegeben werden."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        rejected_count = 0
+        failed_count = 0
+        results: list[dict[str, Any]] = []
+        errors: list[dict[str, Any]] = []
+
+        pending_items = {
+            p.id: p for p in PendingCertificate.objects.filter(id__in=ids)
+        }
+
+        for raw_id in ids:
+            try:
+                pk_val = int(raw_id)
+            except (ValueError, TypeError):
+                errors.append({"id": raw_id, "error": "Ungültige ID."})
+                failed_count += 1
+                continue
+
+            pending = pending_items.get(pk_val)
+            if not pending:
+                errors.append({"id": pk_val, "error": "Datensatz nicht gefunden."})
+                failed_count += 1
+                continue
+
+            if pending.status != PendingCertificateStatus.PENDING:
+                errors.append(
+                    {
+                        "id": pk_val,
+                        "error": (
+                            f"Datensatz hat Status '{pending.status}', nur 'pending' "
+                            "kann abgelehnt werden."
+                        ),
+                    }
+                )
+                failed_count += 1
+                continue
+
+            try:
+                reject_pending_certificate(pending)
+                rejected_count += 1
+                results.append({"id": pk_val, "status": "rejected"})
+            except PromotionError as exc:
+                errors.append({"id": pk_val, "error": str(exc)})
+                failed_count += 1
+            except Exception:
+                logger.exception(
+                    "Unerwarteter Fehler bei bulk_reject für ID %s", pk_val
+                )
+                errors.append(
+                    {"id": pk_val, "error": "Interner Serverfehler beim Ablehnen."}
+                )
+                failed_count += 1
+
+        return Response(
+            {
+                "rejected_count": rejected_count,
+                "failed_count": failed_count,
+                "results": results,
+                "errors": errors,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=True, methods=["get"])
     def file(self, request: Request, pk: str | None = None) -> FileResponse | Response:

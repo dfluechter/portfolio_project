@@ -648,26 +648,26 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 > **damit** ich bei großen Zertifikatsstapeln nicht jeden Eintrag einzeln öffnen und bestätigen muss.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [ ] **Szenario 1 (REST-API `bulk_approve` Erfolgsfall):**
+- [x] **Szenario 1 (REST-API `bulk_approve` Erfolgsfall):**
   - **Given** drei `PendingCertificate`-Datensätze mit Status `pending`
   - **When** ein Administrator `POST /api/pending-certificates/bulk_approve/` mit `ids: [1, 2, 3]` und `track_ids: [4]` sendet
   - **Then** antwortet die API mit Statuscode `200 OK`
   - **And** alle drei Datensätze besitzen nun den Status `approved`
   - **And** für jedes Dokument existiert ein zugeordnetes `Certificate`-Objekt mit verknüpftem Track 4 und `is_published=False`.
-- [ ] **Szenario 2 (REST-API `bulk_approve` Fallback auf `suggested_tracks`):**
+- [x] **Szenario 2 (REST-API `bulk_approve` Fallback auf `suggested_tracks`):**
   - **Given** ein ausstehendes Zertifikat besitzt heuristisch vorgeschlagene Tracks (`suggested_tracks: [2, 5]`)
   - **When** `POST /api/pending-certificates/bulk_approve/` ohne `track_ids` aufgerufen wird
   - **Then** erhält das neu angelegte `Certificate` die Tracks 2 und 5.
-- [ ] **Szenario 3 (REST-API `bulk_approve` Teilerfolg & Fehlerabfang):**
+- [x] **Szenario 3 (REST-API `bulk_approve` Teilerfolg & Fehlerabfang):**
   - **Given** ein Batch von zwei IDs, wovon eine Datei lokal nicht mehr existiert
   - **When** `bulk_approve` ausgeführt wird
   - **Then** liefert die API `200 OK` mit `approved_count: 1`, `failed_count: 1`
   - **And** das Array `errors` enthält Details zur fehlgeschlagenen Datei, während die valide Datei erfolgreich transferiert wurde.
-- [ ] **Szenario 4 (REST-API `bulk_reject`):**
+- [x] **Szenario 4 (REST-API `bulk_reject`):**
   - **Given** mehrere ausstehende Zertifikate mit Status `pending`
   - **When** `POST /api/pending-certificates/bulk_reject/` mit deren IDs aufgerufen wird
   - **Then** werden die Datensätze auf Status `rejected` gesetzt und `rejected_count` zurückgegeben.
-- [ ] **Szenario 5 (Django-Admin Massenaktionen):**
+- [x] **Szenario 5 (Django-Admin Massenaktionen):**
   - **Given** die Changelist von `PendingCertificateAdmin`
   - **When** der Administrator mehrere Zeilen markiert
   - **Then** stehen im Aktions-Dropdown zwei Aktionen zur Verfügung:

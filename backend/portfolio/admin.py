@@ -18,7 +18,11 @@ from .models import (
     Track,
     User,
 )
-from .services.promotion import PromotionError, promote_pending_certificate
+from .services.promotion import (
+    PromotionError,
+    promote_pending_certificate,
+    reject_pending_certificate,
+)
 
 
 @admin.register(User)
@@ -155,7 +159,7 @@ class PendingCertificateAdmin(admin.ModelAdmin):
         "show_file_button",
     )
     filter_horizontal = ("suggested_tracks",)
-    actions = ("promote_selected",)
+    actions = ("promote_selected", "reject_selected")
 
     fieldsets = (
         (
@@ -298,6 +302,26 @@ class PendingCertificateAdmin(admin.ModelAdmin):
             self.message_user(
                 request,
                 f"{success_count} Zertifikat(e) erfolgreich freigegeben und übertragen.",
+                level=messages.SUCCESS,
+            )
+
+    @admin.action(description="Ausgewählte Zertifikate ablehnen")
+    def reject_selected(self, request, queryset):
+        success_count = 0
+        for pending in queryset:
+            try:
+                reject_pending_certificate(pending)
+                success_count += 1
+            except PromotionError as exc:
+                self.message_user(
+                    request,
+                    f"Fehler bei {pending.original_file_name}: {exc}",
+                    level=messages.ERROR,
+                )
+        if success_count:
+            self.message_user(
+                request,
+                f"{success_count} Zertifikat(e) abgelehnt.",
                 level=messages.SUCCESS,
             )
 
