@@ -44,11 +44,11 @@ services:
       - key: DIRECT_DATABASE_URL
         sync: false
       - key: DJANGO_ALLOWED_HOSTS
-        sync: "dfluechter.ipv64.de,dfluechter.onrender.com,localhost,127.0.0.1"
+        value: "dfluechter.ipv64.de,dfluechter.onrender.com,localhost,127.0.0.1"
       - key: CSRF_TRUSTED_ORIGINS
-        sync: "https://dfluechter.ipv64.de"
+        value: "https://dfluechter.ipv64.de"
       - key: CORS_ALLOWED_ORIGINS
-        sync: "https://dfluechter.ipv64.de"
+        value: "https://dfluechter.ipv64.de"
       - key: PORTFOLIO_OWNER_NAME
         sync: false
       - key: PORTFOLIO_OWNER_EMAIL
