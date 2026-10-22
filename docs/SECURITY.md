@@ -29,11 +29,16 @@ Die Sicherheitsarchitektur folgt dem Prinzip der mehrschichtigen Verteidigung (*
 
 ## 3. Authentifizierung & Autorisierung (RBAC)
 
-### 3.1 Authentifizierungs-Stack
-- **JWT (JSON Web Tokens):** Implementiert via `djangorestframework-simplejwt` und `djoser`.
+### 3.1 Authentifizierungs-Stack & Core Security
+
+* **Custom User Model (`portfolio.User`)**: Die Anmeldung nutzt ausschließlich eine eindeutige E-Mail-Adresse (kein Nutzername).
+* **Geschlossene Registrierung**: Öffentliche Registrierungsendpunkte (`POST /api/auth/users/`) sind mittels `IsAdminUser` blockiert. Administrator-Accounts werden manuell über den Befehl `createsuperuser` angelegt.
+* **Passwort-Reset & Session-Sync**: Bietet einen Single-User-Reset-Flow über das Login-Modal und eine gesicherte Bestätigungsseite (`/password/reset/confirm/:uid/:token`). Bei abgelaufenem Refresh-Token sichert ein Axios-Interceptor den sauberen Logout via `auth:unauthorized`.
+
+- **JWT-Architektur:** Implementiert via `djangorestframework-simplejwt` und `djoser`.
 - **Token-Lebenszyklen:**
   - `ACCESS_TOKEN_LIFETIME`: 60 Minuten (kurzlebig zur Begrenzung von Replay-Risiken).
-  - `REFRESH_TOKEN_LIFETIME`: 1 Tag (mit automatischem Token-Blacklisting bei Rotation und Logout).
+  - `REFRESH_TOKEN_LIFETIME`: 7 Tage (mit automatischem Token-Blacklisting bei Rotation und Logout).
 - **Passwort-Hashing:** Verwendung von PBKDF2 mit SHA-256 und mindestens 600.000 Iterationen (gemäß OWASP-Empfehlung).
 
 ### 3.2 Rollenbasierte Zugriffskontrolle (RBAC)

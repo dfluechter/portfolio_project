@@ -42,7 +42,7 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 11** | RAG Portfolio-Copilot, pgvector Hybrid Retrieval, Guardrails & UI-Skills Polish | Abgeschlossen | US 11.1, US 11.2, US 11.3, US 11.4, US 11.5 |
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
 | **Epic 13** | Robuste OCR-Extraktion, Dokumentenvorschau & Commitlint-Governance | Abgeschlossen | US 13.1, US 13.2, US 13.3, US 13.4 |
-| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | Bereit zur Umsetzung (Ready) | US 14.1, US 14.2, US 14.3 |
+| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | In Bearbeitung | US 14.2 bereit zur Umsetzung |
 | **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | In Bearbeitung | US 15.1 abgeschlossen |
 
 ---
@@ -636,23 +636,49 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 14.2: Bulk-Approve und Bulk-Reject im Django-Admin und React-Dashboard
+> *Spezifikation & Blueprint: Siehe [`docs/specs/us-14-2-bulk-approve-reject.md`](specs/us-14-2-bulk-approve-reject.md)*
+>
 > **Als** Administrator
 > **möchte ich** mehrere ausstehende Zertifikate gleichzeitig freigeben oder ablehnen können,
 > **damit** ich bei großen Zertifikatsstapeln nicht jeden Eintrag einzeln öffnen und bestätigen muss.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [ ] **Szenario 1 (Django-Admin Bulk-Action):**
-  - **Given** eine Auswahl mehrerer Checkboxen in der Changelist von `PendingCertificateAdmin`
-  - **When** der Administrator die Aktion *„Ausgewählte Zertifikate genehmigen und übertragen“* wählt
-  - **Then** werden die ausgewählten Einträge in einer atomaren Datenbanktransaktion (`transaction.atomic`) in `Certificate`-Datensätze überführt.
-- [ ] **Szenario 2 (Track-Default bei Bulk-Approve):**
-  - **Given** Zertifikate werden per Bulk freigegeben
-  - **When** vor der Freigabe Tracks zugewiesen werden müssen (gemäß Track-Pflicht aus Epic 12)
-  - **Then** öffnet sich ein Zwischenformular oder ein Standard-Track wird vergeben, sodass die Integritätsregel nicht verletzt wird.
-- [ ] **Szenario 3 (REST-API Batch-Endpunkte):**
-  - **Given** `POST /api/pending-certificates/bulk_approve/` mit Payload `{"ids": [1, 2, 3], "track_ids": [4]}`
-  - **When** ein Staff-Benutzer den Request sendet
-  - **Then** antwortet die API mit `200 OK` und den erzeugten Zertifikat-IDs.
+- [ ] **Szenario 1 (REST-API `bulk_approve` Erfolgsfall):**
+  - **Given** drei `PendingCertificate`-Datensätze mit Status `pending`
+  - **When** ein Administrator `POST /api/pending-certificates/bulk_approve/` mit `ids: [1, 2, 3]` und `track_ids: [4]` sendet
+  - **Then** antwortet die API mit Statuscode `200 OK`
+  - **And** alle drei Datensätze besitzen nun den Status `approved`
+  - **And** für jedes Dokument existiert ein zugeordnetes `Certificate`-Objekt mit verknüpftem Track 4 und `is_published=False`.
+- [ ] **Szenario 2 (REST-API `bulk_approve` Fallback auf `suggested_tracks`):**
+  - **Given** ein ausstehendes Zertifikat besitzt heuristisch vorgeschlagene Tracks (`suggested_tracks: [2, 5]`)
+  - **When** `POST /api/pending-certificates/bulk_approve/` ohne `track_ids` aufgerufen wird
+  - **Then** erhält das neu angelegte `Certificate` die Tracks 2 und 5.
+- [ ] **Szenario 3 (REST-API `bulk_approve` Teilerfolg & Fehlerabfang):**
+  - **Given** ein Batch von zwei IDs, wovon eine Datei lokal nicht mehr existiert
+  - **When** `bulk_approve` ausgeführt wird
+  - **Then** liefert die API `200 OK` mit `approved_count: 1`, `failed_count: 1`
+  - **And** das Array `errors` enthält Details zur fehlgeschlagenen Datei, während die valide Datei erfolgreich transferiert wurde.
+- [ ] **Szenario 4 (REST-API `bulk_reject`):**
+  - **Given** mehrere ausstehende Zertifikate mit Status `pending`
+  - **When** `POST /api/pending-certificates/bulk_reject/` mit deren IDs aufgerufen wird
+  - **Then** werden die Datensätze auf Status `rejected` gesetzt und `rejected_count` zurückgegeben.
+- [ ] **Szenario 5 (Django-Admin Massenaktionen):**
+  - **Given** die Changelist von `PendingCertificateAdmin`
+  - **When** der Administrator mehrere Zeilen markiert
+  - **Then** stehen im Aktions-Dropdown zwei Aktionen zur Verfügung:
+    1. *„Ausgewählte Zertifikate freigeben und übertragen“* (`promote_selected`)
+    2. *„Ausgewählte Zertifikate ablehnen“* (`reject_selected`)
+  - **And** die Ausführung quittiert die Anzahl erfolgreicher und fehlgeschlagener Übertragungen via Django Messages.
+- [ ] **Szenario 6 (React-Dashboard Interaktive Massenauswahl):**
+  - **Given** `PendingCertificateManager.tsx` im Admin-Dashboard
+  - **When** ausstehende Kandidaten gelistet werden
+  - **Then** besitzt jede Zeile/Karte eine Checkbox und die Tabellen-Kopfzeile eine „Alle auswählen“-Checkbox
+  - **And** bei Auswahl von mindestens einem Element blendet sich eine Floating Action Bar ein mit Track-Zuweisung, Genehmigungs- und Ablehnungs-Aktionen
+  - **And** nach erfolgreicher Mutation invalidiert TanStack Query die Keys `['pending-certificates']` und `['certificates']` automatisch.
+- [ ] **Szenario 7 (Automatisierte Testabdeckung):**
+  - **Given** die neuen API-Endpunkte und Frontend-Komponenten
+  - **When** Pytest im Backend (`uv run pytest portfolio/tests/test_pending_bulk_operations.py`) und Vitest im Frontend (`npm run test:run`) ausgeführt werden
+  - **Then** sind alle Szenarien abgedeckt und die Backend-Coverage bleibt $\ge 95\%$.
 
 ---
 
