@@ -83,6 +83,7 @@ Alle Architekturentscheidungen, Datenflüsse und Spezifikationen sind im Ordner 
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Sicherheitsarchitektur, Defense-in-Depth, Zero-Cost AI Circuit Breaker, Read-Only-Governance & Disclosure |
 | [`docs/glossary.md`](docs/glossary.md) | Verbindliches Fachglossar (Entitäten, Zertifikats-Lifecycle, Infrastruktur- & RAG-Begriffe) |
 | [`docs/backlog.md`](docs/backlog.md) | Agiles Product Backlog (Epics 1–12), User Stories, Definition of Ready (DoR) & Definition of Done (DoD) |
+| [GitHub Wiki](https://github.com/dfluechter/portfolio_project/wiki) (`docs/wiki/`) | Vollständiges Projekt-Wiki (System-Architektur, RAG, Frontend, Deployment, Security & Glossary) |
 | [`docs/adrs/`](docs/adrs/) | Architectural Decision Records ([ADR-001](docs/adrs/001-monorepo.md) bis [ADR-007](docs/adrs/007-rag-copilot-caching-guardrails.md)) |
 
 ---

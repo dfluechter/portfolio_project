@@ -2,7 +2,7 @@
 
 Diese Dokumentation beschreibt Architektur, Datenfluss, API-Endpunkte sowie das Authentifizierungs- und Sicherheitskonzept des Portfolios.
 
-Weiterführend: [Frontend-Architektur](frontend.md) · [RAG Portfolio-Copilot](ai-assistant-rag.md) · [Deployment & Operations](deployment.md) · [Sicherheitskonzept](SECURITY.md) · [Glossar](glossary.md) · [Backlog](backlog.md) · [ADRs](adrs/)
+Weiterführend: [Frontend-Architektur](frontend.md) · [RAG Portfolio-Copilot](ai-assistant-rag.md) · [Deployment & Operations](deployment.md) · [Sicherheitskonzept](SECURITY.md) · [Glossar](glossary.md) · [Backlog](backlog.md) · [ADRs](adrs/) · [GitHub Wiki](https://github.com/dfluechter/portfolio_project/wiki)
 
 ---
 
