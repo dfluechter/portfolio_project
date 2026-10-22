@@ -286,4 +286,3 @@ export const useConfirmPasswordReset = () => {
     }) => portfolioService.confirmPasswordReset(payload),
   });
 };
-

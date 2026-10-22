@@ -670,7 +670,9 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
         file_path = Path(pending.file_path)
         if not file_path.exists() or not file_path.is_file():
             return Response(
-                {"detail": f"Datei '{pending.original_file_name}' existiert lokal nicht mehr."},
+                {
+                    "detail": f"Datei '{pending.original_file_name}' existiert lokal nicht mehr."
+                },
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -681,8 +683,10 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
         elif ext in {".jpg", ".jpeg"}:
             content_type = "image/jpeg"
 
-        response = FileResponse(open(file_path, "rb"), content_type=content_type)
-        response["Content-Disposition"] = f'inline; filename="{pending.original_file_name}"'
+        response = FileResponse(open(file_path, "rb"), content_type=content_type)  # noqa: SIM115
+        response["Content-Disposition"] = (
+            f'inline; filename="{pending.original_file_name}"'
+        )
         return response
 
 

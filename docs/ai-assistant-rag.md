@@ -6,7 +6,7 @@ Diese Dokumentation beschreibt die Konzeption, Implementierung, Guardrails und d
 
 ## 1. Übersicht & Zielsetzung
 
-Der Portfolio-Copilot (`/api/ai/chat/`) ermöglicht Besuchern und potenziellen Arbeitgebern, in natürlicher Sprache Fragen zu Projekten, Fähigkeiten (Skills), Zertifikaten und dem beruflichen Werdegang zu stellen. 
+Der Portfolio-Copilot (`/api/ai/chat/`) ermöglicht Besuchern und potenziellen Arbeitgebern, in natürlicher Sprache Fragen zu Projekten, Fähigkeiten (Skills), Zertifikaten und dem beruflichen Werdegang zu stellen.
 
 ### Kernanforderungen & Designprinzipien:
 1. **Faktenstrenge & Grounding (RAG)**: Der Assistent antwortet ausschließlich auf Basis des realen Datenbank-Kontexts (Grounding). Spekulationen oder Halluzinationen werden durch strenge System-Prompts unterbunden.
@@ -32,7 +32,7 @@ sequenceDiagram
 
     User->>Widget: Frage eingeben (z. B. "Welche Django-Projekte gibt es?")
     Widget->>API: POST /api/ai/chat/ { message: "..." }
-    
+
     API->>API: 1. Guardrail-Check: Zeichenanzahl <= 500?
     alt Nachricht > 500 Zeichen
         API-->>Widget: 400 Bad Request ("Nachricht zu lang")
@@ -56,7 +56,7 @@ sequenceDiagram
             DB-->>API: Projects, Certificates, Skills, Timeline
             API->>Cache: Grounding Context speichern
         end
-        
+
         API->>API: 5. Heuristisches Query-Pruning (Token-Optimierung)
         API->>Gemini: 6. generateContent(SystemPrompt + PrunedContext + Question)
         Gemini-->>API: Antwort-Text mit Quellen-Tags
@@ -177,4 +177,3 @@ Für präzise semantische Suchen und Skalierbarkeit über tausende von Textabsch
    - Auf SQLite (lokal) oder bei Kontingenterschöpfung: Nahtloser Fallback auf Keyword-Matching und Volltext-Filterung.
 4. **Management Command**:
    - `python manage.py index_rag_chunks [--with-embeddings]`: Indiziert und synchronisiert den gesamten Datenbestand.
-

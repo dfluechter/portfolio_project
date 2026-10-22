@@ -1,11 +1,11 @@
 # ADR-002: Wahl der Datenbank (Neon Serverless PostgreSQL)
 
-**Status:** Accepted  
-**Datum:** 2026-10-06  
-**Autor:** Dominik Flüchter  
+**Status:** Accepted
+**Datum:** 2026-10-06
+**Autor:** Dominik Flüchter
 
 ## Kontext und Problem
-Für das Django-Backend in Produktion wird eine relationale Datenbank benötigt. Es galt eine kosteneffiziente, skalierbare und gut in den Entwicklungs-Workflow integrierbare PostgreSQL-Lösung zu finden. 
+Für das Django-Backend in Produktion wird eine relationale Datenbank benötigt. Es galt eine kosteneffiziente, skalierbare und gut in den Entwicklungs-Workflow integrierbare PostgreSQL-Lösung zu finden.
 
 ## Alternativen
 - **Lokales SQLite:** Ausreichend für Entwicklung (und wird auch genutzt), aber nicht geeignet für produktive Umgebungen (keine Nebenläufigkeit, fehlende Datensicherheit).

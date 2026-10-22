@@ -109,5 +109,3 @@ PostgreSQL-Erweiterung (`vector`) auf Neon Serverless PostgreSQL zur nativen Spe
 
 ### Hybrid Retrieval
 Zweistufiges Suchverfahren in `portfolio/services/retrieval.py`: Auf PostgreSQL/Neon wird primär per Vektor-Ähnlichkeit (`CosineDistance`) nach den semantisch passendsten `KnowledgeChunk`-Einträgen gesucht; auf SQLite (lokale Entwicklung) oder bei fehlendem API-Kontingent greift automatisch ein deterministischer Keyword-Fallback.
-
-

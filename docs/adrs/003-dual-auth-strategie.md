@@ -1,8 +1,8 @@
 # ADR-003: Dual-Auth Strategie
 
-**Status:** Superseded by [ADR-006](006-resolving-technical-debt-and-security.md)  
-**Datum:** 2026-10-06  
-**Autor:** Dominik Flüchter  
+**Status:** Superseded by [ADR-006](006-resolving-technical-debt-and-security.md)
+**Datum:** 2026-10-06
+**Autor:** Dominik Flüchter
 
 > [!NOTE]
 > **Abgelöst durch ADR-006:** Die serverseitig gerenderten Django-Templates (`login.html`, `dashboard.html`) und Session-Views wurden im Rahmen von User Story 7.1 entfernt. Die Webanwendung arbeitet seither als konsequente Headless-Architektur mit reiner JWT-Authentifizierung via Djoser + SimpleJWT für die React-SPA.

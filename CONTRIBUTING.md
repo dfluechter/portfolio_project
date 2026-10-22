@@ -32,7 +32,7 @@ Du hast eine Idee für eine neue Funktion? Großartig! Erstelle ein Issue und be
 * Eventuelle Alternativen, die du in Betracht gezogen hast.
 
 ### 3. Pull Requests (PRs) einreichen
-Bevor du mit dem Schreiben von Code beginnst, stelle sicher, dass es ein entsprechendes Issue gibt oder erstelle eines, um deine Idee vorab mit uns zu besprechen. 
+Bevor du mit dem Schreiben von Code beginnst, stelle sicher, dass es ein entsprechendes Issue gibt oder erstelle eines, um deine Idee vorab mit uns zu besprechen.
 
 Befolge für deinen PR diese Schritte:
 1. Forke das Repository und erstelle einen eigenen Feature-Branch (z. B. `feat/mein-neues-feature` oder `fix/login-fehler`).

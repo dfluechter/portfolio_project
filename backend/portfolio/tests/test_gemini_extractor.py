@@ -59,7 +59,9 @@ def test_gemini_vision_successful_extraction(dummy_image_file):
 def test_gemini_vision_handles_api_error_gracefully(dummy_image_file):
     """Testet, dass API-Fehler (z.B. HTTP 500 oder Netzwerkfehler) abgefangen werden."""
     mock_client = MagicMock()
-    mock_client.models.generate_content.side_effect = RuntimeError("API connection failed")
+    mock_client.models.generate_content.side_effect = RuntimeError(
+        "API connection failed"
+    )
 
     with patch("google.genai.Client", return_value=mock_client):
         result = extract_via_gemini_vision(dummy_image_file, api_key="dummy-test-key")
@@ -210,6 +212,7 @@ def test_udemy_certificate_structure_extraction_live_example():
 def test_real_downloaded_udemy_pdf_extraction():
     """Testet die echte heruntergeladene Udemy-PDF, falls sie im lokalen Cache vorhanden ist."""
     from pathlib import Path
+
     from portfolio.models import TRACK_RULES
     from portfolio.services.extractor import extract_metadata
 
@@ -234,5 +237,3 @@ def test_real_downloaded_udemy_pdf_extraction():
         assert res.guessed_provider == "Udemy"
         assert res.issued_date == "2023-11-28"
         assert res.credential_id.startswith("UC-")
-
-

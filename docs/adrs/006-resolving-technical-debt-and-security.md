@@ -1,8 +1,8 @@
 # ADR-006: Behebung technischer Schulden, Cloud-Architektur und Sicherheits-Härtung
 
-**Status:** Accepted  
-**Datum:** 2026-10-14  
-**Autor:** Dominik Flüchter  
+**Status:** Accepted
+**Datum:** 2026-10-14
+**Autor:** Dominik Flüchter
 
 ---
 

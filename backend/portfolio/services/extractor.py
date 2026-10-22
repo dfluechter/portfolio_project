@@ -328,7 +328,14 @@ def guess_title(text: str, filename: str, pdf_meta: dict, provider: str = "") ->
     )
     if udemy_match:
         cand = udemy_match.group(1).strip(" :,-_")
-        if cand and len(cand) > 3 and not any(n in cand.lower() for n in ["dominik flüchter", "dominik", "completion", "zertifikat"]):
+        if (
+            cand
+            and len(cand) > 3
+            and not any(
+                n in cand.lower()
+                for n in ["dominik flüchter", "dominik", "completion", "zertifikat"]
+            )
+        ):
             return cand
 
     title_patterns = [
@@ -346,17 +353,28 @@ def guess_title(text: str, filename: str, pdf_meta: dict, provider: str = "") ->
             # Kürzen falls mehrzeilig
             if "\n" in candidate:
                 candidate = candidate.split("\n")[0].strip()
-            
+
             # Negativprüfung: Name des Teilnehmers oder reine Standardfloskeln verwerfen
             candidate_lower = candidate.lower()
             owner_name = os.getenv("PORTFOLIO_OWNER_NAME", "Dominik Flüchter").lower()
-            if (
-                any(n in candidate_lower for n in [owner_name, "dominik flüchter", "dominik fluechter", "dominik"])
-                or candidate_lower in {
-                    "completion", "achievement", "accomplishment", "attendance",
-                    "erfolgreich", "teilnahme", "certificate", "zertifikat",
-                }
-            ):
+            if any(
+                n in candidate_lower
+                for n in [
+                    owner_name,
+                    "dominik flüchter",
+                    "dominik fluechter",
+                    "dominik",
+                ]
+            ) or candidate_lower in {
+                "completion",
+                "achievement",
+                "accomplishment",
+                "attendance",
+                "erfolgreich",
+                "teilnahme",
+                "certificate",
+                "zertifikat",
+            }:
                 continue
 
             if candidate and len(candidate) > 3 and len(candidate) <= 120:
@@ -718,7 +736,9 @@ def extract_metadata(
     else:
         return None
 
-    guessed_provider = guess_provider(extracted_text, effective_filename, known_providers)
+    guessed_provider = guess_provider(
+        extracted_text, effective_filename, known_providers
+    )
     guessed_title = guess_title(
         extracted_text, effective_filename, pdf_meta, guessed_provider
     )
@@ -737,14 +757,12 @@ def extract_metadata(
         or guessed_title.lower() in {"certificate", "zertifikat", "document", "scan"}
         or guessed_title == Path(file_path.name).stem
         or (len(guessed_title.split()) <= 1 and len(guessed_title) < 15)
-        or any(n in guessed_title.lower() for n in ["dominik flüchter", "dominik fluechter"])
+        or any(
+            n in guessed_title.lower()
+            for n in ["dominik flüchter", "dominik fluechter"]
+        )
     )
-    if (
-        ocr_pending
-        or len(extracted_text) < 60
-        or is_weak_title
-        or not guessed_provider
-    ):
+    if ocr_pending or len(extracted_text) < 60 or is_weak_title or not guessed_provider:
         gemini_data = extract_via_gemini_vision(file_path)
         if gemini_data and isinstance(gemini_data, dict):
             logger.info(

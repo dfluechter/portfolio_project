@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Regression tests for color-mode coherence in design_system.py (issue #428).
 
@@ -24,9 +23,11 @@ from pathlib import Path
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from design_system import (  # noqa: E402
-    _filter_anti_patterns_for_mode,
+from design_system import (
+    BOX_WIDTH,
+    DesignSystemGenerator,
     _contrast_ratio,
+    _filter_anti_patterns_for_mode,
     _mode_support_labels,
     _palette_is_dark,
     _query_wants_dark,
@@ -34,15 +35,21 @@ from design_system import (  # noqa: E402
     _resolve_color_mode,
     _select_palette_for_mode,
     _style_is_dark_primary,
-    BOX_WIDTH,
-    DesignSystemGenerator,
     format_ascii_box,
     format_markdown,
     format_master_md,
-)  # noqa: I001 - private helpers first, public class last
+)
 
-LIGHT_PALETTE = {"Product Type": "SaaS", "Background": "#F8FAFC", "Foreground": "#020617"}
-DARK_PALETTE = {"Product Type": "Fintech/Crypto", "Background": "#0F172A", "Foreground": "#F8FAFC"}
+LIGHT_PALETTE = {
+    "Product Type": "SaaS",
+    "Background": "#F8FAFC",
+    "Foreground": "#020617",
+}
+DARK_PALETTE = {
+    "Product Type": "Fintech/Crypto",
+    "Background": "#0F172A",
+    "Foreground": "#F8FAFC",
+}
 
 # Verbatim from styles.csv row "Modern Dark (Cinema Mobile)".
 DARK_PRIMARY_STYLE = {
@@ -114,19 +121,20 @@ class TestPaletteSelection(unittest.TestCase):
         self.assertEqual(_select_palette_for_mode([], "dark"), {})
 
     def test_category_identity_wins_over_unrelated_dark_palette(self):
-        chosen = _select_palette_for_mode(
-            [LIGHT_PALETTE, DARK_PALETTE], "dark", "SaaS")
+        chosen = _select_palette_for_mode([LIGHT_PALETTE, DARK_PALETTE], "dark", "SaaS")
         self.assertEqual("SaaS", chosen["Product Type"])
         self.assertEqual("derived-dark", chosen["_mode_derivation"])
         self.assertTrue(_palette_is_dark(chosen))
         self.assertGreaterEqual(
-            _contrast_ratio(chosen["Ring"], chosen["Background"]), 3.0)
+            _contrast_ratio(chosen["Ring"], chosen["Background"]), 3.0
+        )
 
 
 class TestAntiPatternGating(unittest.TestCase):
     def test_dark_clause_dropped_others_kept(self):
         result = _filter_anti_patterns_for_mode(
-            "Excessive animation + Dark mode by default", "dark")
+            "Excessive animation + Dark mode by default", "dark"
+        )
         self.assertEqual(result, "Excessive animation")
 
     def test_light_mode_is_a_no_op(self):
@@ -151,7 +159,7 @@ class TestEndToEndCoherence(unittest.TestCase):
         background = ds["colors"]["background"]
         self.assertTrue(
             _palette_is_dark({"Background": background}),
-            "dark-mode query returned a light background: {}".format(background),
+            f"dark-mode query returned a light background: {background}",
         )
 
     def test_generator_exports_every_semantic_foreground_pair(self):
@@ -209,24 +217,35 @@ class TestLightResultOutputCoherence(unittest.TestCase):
 
     def test_labels_unchanged_when_dark_mode_is_not_avoided(self):
         style = {"light_mode": "supported", "dark_mode": "supported"}
-        self.assertEqual(_mode_support_labels(style, "Harsh animations"),
-                         ("supported", "supported"))
+        self.assertEqual(
+            _mode_support_labels(style, "Harsh animations"), ("supported", "supported")
+        )
 
     def test_ascii_box_lines_never_overflow_the_border(self):
         for query in (self.QUERY, "SaaS invoicing fintech B2B professional dark mode"):
             with self.subTest(query=query):
                 ds = DesignSystemGenerator().generate(query, motion=7)
-                widths = {len(re.sub(r"\033\[[0-9;]*m", "", line))
-                          for line in format_ascii_box(ds).splitlines()}
+                widths = {
+                    len(re.sub(r"\033\[[0-9;]*m", "", line))
+                    for line in format_ascii_box(ds).splitlines()
+                }
                 self.assertEqual(widths, {BOX_WIDTH + 1})
 
     def test_master_button_text_meets_contrast_on_its_background(self):
         colors = self.ds["colors"]
         master = format_master_md(self.ds)
-        primary = re.search(r"\.btn-primary \{\n  background: (#\w+);\n  color: (#\w+);", master)
-        secondary = re.search(r"\.btn-secondary \{\n  background: transparent;\n  color: (#\w+);", master)
-        self.assertGreaterEqual(_contrast_ratio(primary.group(2), primary.group(1)), 4.5)
-        self.assertGreaterEqual(_contrast_ratio(secondary.group(1), colors["background"]), 4.5)
+        primary = re.search(
+            r"\.btn-primary \{\n  background: (#\w+);\n  color: (#\w+);", master
+        )
+        secondary = re.search(
+            r"\.btn-secondary \{\n  background: transparent;\n  color: (#\w+);", master
+        )
+        self.assertGreaterEqual(
+            _contrast_ratio(primary.group(2), primary.group(1)), 4.5
+        )
+        self.assertGreaterEqual(
+            _contrast_ratio(secondary.group(1), colors["background"]), 4.5
+        )
 
 
 if __name__ == "__main__":

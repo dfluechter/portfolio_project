@@ -30,4 +30,3 @@ fi
 
 echo "==> Synchronisiere RAG Knowledge Chunks (Initial- & Delta-Indizierung)..."
 uv run python manage.py index_rag_chunks
-

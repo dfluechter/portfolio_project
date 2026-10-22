@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Regression tests for the dropped --stack flag in --design-system mode (issue #484).
 
@@ -41,7 +40,9 @@ class TestStackFlagWithDesignSystem(unittest.TestCase):
         )
 
     def test_design_system_with_stack_succeeds_and_says_stack_is_ignored(self):
-        proc = self.run_search("platform engineer dashboard", "--design-system", "--stack", "nextjs")
+        proc = self.run_search(
+            "platform engineer dashboard", "--design-system", "--stack", "nextjs"
+        )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("--stack", proc.stderr)
         self.assertIn("ignored", proc.stderr.lower())

@@ -1,8 +1,8 @@
 # ADR-001: Monorepo vs. Polyrepo
 
-**Status:** Accepted  
-**Datum:** 2026-10-06  
-**Autor:** Dominik Flüchter  
+**Status:** Accepted
+**Datum:** 2026-10-06
+**Autor:** Dominik Flüchter
 
 ## Kontext und Problem
 Das Portfolio-Projekt besteht aus zwei Hauptkomponenten: einem Backend (Django 5.2) und einem Frontend (React 19). Es stellte sich die Frage, ob diese Komponenten in separaten Repositories (Polyrepo) oder in einem gemeinsamen Repository (Monorepo) verwaltet werden sollen.

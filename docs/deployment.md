@@ -220,4 +220,3 @@ Da der Browser beim Direct-to-Storage Upload (User Story 10.1) Binärdateien dir
 ```
 
 Diese Konfiguration kann über das Supabase Dashboard (Storage $\rightarrow$ Bucket Configuration $\rightarrow$ CORS Policies) oder über die AWS/S3-kompatible API hinterlegt werden.
-

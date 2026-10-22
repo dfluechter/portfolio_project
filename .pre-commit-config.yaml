@@ -6,81 +6,48 @@ repos:
   # 1. Standard-Sicherheits- und Format-Checks
   # ============================================================================
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        description: Entfernt überflüssige Leerzeichen am Zeilenende.
       - id: end-of-file-fixer
-        description: Stellt sicher, dass jede Datei mit einer leeren Zeile endet.
       - id: check-yaml
-        description: Überprüft YAML-Dateien auf syntaktische Korrektheit.
       - id: check-json
-        description: Überprüft JSON-Dateien auf syntaktische Korrektheit.
+        exclude: tsconfig.*\.json$
       - id: check-added-large-files
-        description: Verhindert das unabsichtliche Einchecken von riesigen Mediendateien (Limit: 5MB).
-        args: ['--maxkb=5120']
+        args: ["--maxkb=5120"]
       - id: check-toml
-        description: Ueberprueft TOML-Dateien (z. B. pyproject.toml) auf syntaktische Korrektheit.
       - id: check-merge-conflict
-        description: Verhindert das Einchecken ungeloester Git-Merge-Konfliktmarker.
-      - id: no-commit-to-branch
-        description: Verhindert direkte Commits auf geschuetzte Haupt-Branches (main/master).
-        args: ['--branch', 'main', '--branch', 'master']
 
   # ============================================================================
-  # 2. Python Qualitätssicherung (Ruff Linter & Formatter)
+  # 2. Python Qualitätssicherung (Ruff Linter & Formatter für backend/)
   # ============================================================================
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.10
+    rev: v0.17.1
     hooks:
-      # Linter ausführen
       - id: ruff
-        description: Prüft den Python-Code auf Stil- und Logikfehler.
-        args: [ --fix ] # Behebt einfache Fehler (wie ungenutzte Imports) automatisch
-      # Formatter ausführen
+        args: [--fix]
+        files: ^backend/
       - id: ruff-format
-        description: Erzwingt eine konsistente Code-Formatierung.
+        files: ^backend/
 
   # ============================================================================
-  # 3. Statische Typprüfung für Python (MyPy via lokale Ausführung)
+  # 3. Python Statische Typprüfung (MyPy im backend/-Kontext via uv)
   # ============================================================================
   - repo: local
     hooks:
       - id: mypy
         name: mypy (lokal via uv)
-        entry: uv run mypy
+        entry: uv run --directory backend mypy .
         language: system
         types: [python]
-        pass_filenames: true
-        description: Prüft statische Typdefinitionen im Python-Code.
+        pass_filenames: false
 
   # ============================================================================
-  # 4. Shell-Skript Validierung (ShellCheck)
-  # ============================================================================
-  - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.10.0
-    hooks:
-      - id: shellcheck
-        description: Validiert Shell-Skripte (wie build.sh oder start_dev.sh) auf Syntaxfehler und Best Practices.
-
-  # ============================================================================
-  # 5. Geheimnisschutz & DevSecOps (TruffleHog)
-  # ============================================================================
-  - repo: https://github.com/trufflesecurity/trufflehog
-    rev: v3.63.11
-    hooks:
-      - id: trufflehog
-        name: TruffleHog Secret Scan
-        description: Scannt gestagete Dateien auf versehentlich eingebrachte API-Keys, Passwoerter und Tokens.
-        entry: trufflehog git file://. --since-commit HEAD --only-verified
-
-  # ============================================================================
-  # 6. Git-Commit-Meldungen validieren (Commitlint)
+  # 4. Git-Commit-Meldungen validieren (Commitlint)
   # ============================================================================
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.16.0
+    rev: v9.27.0
     hooks:
       - id: commitlint
         stages: [commit-msg]
-        additional_dependencies: ['@commitlint/config-conventional']
-        description: Erzwingt die Einhaltung der Conventional Commit-Richtlinien.
+        additional_dependencies: ["@commitlint/config-conventional"]

@@ -215,4 +215,3 @@ describe('PortfolioChatWidget Component', () => {
     expect(screen.getByRole('button', { name: /Nachricht senden/i })).toBeDisabled();
   });
 });
-

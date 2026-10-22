@@ -32,7 +32,7 @@ describe('AuthContext', () => {
     (api.refreshUser as any).mockRejectedValue(new Error('no auth'));
 
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
-    
+
     // Zuerst lädt der Kontext, bis refreshUser fertig ist
     // Note: da der useEffect asynchron läuft, sind wir nach dem ersten Render im loading Zustand
     expect(result.current.isLoading).toBe(true);
@@ -48,12 +48,12 @@ describe('AuthContext', () => {
     // @ts-ignore
     (api.refreshUser as any).mockRejectedValue(new Error('no auth'));
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
-    
+
     // Warten, bis das initiale Laden abgeschlossen ist
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
-    
+
     act(() => {
       window.dispatchEvent(new Event('auth:unauthorized'));
     });

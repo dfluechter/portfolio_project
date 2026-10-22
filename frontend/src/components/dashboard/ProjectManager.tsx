@@ -264,7 +264,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
             <label htmlFor="project-image-file" className="block text-xs font-semibold text-slate-400 mb-1">
               Projekt-Bild (optional)
             </label>
-            
+
             {imagePreview ? (
               <div className="relative mb-2 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 p-2 flex items-center gap-3">
                 <img
@@ -435,7 +435,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
                       </div>
 
                       <p className="text-xs text-slate-400 line-clamp-2">{proj.description}</p>
-                      
+
                       <div className="flex items-center gap-3 pt-1">
                         {proj.github_url && (
                           <a

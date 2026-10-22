@@ -117,4 +117,3 @@ Access Token: 60 min, Refresh Token: 7 days. Header: `Authorization: Bearer <tok
 - German `verbose_name` / `verbose_name_plural` on all model `Meta` classes.
 - Inline DB model field comments in German.
 - Test classes use plain `class` syntax (no `unittest.TestCase`).
-

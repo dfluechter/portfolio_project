@@ -52,11 +52,11 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 ### Epic 1: CI/CD- & Build-Pipeline-Stabilität (P0 - Kritisch)
 
 #### User Story 1.1: Konsistenz von Render-Build und GitHub Actions Backend-Build
-> **Als** DevOps-/Backend-Entwickler  
-> **möchte ich**, dass `build.sh` und der CI-Job `backend-build` den Ausführungskontext des `backend/`-Unterverzeichnisses korrekt berücksichtigen,  
+> **Als** DevOps-/Backend-Entwickler
+> **möchte ich**, dass `build.sh` und der CI-Job `backend-build` den Ausführungskontext des `backend/`-Unterverzeichnisses korrekt berücksichtigen,
 > **damit** automatische Deployments auf Render und GitHub Actions System-Checks fehlerfrei durchlaufen.
 
-**Kontext:**  
+**Kontext:**
 `render.yaml` definiert `rootDir: backend` und `buildCommand: ./build.sh`. Das Skript `build.sh` liegt jedoch im Wurzelverzeichnis. Ebenso fehlte im GitHub Actions Workflow `.github/workflows/ci.yml` beim Job `backend-build` die Direktive `defaults: run: working-directory: backend`.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -74,8 +74,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 ### Epic 2: Frontend-Architektur-Dokumentation (P1 - Hoch)
 
 #### User Story 2.1: Erstellung von `docs/frontend.md`
-> **Als** Frontend-Entwickler  
-> **möchte ich** eine dedizierte Architekturdokumentation für das React-19-Frontend,  
+> **Als** Frontend-Entwickler
+> **möchte ich** eine dedizierte Architekturdokumentation für das React-19-Frontend,
 > **damit** Komponentenstruktur, State Management (TanStack Query + AuthContext), Axios-Interceptors und Tailwind v4 sauber nachvollziehbar sind.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -92,8 +92,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 ### Epic 3: Repository-Hygiene & Dateistruktur (P2 - Mittel)
 
 #### User Story 3.1: Konsolidierung verwaister Root-Artefakte
-> **Als** Entwickler und Maintainer  
-> **möchte ich**, dass verwaiste Entwicklungs- und Asset-Dateien aus dem Root-Verzeichnis aufgeräumt werden,  
+> **Als** Entwickler und Maintainer
+> **möchte ich**, dass verwaiste Entwicklungs- und Asset-Dateien aus dem Root-Verzeichnis aufgeräumt werden,
 > **damit** das Projekt übersichtlich und frei von versehentlich committeten Verzeichnissen bleibt.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -106,8 +106,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 ### Epic 4: Deployment & Operations Leitfaden (P2 - Mittel)
 
 #### User Story 4.1: Erstellung von `docs/deployment.md`
-> **Als** Maintainer  
-> **möchte ich** eine Schritt-für-Schritt-Anleitung für das Deployment auf Render und die Konfiguration von Neon Serverless Branching in GitHub Actions,  
+> **Als** Maintainer
+> **möchte ich** eine Schritt-für-Schritt-Anleitung für das Deployment auf Render und die Konfiguration von Neon Serverless Branching in GitHub Actions,
 > **damit** Releases und Incident-Management reproduzierbar und dokumentiert sind.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -122,8 +122,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 ### Epic 5: Zertifikats-Review & Dashboard-Skalierung (P1 - Hoch)
 
 #### User Story 5.1: Server-Side Pagination & Review-Filter für Certificates API
-> **Als** Administrator  
-> **möchte ich**, dass der Endpunkt `/api/certificates/` paginiert ist und Filter nach `is_published` sowie unvollständigen Daten unterstützt,  
+> **Als** Administrator
+> **möchte ich**, dass der Endpunkt `/api/certificates/` paginiert ist und Filter nach `is_published` sowie unvollständigen Daten unterstützt,
 > **damit** das Dashboard auch bei hunderten Zertifikaten reaktionsschnell bleibt und ich unfertige Einträge gezielt prüfen kann.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -137,8 +137,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 - [x] Abwärtskompatibilität für Full-List-Abrufe via `?no_page=true` oder `?all=true`.
 
 #### User Story 5.2: Review-Drawer & On-Demand Metadata Extraction im Frontend
-> **Als** Administrator  
-> **möchte ich** im Dashboard ein Review-Modal bzw. einen Detail-Drawer mit Dokumentenvorschau und manueller OCR-Analyse,  
+> **Als** Administrator
+> **möchte ich** im Dashboard ein Review-Modal bzw. einen Detail-Drawer mit Dokumentenvorschau und manueller OCR-Analyse,
 > **damit** ich Zertifikate visuell kontrollieren, Metadaten nachschärfen und gezielt veröffentlichen kann.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -154,8 +154,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 ### Epic 6: Public Track-Filterung & Cold-Start UX (P1 - Hoch)
 
 #### User Story 6.1: Interaktive Many-to-Many Track-Filterchips auf der Startseite
-> **Als** Besucher des Portfolios  
-> **möchte ich** auf der Landingpage Zertifikate interaktiv über klickbare Track-Chips filtern können,  
+> **Als** Besucher des Portfolios
+> **möchte ich** auf der Landingpage Zertifikate interaktiv über klickbare Track-Chips filtern können,
 > **damit** ich gezielt Qualifikationen in meinen Wunschbereichen (z. B. "Cloud & DevOps", "Backend") einsehen kann.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -165,8 +165,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 - [x] Reset-Button leert die Track-Auswahl bei Bedarf.
 
 #### User Story 6.2: Status-Ping & Cold-Start Banner für Render Free-Tier
-> **Als** Besucher oder Administrator  
-> **möchte ich** eine transparente Lade-Rückmeldung sehen, wenn der Render-Backend-Dienst nach Inaktivität aufgeweckt wird,  
+> **Als** Besucher oder Administrator
+> **möchte ich** eine transparente Lade-Rückmeldung sehen, wenn der Render-Backend-Dienst nach Inaktivität aufgeweckt wird,
 > **damit** ich verstehe, dass der Server hochfährt und kein technischer Defekt vorliegt.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -179,8 +179,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 ### Epic 7: Headless Cleanup & Frontend Bundle Splitting (P1 - Hoch)
 
 #### User Story 7.1: Entfernung veralteter Django HTML-Templates
-> **Als** Backend-Entwickler  
-> **möchte ich**, dass verwaiste Django-Templates (`login.html`, `dashboard.html`) entfernt und die Routen auf reine API-Endpunkte bereinigt werden,  
+> **Als** Backend-Entwickler
+> **möchte ich**, dass verwaiste Django-Templates (`login.html`, `dashboard.html`) entfernt und die Routen auf reine API-Endpunkte bereinigt werden,
 > **damit** die Architektur sauber als Headless-Backend definiert ist.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -189,8 +189,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 - [x] Root-Route (`/`) verweist auf Swagger-UI oder liefert JSON-Status.
 
 #### User Story 7.2: Code-Splitting & Lazy Loading für Admin-Dashboard
-> **Als** Frontend-Entwickler  
-> **möchte ich**, dass das Admin-Dashboard dynamisch nachgeladen wird (`React.lazy`),  
+> **Als** Frontend-Entwickler
+> **möchte ich**, dass das Admin-Dashboard dynamisch nachgeladen wird (`React.lazy`),
 > **damit** Besucher der öffentlichen Startseite nicht das schwere Dashboard-Bundle laden müssen und der Vite-Chunk-Size-Warning behoben ist.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -203,8 +203,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 ### Epic 8: Neon PostgreSQL Connection Separation & DDL-Stabilität (P1 - Hoch)
 
 #### User Story 8.1: Trennung von Pooled- und Direct-Connection für Neon
-> **Als** DevOps-Ingenieur  
-> **möchte ich**, dass `DIRECT_DATABASE_URL` für Migrationen und `DATABASE_URL` für den Gunicorn-Webbetrieb genutzt wird,  
+> **Als** DevOps-Ingenieur
+> **möchte ich**, dass `DIRECT_DATABASE_URL` für Migrationen und `DATABASE_URL` für den Gunicorn-Webbetrieb genutzt wird,
 > **damit** PgBouncer-Verbindungsfehler und Transaktions-Locks bei Schema-Updates ausgeschlossen sind.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -217,8 +217,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 ### Epic 9: Gemini Vision Fallback & Magic-Byte Validation (P2 - Mittel)
 
 #### User Story 9.1: Multimodale Gemini Vision OCR-Anbindung
-> **Als** Administrator  
-> **möchte ich**, dass gescannte oder bildbasierte Zertifikate ohne Textlayer on-demand via Gemini Vision analysiert werden können,  
+> **Als** Administrator
+> **möchte ich**, dass gescannte oder bildbasierte Zertifikate ohne Textlayer on-demand via Gemini Vision analysiert werden können,
 > **damit** auch schwierige Handschriften und komplexe Layouts präzise erkannt werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -227,8 +227,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 - [x] Integrationstest mit gemocktem Gemini-API-Response.
 
 #### User Story 9.2: Serverseitige Magic-Byte Dateiprüfung
-> **Als** Security-Verantwortlicher  
-> **möchte ich**, dass Datei-Uploads auf echte Header-Magic-Bytes geprüft werden,  
+> **Als** Security-Verantwortlicher
+> **möchte ich**, dass Datei-Uploads auf echte Header-Magic-Bytes geprüft werden,
 > **damit** manipulierte Dateien mit gefälschten Dateiendungen abgewiesen werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -241,8 +241,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 ### Epic 10: Supabase S3 Presigned Uploads & Security (P1 - Hoch)
 
 #### User Story 10.1: Presigned S3-Uploads für Direct-to-Storage
-> **Als** Cloud-Architekt  
-> **möchte ich**, dass Uploads direkt vom Browser zu Supabase S3 über presigned URLs erfolgen,  
+> **Als** Cloud-Architekt
+> **möchte ich**, dass Uploads direkt vom Browser zu Supabase S3 über presigned URLs erfolgen,
 > **damit** der Render-Container entlastet wird.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -250,11 +250,11 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 - [x] Frontend lädt Datei direkt nach Supabase hoch und meldet den Speicher-Schlüssel an Django zurück.
 
 #### User Story 10.2: Serverseitige Härtung und Integritätsprüfung für Direct-to-Storage Uploads
-> **Als** Administrator und Security-Verantwortlicher  
-> **möchte ich**, dass beim Registrieren eines per Direct-Upload gespeicherten Zertifikats via `storage_key` die Datei im S3-Storage auf Existenz, Magic Bytes und Maximalgröße geprüft sowie ihr Hash serverseitig verifiziert wird,  
+> **Als** Administrator und Security-Verantwortlicher
+> **möchte ich**, dass beim Registrieren eines per Direct-Upload gespeicherten Zertifikats via `storage_key` die Datei im S3-Storage auf Existenz, Magic Bytes und Maximalgröße geprüft sowie ihr Hash serverseitig verifiziert wird,
 > **damit** Clients weder fehlerhafte/leere Storage-Keys noch manipulierte Hashes oder unzulässige Dateiformate in der Datenbank anlegen können.
 
-**Kontext:**  
+**Kontext:**
 In US 10.1 wurde der Presigned Upload umgesetzt. Aktuell vertraut das Backend bei `POST /api/certificates/` mit `storage_key` darauf, dass die Datei existiert und der vom Client übermittelte `sha256_hash` korrekt ist. Es erfolgt noch keine serverseitige Header-Bytes-Prüfung auf dem S3-Objekt.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -285,8 +285,8 @@ In US 10.1 wurde der Presigned Upload umgesetzt. Aktuell vertraut das Backend be
 ### Epic 11: RAG Portfolio-Copilot, Guardrails & UI-Skills Polish (P1 - Hoch)
 
 #### User Story 11.1: RAG Grounding Context & Query-Pruning mit Gemini 3.8 Flash
-> **Als** Portfolio-Besucher  
-> **möchte ich** per KI-Chat Fragen zu Projekten, Fähigkeiten und Werdegang stellen,  
+> **Als** Portfolio-Besucher
+> **möchte ich** per KI-Chat Fragen zu Projekten, Fähigkeiten und Werdegang stellen,
 > **damit** ich schnell fundierte Informationen erhalte, die strikt auf echten Portfolio-Daten basieren.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -300,8 +300,8 @@ In US 10.1 wurde der Presigned Upload umgesetzt. Aktuell vertraut das Backend be
   - **Then** werden irrelevante Sektionen (z. B. Zertifikate bei reinen Projektfragen) herausgefiltert und mindestens 40-50 % der Kontext-Tokens eingespart.
 
 #### User Story 11.2: Automatische Cache-Invalidierung via Django Signals ($O(1)$)
-> **Als** Administrator und Systemarchitekt  
-> **möchte ich**, dass Änderungen an Projekten, Skills, Zertifikaten oder dem Werdegang den KI-Kontext sofort invalidieren,  
+> **Als** Administrator und Systemarchitekt
+> **möchte ich**, dass Änderungen an Projekten, Skills, Zertifikaten oder dem Werdegang den KI-Kontext sofort invalidieren,
 > **damit** Besucher niemals veraltete Antworten erhalten, während Lesezugriffe maximal performant aus dem Cache bedient werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -315,8 +315,8 @@ In US 10.1 wurde der Presigned Upload umgesetzt. Aktuell vertraut das Backend be
   - **Then** ist der Cache-Key an die aktuelle Kontext-Version gekoppelt (`portfolio_ai_resp_v{version}_{hash}`), sodass alte Cache-Einträge bei Datenänderungen automatisch in $O(1)$ verfallen.
 
 #### User Story 11.3: Sicherheits-Guardrails (Pre-Flight Filterung & 0-Token Drop)
-> **Als** Security-Verantwortlicher  
-> **möchte ich**, dass der Chat-Endpunkt vor Prompt Injections, Jailbreaks und DoS-Angriffen geschützt ist,  
+> **Als** Security-Verantwortlicher
+> **möchte ich**, dass der Chat-Endpunkt vor Prompt Injections, Jailbreaks und DoS-Angriffen geschützt ist,
 > **damit** keine sensiblen Systemprompts geleakt werden und keine unnötigen LLM-Tokenkosten anfallen.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -330,8 +330,8 @@ In US 10.1 wurde der Presigned Upload umgesetzt. Aktuell vertraut das Backend be
   - **Then** wird der Request nicht an Gemini weitergeleitet, sondern direkt mit einer defensiven Antwort beantwortet (0 LLM-Tokens verbraucht).
 
 #### User Story 11.4: Interaktive Deep-Linking Quell-Badges & UI-Skills Polish
-> **Als** Portfolio-Besucher  
-> **möchte ich**, dass Quellen in KI-Antworten als klickbare Badges angezeigt werden und mich direkt zur relevanten Sektion scrollen,  
+> **Als** Portfolio-Besucher
+> **möchte ich**, dass Quellen in KI-Antworten als klickbare Badges angezeigt werden und mich direkt zur relevanten Sektion scrollen,
 > **damit** ich Aussagen der KI mit einem Klick visuell verifizieren kann.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -349,8 +349,8 @@ In US 10.1 wurde der Presigned Upload umgesetzt. Aktuell vertraut das Backend be
   - **Then** bietet die Oberfläche Glassmorphism (`backdrop-blur-2xl`), Radar-Ping am Trigger-Button, Bouncing Wave Thinking State und Copy-to-Clipboard mit Morphing Checkmark.
 
 #### User Story 11.5: Native pgvector Vektordatenbank & Hybrid Retrieval (Option A)
-> **Als** Systemarchitekt und Portfolio-Besucher  
-> **möchte ich**, dass Portfolio-Inhalte und OCR-Zertifikatstexte als granulare Wissens-Chunks (`KnowledgeChunk`) mit 768-dimensionalen Embeddings (`text-embedding-004`) in Neon PostgreSQL (`pgvector`) indiziert und per Hybrid Retrieval durchsucht werden,  
+> **Als** Systemarchitekt und Portfolio-Besucher
+> **möchte ich**, dass Portfolio-Inhalte und OCR-Zertifikatstexte als granulare Wissens-Chunks (`KnowledgeChunk`) mit 768-dimensionalen Embeddings (`text-embedding-004`) in Neon PostgreSQL (`pgvector`) indiziert und per Hybrid Retrieval durchsucht werden,
 > **damit** auch spezifische Detailfragen über große Textmengen hinweg mit höchster semantischer Präzision beantwortet werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -372,11 +372,11 @@ In US 10.1 wurde der Presigned Upload umgesetzt. Aktuell vertraut das Backend be
 ### Epic 12: Track-Pflicht für Zertifikate & FontAwesome Icon Integration (P1 - Hoch)
 
 #### User Story 12.1: Pflichtzuweisung von mindestens einem Track für veröffentlichte Zertifikate
-> **Als** Administrator und Kurator  
-> **möchte ich**, dass ein Zertifikat nur dann veröffentlicht werden kann (`is_published=True`), wenn ihm mindestens ein Track zugewiesen ist,  
+> **Als** Administrator und Kurator
+> **möchte ich**, dass ein Zertifikat nur dann veröffentlicht werden kann (`is_published=True`), wenn ihm mindestens ein Track zugewiesen ist,
 > **damit** alle öffentlich sichtbaren Zertifikate inhaltlich kategorisiert sind und die Track-Filterung auf der Startseite lückenlos funktioniert.
 
-**Kontext:**  
+**Kontext:**
 Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unveröffentlichte Entwürfe (z. B. nach initialem Datei-Import oder Inbox-Kandidaten) dürfen weiterhin ohne Tracks existieren. Vor oder bei der Veröffentlichung (`POST /api/certificates/<id>/publish/` oder `PATCH` mit `is_published=true`) muss jedoch zwingend mindestens ein Track zugeordnet sein.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -406,8 +406,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 12.2: Pytest Unit-Test-Suite für die Track-Zertifikats-Validierung
-> **Als** QA-Tester  
-> **möchte ich** eine dedizierte Pytest-Test-Suite für alle Veröffentlichungs- und Track-Validierungsfälle,  
+> **Als** QA-Tester
+> **möchte ich** eine dedizierte Pytest-Test-Suite für alle Veröffentlichungs- und Track-Validierungsfälle,
 > **damit** die Integritätsregel regressionssicher abgedeckt ist und die Testabdeckung im Backend $\ge 95\%$ bleibt.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -424,8 +424,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 12.3: FontAwesome Solid Icon Download-Service & Track-Model-Erweiterung
-> **Als** Entwickler und Maintainer  
-> **möchte ich**, dass Tracks ein Icon-Attribut besitzen und FontAwesome Solid Icons bei erstmaliger Verwendung automatisch von `fontawesome.com` heruntergeladen und lokal unter `/static/img/icons/` gecacht werden,  
+> **Als** Entwickler und Maintainer
+> **möchte ich**, dass Tracks ein Icon-Attribut besitzen und FontAwesome Solid Icons bei erstmaliger Verwendung automatisch von `fontawesome.com` heruntergeladen und lokal unter `/static/img/icons/` gecacht werden,
 > **damit** keine externen CDN-Laufzeitabhängigkeiten bestehen und Icons schnell und zuverlässig ausgeliefert werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -450,8 +450,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 12.4: Visualisierung der Track-Icons auf Portfolio- und Dashboard-Page
-> **Als** Besucher und Administrator  
-> **möchte ich** Tracks sowohl auf der öffentlichen Startseite als auch im Admin-Dashboard mit ihren Icons visualisiert sehen,  
+> **Als** Besucher und Administrator
+> **möchte ich** Tracks sowohl auf der öffentlichen Startseite als auch im Admin-Dashboard mit ihren Icons visualisiert sehen,
 > **damit** die thematische Zuordnung visuell ansprechend, sofort erfassbar und konsistent ist.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -473,8 +473,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ### Epic 13: Robuste OCR-Extraktion, Dokumentenvorschau & Commitlint-Governance (P1 - Hoch)
 
 #### User Story 13.1: SDK-Migration auf Gemini 3.8 Flash & Mehrzeiliges Plattform-Parsing
-> **Als** Administrator und Backend-Entwickler  
-> **möchte ich**, dass der Extraktions-Service das moderne `google-genai` SDK mit dem Modell `gemini-3.8-flash` nutzt und mehrzeilige Plattform-Zertifikate (wie Udemy und Coursera) semantisch korrekt extrahiert,  
+> **Als** Administrator und Backend-Entwickler
+> **möchte ich**, dass der Extraktions-Service das moderne `google-genai` SDK mit dem Modell `gemini-3.8-flash` nutzt und mehrzeilige Plattform-Zertifikate (wie Udemy und Coursera) semantisch korrekt extrahiert,
 > **damit** Metadaten-Extraktionen auch für Neunutzer fehlerfrei funktionieren und Kurstitel nicht mehr durch Floskeln oder temporäre Dateinamen verfälscht werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -504,8 +504,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 13.2: „Show File“-Button & Live-Dokumentenvorschau in Django-Admin & Dashboard
-> **Als** Administrator  
-> **möchte ich** im Django-Admin und im Admin-Dashboard für ausstehende Zertifikate einen direkten „Show File“-Button sowie eine interaktive Inline-Dokumentenvorschau (PDF/Bild),  
+> **Als** Administrator
+> **möchte ich** im Django-Admin und im Admin-Dashboard für ausstehende Zertifikate einen direkten „Show File“-Button sowie eine interaktive Inline-Dokumentenvorschau (PDF/Bild),
 > **damit** ich Zertifikatsdateien vor der Freigabe visuell kontrollieren kann, ohne den Tab zu verlassen oder die Datei separat herunterladen zu müssen.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -533,8 +533,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 13.3: Konventionelle Git-Commit-Governance & Commitlint-Härtung
-> **Als** Maintainer und DevOps-Ingenieur  
-> **möchte ich** einheitliche, automatisierte Commitlint-Regeln mit Unterstützung für den Typ `enh`, `camelCase`-Scopes und maximal 72 Zeichen Header-Länge,  
+> **Als** Maintainer und DevOps-Ingenieur
+> **möchte ich** einheitliche, automatisierte Commitlint-Regeln mit Unterstützung für den Typ `enh`, `camelCase`-Scopes und maximal 72 Zeichen Header-Länge,
 > **damit** alle Git-Commits im Monorepo einer einheitlichen, sauberen Konvention folgen und keine fehlerhaften Commit-Messages in den Verlauf gelangen.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -554,8 +554,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 13.4: Systemweite Sicherheitsdokumentation (`docs/SECURITY.md`)
-> **Als** Security Auditor und Open-Source Maintainer  
-> **möchte ich** eine umfassende Sicherheitsarchitektur-Dokumentation im Repository,  
+> **Als** Security Auditor und Open-Source Maintainer
+> **möchte ich** eine umfassende Sicherheitsarchitektur-Dokumentation im Repository,
 > **damit** Sicherheitsmechanismen, Read-Only-Governance, Zero-Cost Circuit Breaker und Responsible-Disclosure-Richtlinien klar nachvollziehbar sind.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -581,8 +581,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ### Epic 14: Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing (P2 - Mittel)
 
 #### User Story 14.1: Automatisierter Inbox-Scan mit Duplikats- & Re-Import-Erkennung
-> **Als** Administrator  
-> **möchte ich**, dass der Inbox-Scanner (`scan_inbox`) bereits vorhandene Zertifikate (anhand von SHA-256 Hash und Quellpfad) automatisch erkennt und überspringt,  
+> **Als** Administrator
+> **möchte ich**, dass der Inbox-Scanner (`scan_inbox`) bereits vorhandene Zertifikate (anhand von SHA-256 Hash und Quellpfad) automatisch erkennt und überspringt,
 > **damit** keine redundanten Einträge in `PendingCertificate` erzeugt werden und der Import-Lauf idempotent und sicher ist.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -602,8 +602,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 14.2: Bulk-Approve und Bulk-Reject im Django-Admin und React-Dashboard
-> **Als** Administrator  
-> **möchte ich** mehrere ausstehende Zertifikate gleichzeitig freigeben oder ablehnen können,  
+> **Als** Administrator
+> **möchte ich** mehrere ausstehende Zertifikate gleichzeitig freigeben oder ablehnen können,
 > **damit** ich bei großen Zertifikatsstapeln nicht jeden Eintrag einzeln öffnen und bestätigen muss.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -623,8 +623,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 14.3: Automatisierte Integritäts- und Bereinigungs-Checks
-> **Als** Systembetreuer  
-> **möchte ich** einen Management-Befehl `verify_certificate_integrity`, der alle Zertifikate gegen den S3-Storage abgleicht,  
+> **Als** Systembetreuer
+> **möchte ich** einen Management-Befehl `verify_certificate_integrity`, der alle Zertifikate gegen den S3-Storage abgleicht,
 > **damit** tote Links, fehlende Storage-Objekte oder Hash-Inkonsistenzen sofort aufgedeckt werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -642,8 +642,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ### Epic 15: Public Performance, HTTP-Caching & Core Web Vitals (P2 - Mittel)
 
 #### User Story 15.1: HTTP Conditional Caching (ETag & Cache-Control) für Read-Only APIs
-> **Als** Portfolio-Besucher und Betreiber  
-> **möchte ich**, dass öffentliche Lese-Endpunkte (`/api/projects/`, `/api/tracks/`, `/api/skills/`, `/api/certificates/`) HTTP-Caching-Header (`ETag`, `Cache-Control`, `304 Not Modified`) unterstützen,  
+> **Als** Portfolio-Besucher und Betreiber
+> **möchte ich**, dass öffentliche Lese-Endpunkte (`/api/projects/`, `/api/tracks/`, `/api/skills/`, `/api/certificates/`) HTTP-Caching-Header (`ETag`, `Cache-Control`, `304 Not Modified`) unterstützen,
 > **damit** wiederkehrende Besuche blitzschnell laden und unnötige Datenbankabfragen auf Neon vermieden werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -663,8 +663,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 15.2: Image & Media Optimization (Responsive WebP & Blur-Up)
-> **Als** Mobil-Nutzer mit schwacher Internetverbindung  
-> **möchte ich**, dass Projekt-Vorschaubilder und Zertifikats-Thumbnails als moderne WebP-Bilder in optimierter Auflösung ausgeliefert werden,  
+> **Als** Mobil-Nutzer mit schwacher Internetverbindung
+> **möchte ich**, dass Projekt-Vorschaubilder und Zertifikats-Thumbnails als moderne WebP-Bilder in optimierter Auflösung ausgeliefert werden,
 > **damit** das Datenvolumen minimiert wird und die Seite flüssig aufbaut.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -680,8 +680,8 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 ---
 
 #### User Story 15.3: Core Web Vitals Auditing & CI-Performance-Gate
-> **Als** Frontend-Developer und Maintainer  
-> **möchte ich**, dass die Core Web Vitals (LCP < 2.5s, CLS < 0.1, INP < 200ms) automatisiert per Lighthouse-CI überwacht werden,  
+> **Als** Frontend-Developer und Maintainer
+> **möchte ich**, dass die Core Web Vitals (LCP < 2.5s, CLS < 0.1, INP < 200ms) automatisiert per Lighthouse-CI überwacht werden,
 > **damit** Performance-Regressionen bei zukünftigen Releases sofort erkannt und verhindert werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
@@ -693,7 +693,3 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
   - **Given** der Lighthouse-Report
   - **When** Performance, Accessibility, Best Practices oder SEO unter einen Score von 90 fallen
   - **Then** wird im PR eine Warnung ausgegeben.
-
-
-
-

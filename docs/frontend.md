@@ -254,7 +254,5 @@ Zur Sicherstellung herausragender Nutzererfahrung und optimaler Lighthouse-Score
 - **Moderne Bildformate**: Bevorzugte Bereitstellung von WebP-Bildern via `<picture>`-Elemente mit automatischem PNG/JPEG-Fallback.
 
 ### 11.3 Resilientes Dynamic Import Retry (`lazyRetry`)
-Bei dynamischem Code-Splitting via `React.lazy` (z. B. für `/dashboard`) kann nach Server-Neustarts oder Deployments ein Netzwerkfehler auftreten (`Failed to fetch dynamically imported module`). 
+Bei dynamischem Code-Splitting via `React.lazy` (z. B. für `/dashboard`) kann nach Server-Neustarts oder Deployments ein Netzwerkfehler auftreten (`Failed to fetch dynamically imported module`).
 - Durch Einbindung eines `lazyRetry`-Wrappers um `import()` führt die Anwendung bei einem Fetch-Fehler automatisch einen einmaligen Hard-Reload durch (`sessionStorage`-gesichert gegen Reload-Loops), sodass Benutzer nahtlos auf die neueste Modul-Version zugreifen können, ohne auf einer Fehlerseite zu landen.
-
-

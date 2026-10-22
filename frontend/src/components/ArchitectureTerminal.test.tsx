@@ -48,4 +48,3 @@ describe('ArchitectureTerminal', () => {
     expect(screen.getByLabelText('Ausgabe kopiert')).toBeInTheDocument();
   });
 });
-

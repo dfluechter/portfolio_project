@@ -11,8 +11,8 @@ Gibt es ein Problem oder ein ungelöstes Szenario, das durch diese Anforderung g
 *Beispiel: Ich ärgere mich jedes Mal, wenn...*
 
 ## Lösungsvorschlag (User Story)
-**Als** [Rolle des Nutzers, z. B. Besucher, Administrator, Recruiter]  
-**möchte ich** [gewünschte Funktionalität / Fähigkeit],  
+**Als** [Rolle des Nutzers, z. B. Besucher, Administrator, Recruiter]
+**möchte ich** [gewünschte Funktionalität / Fähigkeit],
 **damit** [erzielter Mehrwert / geschäftlicher Nutzen].
 
 ## Akzeptanzkriterien (BDD-Format)

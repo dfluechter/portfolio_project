@@ -1,8 +1,8 @@
 # ADR-007: RAG Portfolio-Copilot, Native pgvector Hybrid Retrieval, Signals Cache Invalidation & Deep Linking
 
-**Status:** Accepted  
-**Datum:** 2026-10-18  
-**Autor:** Dominik Flüchter  
+**Status:** Accepted
+**Datum:** 2026-10-18
+**Autor:** Dominik Flüchter
 
 ---
 

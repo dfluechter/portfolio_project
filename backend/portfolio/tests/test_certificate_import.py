@@ -584,7 +584,10 @@ class TestPromotionWorkflowAPIAndAdmin:
         # Button rendering
         button_html = admin_instance.show_file_button(pending)
         assert "Show File (PDF)" in button_html
-        assert f"/admin/portfolio/pendingcertificate/{pending.pk}/show-file/" in button_html
+        assert (
+            f"/admin/portfolio/pendingcertificate/{pending.pk}/show-file/"
+            in button_html
+        )
 
         # 2. REST API /api/pending-certificates/{id}/file/
         client = APIClient()
@@ -593,7 +596,6 @@ class TestPromotionWorkflowAPIAndAdmin:
         assert api_resp.status_code == 200
         assert api_resp["Content-Type"] == "application/pdf"
         assert 'inline; filename="preview_cert.pdf"' in api_resp["Content-Disposition"]
-
 
 
 class TestExtractorServiceAndOCR:

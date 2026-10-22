@@ -1,11 +1,11 @@
 # ADR-005: Zertifikats-Lifecycle, Einzel-Review und Server-Side Pagination
 
-**Status:** Accepted (OCR-Extraktion verfeinert durch [ADR-006](006-resolving-technical-debt-and-security.md))  
-**Datum:** 2026-10-14  
-**Autor:** Dominik Flüchter  
+**Status:** Accepted (OCR-Extraktion verfeinert durch [ADR-006](006-resolving-technical-debt-and-security.md))
+**Datum:** 2026-10-14
+**Autor:** Dominik Flüchter
 
 > [!NOTE]
-> Die in Punkt 2 skizzierte OCR-Strategie wurde in [ADR-006](006-resolving-technical-debt-and-security.md) zu einer dreistufigen Kaskade (`pypdf` Textlayer $\rightarrow$ `pytesseract` Lokal-OCR $\rightarrow$ `Gemini Flash` Cloud-Vision) weiterentwickelt. Das Review-Modal, der Freigabeprozess und die Server-Pagination gelten unverändert.  
+> Die in Punkt 2 skizzierte OCR-Strategie wurde in [ADR-006](006-resolving-technical-debt-and-security.md) zu einer dreistufigen Kaskade (`pypdf` Textlayer $\rightarrow$ `pytesseract` Lokal-OCR $\rightarrow$ `Gemini Flash` Cloud-Vision) weiterentwickelt. Das Review-Modal, der Freigabeprozess und die Server-Pagination gelten unverändert.
 
 ---
 

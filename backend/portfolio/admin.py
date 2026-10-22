@@ -148,7 +148,12 @@ class PendingCertificateAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "import_run")
     search_fields = ("original_file_name", "guessed_title", "guessed_provider")
-    readonly_fields = ("created_at", "extracted_text", "certificate", "show_file_button")
+    readonly_fields = (
+        "created_at",
+        "extracted_text",
+        "certificate",
+        "show_file_button",
+    )
     filter_horizontal = ("suggested_tracks",)
     actions = ("promote_selected",)
 
@@ -223,8 +228,10 @@ class PendingCertificateAdmin(admin.ModelAdmin):
         elif ext in {".jpg", ".jpeg"}:
             content_type = "image/jpeg"
 
-        response = FileResponse(open(file_path, "rb"), content_type=content_type)
-        response["Content-Disposition"] = f'inline; filename="{pending.original_file_name}"'
+        response = FileResponse(open(file_path, "rb"), content_type=content_type)  # noqa: SIM115
+        response["Content-Disposition"] = (
+            f'inline; filename="{pending.original_file_name}"'
+        )
         return response
 
     @admin.display(description="Show File")
@@ -247,14 +254,14 @@ class PendingCertificateAdmin(admin.ModelAdmin):
             preview_markup = format_html(
                 '<div style="margin-top:10px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; max-width:850px;">'
                 '<iframe src="{}" width="100%" height="450px" style="border:none;"></iframe>'
-                '</div>',
+                "</div>",
                 url,
             )
         elif ext in {"PNG", "JPG", "JPEG"}:
             preview_markup = format_html(
                 '<div style="margin-top:10px; max-width:850px;">'
                 '<img src="{}" alt="{}" style="max-width:100%; max-height:450px; border-radius:8px; border:1px solid #cbd5e1; object-fit:contain;" />'
-                '</div>',
+                "</div>",
                 url,
                 obj.original_file_name,
             )
@@ -263,11 +270,11 @@ class PendingCertificateAdmin(admin.ModelAdmin):
             '<div style="margin-bottom:6px;">'
             '<a class="button" href="{}" target="_blank" rel="noopener noreferrer" '
             'style="background-color:#2563eb !important; color:#ffffff !important; padding:8px 16px; '
-            'border-radius:6px; font-weight:bold; font-size:13px; text-decoration:none; display:inline-flex; '
+            "border-radius:6px; font-weight:bold; font-size:13px; text-decoration:none; display:inline-flex; "
             'align-items:center; gap:8px; box-shadow:0 1px 3px rgba(0,0,0,0.15);">'
-            '{} Show File ({})</a>'
-            '</div>'
-            '{}',
+            "{} Show File ({})</a>"
+            "</div>"
+            "{}",
             url,
             icon,
             ext,

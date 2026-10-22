@@ -1,7 +1,7 @@
 # ADR-000: [Titel der Entscheidung]
 
-**Status:** [Draft | Proposed | Accepted | Rejected | Superseded]  
-**Datum:** [JJJJ-MM-TT]  
+**Status:** [Draft | Proposed | Accepted | Rejected | Superseded]
+**Datum:** [JJJJ-MM-TT]
 **Autor:** [Name oder Team]
 
 ## Kontext und Problem

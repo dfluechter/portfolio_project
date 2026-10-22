@@ -47,7 +47,7 @@
     --input: #e2e8f0;
     --ring: #6366f1;
   }
-  
+
   .dark {
     color-scheme: dark;
     --background: #020617;
@@ -107,14 +107,14 @@
 }
 
 .bg-blueprint-grid {
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(99, 102, 241, 0.06) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(99, 102, 241, 0.06) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
 .dark .bg-blueprint-grid {
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(129, 140, 248, 0.07) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(129, 140, 248, 0.07) 1px, transparent 1px);
   background-size: 24px 24px;
