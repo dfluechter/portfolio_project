@@ -189,7 +189,7 @@ class ConditionalCacheMixin:
         cached_response = self.check_conditional_cache(request)
         if cached_response is not None:
             return cached_response
-        return super().list(request, *args, **kwargs)
+        return super().list(request, *args, **kwargs)  # type: ignore[misc]
 
     def retrieve(
         self, request: Request, *args: Any, **kwargs: Any
@@ -197,12 +197,12 @@ class ConditionalCacheMixin:
         cached_response = self.check_conditional_cache(request)
         if cached_response is not None:
             return cached_response
-        return super().retrieve(request, *args, **kwargs)
+        return super().retrieve(request, *args, **kwargs)  # type: ignore[misc]
 
     def finalize_response(
         self, request: Request, response: Response, *args: Any, **kwargs: Any
     ) -> Response:
-        response = super().finalize_response(request, response, *args, **kwargs)
+        response = super().finalize_response(request, response, *args, **kwargs)  # type: ignore[misc]
         if request.method in ("GET", "HEAD"):
             if not request.user.is_authenticated:
                 etag = self._get_etag(request)
@@ -855,9 +855,15 @@ class AIChatView(APIView):
         if history is not None and not isinstance(history, list):
             history = None
 
+        language = request.data.get("language", "de")
+        if not isinstance(language, str):
+            language = "de"
+
         try:
-            result = answer_portfolio_query(message, history)
-            return Response(result, status=status.HTTP_200_OK)
+            response_data = answer_portfolio_query(
+                message, history=history, language=language
+            )
+            return Response(response_data, status=status.HTTP_200_OK)
         except Exception:
             logger.exception(
                 "Unerwarteter Fehler bei der Anfrage an den KI-Assistenten."

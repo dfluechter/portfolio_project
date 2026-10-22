@@ -51,6 +51,17 @@ Cloud-native **Headless Django REST API** (Backend) und **React 19 Single Page A
 - **Ephemeres Neon Branching in GitHub Actions**: CI-Pipeline-Läufe erstellen einen isolierten Datenbank-Branch (`ci-${{ github.run_id }}-${{ github.run_attempt }}`). Nach Ausführung der Testsuite gegen echtes PostgreSQL inkl. `pgvector` wird dieser Branch automatisch verworfen.
 - **Performance & Frontend Cold-Start-UX**: Die Admin-Komponenten (`DashboardPage`, `LoginPage`, `PasswordResetConfirmPage`) werden träge nachgeladen (`React.lazy`). Bei Nutzung der kostenlosen Server-Instanz auf Render weist ein `ColdStartBanner` den Nutzer auf das Aufwachen des Containers hin.
 
+### 📥 4. Inbox-Automatisierung & Batch-Processing
+- **Strikter Read-Only Quellschutz**: Der Import-Scanner (`scan_inbox`) greift gemäß Schutzregeln ausschließlich lesend auf `CERTIFICATES_PATH` zu (keine Modifikationen, kein Löschen am Ursprungsort).
+- **Idempotente Duplikatserkennung**: Anhand des SHA-256-Dateihashes überspringt der Scanner bereits vorhandene Zertifikate (`Certificate`) sowie bereits erfasste Inbox-Kandidaten (`PendingCertificate`), wodurch wiederholte Importläufe vollkommen zustandssicher sind.
+- **Bulk-Approve & Bulk-Reject**: Über die REST-Batch-Endpunkte (`/api/pending-certificates/bulk_approve/` und `/bulk_reject/`) sowie im Django-Admin können mehrere Kandidaten gleichzeitig freigegeben oder abgelehnt werden.
+- **Track-Konsistenz & Teilerfolg**: Bei der Massenfreigabe werden optional gemeinsame Tracks zugewiesen oder auf die heuristischen `suggested_tracks` zurückgegriffen; Einzelfehler (z. B. fehlende Quelldatei) blockieren nicht den gesamten Batch, sondern werden transparent mit detaillierten Fehlerberichten quittiert.
+
+### ⚡ 5. HTTP Conditional Caching & ETag-Strategie (US 15.1)
+- **Versionsbasierte ETags**: Schwache ETags (`W/"<ressource>_v<version>"`) werden direkt aus der atomaren Signal-Cache-Version (`portfolio_rag_context_version_v1`) abgeleitet und an öffentliche Lese-Endpunkte angehängt.
+- **`304 Not Modified` Early Exit**: Sendet der Client den Header `If-None-Match`, prüft das Backend via `ConditionalCacheMixin` die Version bereits vor der Ausführung teurer Datenbankabfragen oder Serialisierungen und antwortet unmittelbar mit einem leeren `304 Not Modified`.
+- **Cache-Control & Dashboard-Bypass**: Öffentliche Lese-Endpunkte (`/api/projects/`, `/api/tracks/`, `/api/skills/`, `/api/certificates/`) liefern `Cache-Control: public, max-age=300, stale-while-revalidate=60`. Für authentifizierte Administratoren im Dashboard wird das Caching automatisch umgangen (`Cache-Control: no-cache, private`), sodass Änderungen sofort sichtbar sind.
+
 ---
 
 ## 🛠 Tech Stack

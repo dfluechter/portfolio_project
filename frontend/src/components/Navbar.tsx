@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { LayoutDashboard, LogIn, LogOut, Menu, X } from 'lucide-react';
 import { PORTFOLIO_OWNER_NAME } from '../constants';
 
@@ -10,6 +12,7 @@ const LOGO_SRC = import.meta.env.DEV
   : `${(import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')}/static/img/icons/logo_df_3.png`;
 
 export const Navbar: React.FC = () => {
+  const { t } = useTranslation();
   const { isAuthenticated, user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -36,33 +39,34 @@ export const Navbar: React.FC = () => {
           {isHome ? (
             <>
               <a href="#about" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
-                Über mich
+                {t('nav.about')}
               </a>
               <a href="#skills" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
-                Skills
+                {t('nav.skills')}
               </a>
               <a href="#projects" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
-                Projekte
+                {t('nav.projects')}
               </a>
               <a href="#certificates" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
-                Zertifikate
+                {t('nav.certificates')}
               </a>
               <a href="#timeline" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
-                Werdegang
+                {t('nav.timeline')}
               </a>
               <a href="#contact" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
-                Kontakt
+                {t('nav.contact')}
               </a>
             </>
           ) : (
             <Link to="/" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
-              ← Zurück zum Portfolio
+              {t('nav.backToPortfolio')}
             </Link>
           )}
         </nav>
 
-        {/* Action Buttons: Theme Toggle + Auth */}
+        {/* Action Buttons: Language Switcher + Theme Toggle + Auth */}
         <div className="hidden md:flex items-center gap-3">
+          <LanguageSwitcher />
           <ThemeToggle />
 
           {isAuthenticated ? (
@@ -72,16 +76,16 @@ export const Navbar: React.FC = () => {
                 className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               >
                 <LayoutDashboard className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Dashboard ({user?.email?.split('@')[0]})</span>
+                <span>{t('nav.dashboard')} ({user?.email?.split('@')[0]})</span>
               </Link>
               <button
                 type="button"
                 onClick={logout}
                 className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                title="Abmelden"
+                title={t('nav.logout')}
               >
                 <LogOut className="w-4 h-4" aria-hidden="true" />
-                <span className="sr-only">Abmelden</span>
+                <span className="sr-only">{t('nav.logout')}</span>
               </button>
             </div>
           ) : (
@@ -90,13 +94,14 @@ export const Navbar: React.FC = () => {
               className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 text-white dark:bg-slate-900 dark:text-slate-200 border border-slate-700 hover:bg-slate-800 text-xs font-semibold transition-colors duration-200 shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               <LogIn className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
-              <span>Admin Login</span>
+              <span>{t('nav.login')}</span>
             </Link>
           )}
         </div>
 
-        {/* Mobile menu and theme toggle */}
+        {/* Mobile menu and controls */}
         <div className="md:hidden flex items-center gap-2">
+          <LanguageSwitcher />
           <ThemeToggle />
           <button
             type="button"
@@ -128,42 +133,42 @@ export const Navbar: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center min-h-[44px] py-2 px-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 rounded-lg cursor-pointer"
               >
-                Über mich
+                {t('nav.about')}
               </a>
               <a
                 href="#skills"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center min-h-[44px] py-2 px-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 rounded-lg cursor-pointer"
               >
-                Skills
+                {t('nav.skills')}
               </a>
               <a
                 href="#projects"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center min-h-[44px] py-2 px-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 rounded-lg cursor-pointer"
               >
-                Projekte
+                {t('nav.projects')}
               </a>
               <a
                 href="#certificates"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center min-h-[44px] py-2 px-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 rounded-lg cursor-pointer"
               >
-                Zertifikate
+                {t('nav.certificates')}
               </a>
               <a
                 href="#timeline"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center min-h-[44px] py-2 px-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 rounded-lg cursor-pointer"
               >
-                Werdegang
+                {t('nav.timeline')}
               </a>
               <a
                 href="#contact"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center min-h-[44px] py-2 px-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 rounded-lg cursor-pointer"
               >
-                Kontakt
+                {t('nav.contact')}
               </a>
             </>
           ) : (
@@ -172,7 +177,7 @@ export const Navbar: React.FC = () => {
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center min-h-[44px] py-2 px-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 rounded-lg cursor-pointer"
             >
-              ← Zurück zum Portfolio
+              {t('nav.backToPortfolio')}
             </Link>
           )}
 
@@ -185,7 +190,7 @@ export const Navbar: React.FC = () => {
                   className="flex items-center gap-2 min-h-[44px] px-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 cursor-pointer"
                 >
                   <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
-                  <span>Dashboard</span>
+                  <span>{t('nav.dashboard')}</span>
                 </Link>
                 <button
                   type="button"
@@ -195,7 +200,7 @@ export const Navbar: React.FC = () => {
                   }}
                   className="min-h-[44px] px-2 text-sm font-medium text-red-500 cursor-pointer"
                 >
-                  Abmelden
+                  {t('nav.logout')}
                 </button>
               </>
             ) : (
@@ -205,7 +210,7 @@ export const Navbar: React.FC = () => {
                 className="flex items-center gap-2 min-h-[44px] px-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" aria-hidden="true" />
-                <span>Admin Login</span>
+                <span>{t('nav.login')}</span>
               </Link>
             )}
           </div>

@@ -1,0 +1,113 @@
+{
+  "nav": {
+    "about": "Über mich",
+    "skills": "Skills",
+    "projects": "Projekte",
+    "certificates": "Zertifikate",
+    "timeline": "Werdegang",
+    "contact": "Kontakt",
+    "backToPortfolio": "← Zurück zum Portfolio",
+    "dashboard": "Dashboard",
+    "login": "Login",
+    "logout": "Abmelden"
+  },
+  "hero": {
+    "statusLive": "System online & betriebsbereit",
+    "badge": "Full-Stack Software Engineer",
+    "title": "Senior Python & Cloud Developer",
+    "subtitle": "Architektur robuster Backend-APIs mit Django & PostgreSQL, performante Web-Frontends mit React & TypeScript sowie automatisierte Cloud-Deployments.",
+    "exploreProjects": "Projekte ansehen",
+    "contactMe": "Kontakt aufnehmen",
+    "bannerTab": "Highlights",
+    "terminalTab": "Architektur-Terminal"
+  },
+  "search": {
+    "placeholder": "Suche nach Projekten, Skills, Zertifikaten oder Stationen...",
+    "resultsFound": "{{count}} Treffer gefunden",
+    "noResults": "Keine Treffer für \"{{query}}\" gefunden",
+    "clear": "Suche leeren",
+    "categories": {
+      "project": "Projekt",
+      "skill": "Skill",
+      "certificate": "Zertifikat",
+      "timeline": "Werdegang"
+    }
+  },
+  "skills": {
+    "eyebrow": "01 // Tech Stack & Core Competencies",
+    "heading": "Technologische Expertise & Fokus",
+    "subheading": "Solides Fundament in moderner Webentwicklung, skalierbaren Cloud-Infrastrukturen und sauberen Architekturmustern.",
+    "topSkills": "Hervorgehobene Kern-Skills",
+    "allSkills": "Vollständiges Skill-Profil",
+    "categories": {
+      "all": "Alle Bereiche",
+      "backend": "Backend & APIs",
+      "frontend": "Frontend",
+      "devops": "Cloud & DevOps",
+      "database": "Datenbanken",
+      "tools": "Tools & Methodik"
+    }
+  },
+  "projects": {
+    "eyebrow": "02 // Selected Works & Code",
+    "heading": "Ausgewählte Projekte & Architektur",
+    "subheading": "Produktionsreife Softwarelösungen, Open-Source-Beiträge und voll funktionsfähige Cloud- und Fullstack-Anwendungen.",
+    "viewCode": "Code auf GitHub",
+    "liveDemo": "Live Demo",
+    "featured": "Featured",
+    "highlights": "Architektur-Highlights"
+  },
+  "certificates": {
+    "eyebrow": "03 // Continuous Learning & Verification",
+    "heading": "Zertifizierungen & Leistungsnachweise",
+    "subheading": "Offiziell verifizierte Prüfungen und Qualifikationen in Cloud-Computing, DevOps, Softwarearchitektur und Sicherheit.",
+    "allTracks": "Alle Schwerpunkte",
+    "viewCertificate": "Zertifikat ansehen",
+    "verifyCredential": "Online verifizieren",
+    "issuedBy": "Ausgestellt von",
+    "issuedAt": "Ausgestellt am"
+  },
+  "timeline": {
+    "eyebrow": "04 // Career Milestones",
+    "heading": "Beruflicher Werdegang & Bildung",
+    "subheading": "Verantwortlichkeiten, Projekte und berufliche Meilensteine im zeitlichen Überblick.",
+    "current": "Aktuell",
+    "experience": "Berufserfahrung",
+    "education": "Ausbildung & Studium"
+  },
+  "contact": {
+    "eyebrow": "05 // Direct Communication",
+    "heading": "Lass uns in Verbindung treten",
+    "subheading": "Interesse an einer technischen Zusammenarbeit, einem Architektur-Review oder fachlichem Austausch? Schreib mir direkt per E-Mail oder vernetze dich über GitHub.",
+    "sendEmail": "E-Mail schreiben",
+    "copyEmail": "E-Mail kopieren",
+    "copied": "Kopiert!"
+  },
+  "footer": {
+    "stackShowcase": "Interactive Stack Showcase",
+    "heading": "Architektur & Entwicklungsschwerpunkte",
+    "hoverHint": "Fahre mit der Maus über die Karten, um die Kernbereiche aufzufächern.",
+    "rights": "Alle Rechte vorbehalten.",
+    "tagline": "Full-Stack Software Engineering & Cloud Architecture"
+  },
+  "chat": {
+    "badge": "KI-Portfolio Copilot",
+    "title": "Frage Dominiks KI-Assistenten",
+    "subtitle": "Gestützt auf Grounding-Daten zu Projekten, Skills und Zertifikaten",
+    "inputPlaceholder": "Stelle eine Frage zu Dominiks Werdegang, Skills oder Projekten...",
+    "send": "Senden",
+    "clearChat": "Verlauf leeren",
+    "suggestedTitle": "Vorgeschlagene Fragen",
+    "sourcesTitle": "Referenzierte Quellen",
+    "close": "Schließen"
+  },
+  "common": {
+    "language": "Sprache",
+    "german": "Deutsch",
+    "english": "English",
+    "switchLanguage": "Sprache wechseln",
+    "loading": "Wird geladen...",
+    "error": "Es ist ein Fehler aufgetreten.",
+    "retry": "Erneut versuchen"
+  }
+}

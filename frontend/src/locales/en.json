@@ -1,0 +1,113 @@
+{
+  "nav": {
+    "about": "About",
+    "skills": "Skills",
+    "projects": "Projects",
+    "certificates": "Certificates",
+    "timeline": "Timeline",
+    "contact": "Contact",
+    "backToPortfolio": "← Back to Portfolio",
+    "dashboard": "Dashboard",
+    "login": "Login",
+    "logout": "Logout"
+  },
+  "hero": {
+    "statusLive": "System online & operational",
+    "badge": "Full-Stack Software Engineer",
+    "title": "Senior Python & Cloud Developer",
+    "subtitle": "Architecting robust backend APIs with Django & PostgreSQL, high-performance web frontends with React & TypeScript, and automated cloud deployments.",
+    "exploreProjects": "Explore Projects",
+    "contactMe": "Get in Touch",
+    "bannerTab": "Highlights",
+    "terminalTab": "Architecture Terminal"
+  },
+  "search": {
+    "placeholder": "Search projects, skills, certificates or milestones...",
+    "resultsFound": "{{count}} results found",
+    "noResults": "No results found for \"{{query}}\"",
+    "clear": "Clear search",
+    "categories": {
+      "project": "Project",
+      "skill": "Skill",
+      "certificate": "Certificate",
+      "timeline": "Timeline"
+    }
+  },
+  "skills": {
+    "eyebrow": "01 // Tech Stack & Core Competencies",
+    "heading": "Technological Expertise & Focus",
+    "subheading": "Solid foundation in modern web development, scalable cloud infrastructures, and clean architectural design patterns.",
+    "topSkills": "Featured Core Skills",
+    "allSkills": "Full Skill Profile",
+    "categories": {
+      "all": "All Domains",
+      "backend": "Backend & APIs",
+      "frontend": "Frontend",
+      "devops": "Cloud & DevOps",
+      "database": "Databases",
+      "tools": "Tools & Methodology"
+    }
+  },
+  "projects": {
+    "eyebrow": "02 // Selected Works & Code",
+    "heading": "Featured Projects & Architecture",
+    "subheading": "Production-grade software solutions, open-source contributions, and fully fledged cloud and full-stack systems.",
+    "viewCode": "View on GitHub",
+    "liveDemo": "Live Demo",
+    "featured": "Featured",
+    "highlights": "Architecture Highlights"
+  },
+  "certificates": {
+    "eyebrow": "03 // Continuous Learning & Verification",
+    "heading": "Certifications & Credentials",
+    "subheading": "Officially verified exams and credentials across cloud computing, DevOps, software architecture, and security.",
+    "allTracks": "All Focus Areas",
+    "viewCertificate": "View Certificate",
+    "verifyCredential": "Verify Online",
+    "issuedBy": "Issued by",
+    "issuedAt": "Issued on"
+  },
+  "timeline": {
+    "eyebrow": "04 // Career Milestones",
+    "heading": "Career Timeline & Education",
+    "subheading": "Roles, responsibilities, projects, and career milestones in chronological order.",
+    "current": "Present",
+    "experience": "Experience",
+    "education": "Education & Degrees"
+  },
+  "contact": {
+    "eyebrow": "05 // Direct Communication",
+    "heading": "Let's Connect",
+    "subheading": "Interested in technical collaboration, an architecture review, or professional exchange? Email me directly or connect on GitHub.",
+    "sendEmail": "Send Email",
+    "copyEmail": "Copy Email",
+    "copied": "Copied!"
+  },
+  "footer": {
+    "stackShowcase": "Interactive Stack Showcase",
+    "heading": "Architecture & Engineering Focus",
+    "hoverHint": "Hover over the cards to reveal the core architectural domains.",
+    "rights": "All rights reserved.",
+    "tagline": "Full-Stack Software Engineering & Cloud Architecture"
+  },
+  "chat": {
+    "badge": "AI Portfolio Copilot",
+    "title": "Ask Dominik's AI Assistant",
+    "subtitle": "Grounded with verifiable data on projects, skills, and certifications",
+    "inputPlaceholder": "Ask a question about Dominik's background, skills, or projects...",
+    "send": "Send",
+    "clearChat": "Clear chat",
+    "suggestedTitle": "Suggested Questions",
+    "sourcesTitle": "Referenced Sources",
+    "close": "Close"
+  },
+  "common": {
+    "language": "Language",
+    "german": "Deutsch",
+    "english": "English",
+    "switchLanguage": "Switch Language",
+    "loading": "Loading...",
+    "error": "An error occurred.",
+    "retry": "Try again"
+  }
+}

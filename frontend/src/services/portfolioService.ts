@@ -243,11 +243,13 @@ export const portfolioService = {
   // Portfolio AI Copilot Chat
   async sendAIChatMessage(
     message: string,
-    history?: { role: 'user' | 'model'; text: string }[]
+    history?: { role: 'user' | 'model'; text: string }[],
+    language?: string
   ): Promise<AIChatResponse> {
     const { data } = await apiClient.post<AIChatResponse>('/api/ai/chat/', {
       message,
       history,
+      language: language || 'de',
     });
     return data;
   },

@@ -42,8 +42,9 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 11** | RAG Portfolio-Copilot, pgvector Hybrid Retrieval, Guardrails & UI-Skills Polish | Abgeschlossen | US 11.1, US 11.2, US 11.3, US 11.4, US 11.5 |
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
 | **Epic 13** | Robuste OCR-Extraktion, Dokumentenvorschau & Commitlint-Governance | Abgeschlossen | US 13.1, US 13.2, US 13.3, US 13.4 |
-| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | In Bearbeitung | US 14.2 bereit zur Umsetzung |
+| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | In Bearbeitung | US 14.1 abgeschlossen, US 14.2 bereit |
 | **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | In Bearbeitung | US 15.1 abgeschlossen |
+| **Epic 16** | Internationalisierung (i18n), Accessibility & Theme Polish | Geplant (Backlog) | US 16.1, US 16.2 |
 
 ---
 
@@ -614,24 +615,28 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 
 ### Epic 14: Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing (P2 - Mittel)
 
-#### User Story 14.1: Automatisierter Inbox-Scan mit Duplikats- & Re-Import-Erkennung
+#### User Story 14.1: Automatisierter Inbox-Scan mit Duplikats- & Re-Import-Erkennung (Abgeschlossen)
 > **Als** Administrator
 > **möchte ich**, dass der Inbox-Scanner (`scan_inbox`) bereits vorhandene Zertifikate (anhand von SHA-256 Hash und Quellpfad) automatisch erkennt und überspringt,
 > **damit** keine redundanten Einträge in `PendingCertificate` erzeugt werden und der Import-Lauf idempotent und sicher ist.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [ ] **Szenario 1 (Hash-basierte Duplikatserkennung gegen `Certificate`):**
+- [x] **Szenario 1 (Hash-basierte Duplikatserkennung gegen `Certificate`):**
   - **Given** eine Datei im Posteingang besitzt einen SHA-256 Hash, der bereits in der Tabelle `portfolio_certificate` existiert
   - **When** der Befehl `python manage.py scan_inbox` ausgeführt wird
   - **Then** wird die Datei ignoriert und im Log als `SKIPPED (Already published: <title>)` vermerkt.
-- [ ] **Szenario 2 (Duplikatserkennung gegen bestehende `PendingCertificate`):**
+- [x] **Szenario 2 (Duplikatserkennung gegen bestehende `PendingCertificate`):**
   - **Given** ein Dokument liegt bereits als `PendingCertificate` mit demselben Hash oder Dateinamen vor
   - **When** `scan_inbox` erneut läuft
   - **Then** wird kein zweiter Eintrag erzeugt, sondern der bestehende Eintrag beibehalten (`SKIPPED (Pending: <id>)`).
-- [ ] **Szenario 3 (Dry-Run Genauigkeit & Statistik):**
+- [x] **Szenario 3 (Dry-Run Genauigkeit & Statistik):**
   - **Given** der Aufruf `python manage.py scan_inbox --dry-run`
   - **When** der Scan abgeschlossen ist
   - **Then** gibt der Command eine strukturierte Zusammenfassung aus (Gefunden, Neu, Duplikate/Übersprungen, Fehlerhaft).
+- [x] **Szenario 4 (Automatisierte Testabdeckung):**
+  - **Given** die Testsuite in `backend/portfolio/tests/test_certificate_import.py`
+  - **When** `uv run pytest portfolio/tests/test_certificate_import.py` ausgeführt wird
+  - **Then** verifizieren alle Unit- und Integrationstests das Idempotenz- und Skip-Verhalten.
 
 ---
 
@@ -759,3 +764,57 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
   - **Given** der Lighthouse-Report
   - **When** Performance, Accessibility, Best Practices oder SEO unter einen Score von 90 fallen
   - **Then** wird im PR eine Warnung ausgegeben.
+
+---
+
+### Epic 16: Internationalisierung (i18n), Accessibility & Theme Polish (P2 - Mittel)
+
+#### User Story 16.1: Zweisprachiges Portfolio (DE / EN) & Mehrsprachiger RAG-Copilot
+> *Spezifikation & Blueprint: Siehe [`docs/specs/us-16-1-i18n-portfolio-and-copilot.md`](specs/us-16-1-i18n-portfolio-and-copilot.md)*
+>
+> **Als** internationaler Recruiter oder Besucher  
+> **möchte ich** das Portfolio und den RAG-Copiloten nahtlos auf Englisch umschalten können,  
+> **damit** ich Qualifikationen, Projektdetails und Werdegang in meiner bevorzugten Sprache einsehen und interaktiv erfragen kann.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [ ] **Szenario 1 (Frontend Sprachumschalter in der Navigation):**
+  - **Given** die Navigationsleiste auf der Startseite
+  - **When** der Besucher auf den Language-Toggle (`DE` / `EN`) klickt
+  - **Then** schalten alle statischen Texte sofort um, `<html lang="...">` synchronisiert sich und die Auswahl wird im `localStorage` persistiert.
+- [ ] **Szenario 2 (Browser-Spracherkennung bei Erstbesuch):**
+  - **Given** ein Erstbesucher ohne gespeicherte Sprachpräferenz
+  - **When** `navigator.language` ein englisches Prefix enthält
+  - **Then** startet das Frontend automatisch auf Englisch (`en`), sonst auf Deutsch (`de`).
+- [ ] **Szenario 3 (Mehrsprachiger RAG-Copilot mit englischer Anfrage):**
+  - **Given** eine englischsprachige Frage an `/api/ai/chat/`
+  - **When** der RAG-Copilot die Antwort generiert
+  - **Then** antwortet der Assistent in natürlichem, professionellem Englisch unter Wahrung aller Fakten.
+- [ ] **Szenario 4 (Copilot Guardrail-Meldungen in der Nutzersprache):**
+  - **Given** ein Besucher mit aktiver Sprache `en`
+  - **When** eine Anfrage das Längenlimit überschreitet oder der Circuit-Breaker greift
+  - **Then** antwortet die API mit englischen Systemmeldungen.
+- [ ] **Szenario 5 (Robuste Deep-Linking Badges in beiden Sprachen):**
+  - **Given** eine englischsprachige Antwort des Copiloten mit Quell-Tags wie `[Project: 1]`
+  - **When** die Nachricht gerendert wird
+  - **Then** werden klickbare Badges mit unveränderter Scroll- und Glow-Funktionalität angezeigt.
+- [ ] **Szenario 6 (Automatisierte Testabdeckung):**
+  - **Given** die neuen Lokalisierungs-Dateien und Chat-Erweiterungen
+  - **When** Frontend-Tests (`npm run test:run`) und Backend-Tests (`uv run pytest`) ausgeführt werden
+  - **Then** sind alle Lokalisierungs- und Chat-Szenarien abgedeckt.
+
+---
+
+#### User Story 16.2: WCAG 2.1 AA Konformität & Screenreader-Audit
+> **Als** Nutzer mit Seheinschränkungen oder assistiven Technologien  
+> **möchte ich** das Portfolio uneingeschränkt per Tastatur und Screenreader bedienen können,  
+> **damit** die Seite barrierefrei gemäß WCAG 2.1 Level AA zugänglich ist.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [ ] **Szenario 1 (Tastaturnavigation & Focus Rings):**
+  - **Given** ein Benutzer navigiert ausschließlich mit der Tab-Taste
+  - **When** er interaktive Elemente (Track-Filterchips, Projektkarten, Chat-Widget, Review-Modal) ansteuert
+  - **Then** besitzt jedes fokussierte Element einen deutlich sichtbaren Focus-Ring (`focus-visible:ring-2 focus-visible:ring-indigo-500`).
+- [ ] **Szenario 2 (ARIA-Attribute & Screenreader-Kompatibilität):**
+  - **Given** Screenreader-Nutzer (NVDA, VoiceOver)
+  - **When** die Track-Filter, Modale und der Chat-Verlauf vorgelesen werden
+  - **Then** sind alle Buttons mit eindeutigen `aria-label`-Attributen versehen und Live-Regionen (`aria-live="polite"`) kündigen neue KI-Nachrichten an.

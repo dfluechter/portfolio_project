@@ -435,7 +435,9 @@ def prune_context_by_query(user_message: str, full_context: str) -> str:
 
 
 def answer_portfolio_query(
-    user_message: str, history: list[dict[str, str]] | None = None
+    user_message: str,
+    history: list[dict[str, str]] | None = None,
+    language: str = "de",
 ) -> dict[str, Any]:
     """Beantwortet eine Besucher-Frage über das Portfolio mit RAG via Gemini 3.8 Flash.
 
@@ -469,7 +471,9 @@ def answer_portfolio_query(
     # 1. Versionierter Response-Cache für wiederkehrende Anfragen ohne Historie (< 5ms Antwortzeit)
     is_single_turn = not history or len(history) == 0
     version = get_rag_context_version()
-    query_hash = hashlib.sha256(cleaned_query.lower().encode("utf-8")).hexdigest()[:16]
+    query_hash = hashlib.sha256(
+        f"{cleaned_query.lower()}_{str(language).lower()}".encode()
+    ).hexdigest()[:16]
     response_cache_key = f"portfolio_ai_resp_v{version}_{query_hash}"
 
     if is_single_turn:
@@ -513,6 +517,7 @@ def answer_portfolio_query(
             :MAX_GROUNDING_CHARS
         ]
 
+    target_lang = "Englisch" if str(language).lower().startswith("en") else "Deutsch"
     system_instruction = (
         "Du bist 'Dominik's Portfolio Copilot', ein freundlicher, hochkompetenter und präziser "
         "KI-Assistent für das persönliche Entwickler-Portfolio von Dominik Flüchter.\n"
@@ -521,7 +526,7 @@ def answer_portfolio_query(
         "bereitgestellten Wissensbasis.\n"
         "2. Bleibe strikt bei den Fakten: Erfinde keine Projekte, Technologien oder Zertifikate, "
         "die nicht in der Wissensbasis aufgeführt sind.\n"
-        "3. Antworte in der Sprache, in der die Frage gestellt wurde (primär Deutsch oder Englisch).\n"
+        f"3. Antworte auf {target_lang}.\n"
         "4. Hebe relevante Highlights hervor (z. B. Django 5, React 19, Neon PostgreSQL, Render Deployment, "
         "Cloud-Zertifizierungen).\n"
         "5. Formatiere deine Antwort lesbar mit Aufzählungspunkten oder Fettungen in Markdown.\n\n"

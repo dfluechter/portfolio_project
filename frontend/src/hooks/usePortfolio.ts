@@ -263,10 +263,12 @@ export const useSendAIChatMessage = () => {
     mutationFn: ({
       message,
       history,
+      language,
     }: {
       message: string;
       history?: { role: 'user' | 'model'; text: string }[];
-    }) => portfolioService.sendAIChatMessage(message, history),
+      language?: string;
+    }) => portfolioService.sendAIChatMessage(message, history, language),
   });
 };
 

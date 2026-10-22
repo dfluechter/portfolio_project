@@ -14,6 +14,7 @@ import {
   User,
   X,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSendAIChatMessage } from '../../hooks/usePortfolio';
 import type { ChatMessage, ChatSourceItem } from '../../types';
 
@@ -290,6 +291,7 @@ export const ChatThinkingIndicator: FC<ChatThinkingIndicatorProps> = ({
 };
 
 export const PortfolioChatWidget: FC = () => {
+  const { i18n, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [inputValue, setInputValue] = useState('');
@@ -379,11 +381,13 @@ export const PortfolioChatWidget: FC = () => {
     setInputValue('');
 
     const history = buildChatHistory(nextMessages);
+    const activeLang = i18n.language && i18n.language.startsWith('en') ? 'en' : 'de';
 
     try {
       const response = await chatMutation.mutateAsync({
         message: text,
         history,
+        language: activeLang,
       });
 
       if (response.disabled || userCount + 1 >= MAX_SESSION_USER_MESSAGES) {
@@ -549,8 +553,8 @@ export const PortfolioChatWidget: FC = () => {
               maxLength={MAX_INPUT_CHARS}
               placeholder={
                 isDisabled
-                  ? 'KI-Assistent deaktiviert (Token-Limit geschützt)'
-                  : 'Frage zu Dominiks Portfolio stellen...'
+                  ? (i18n.language.startsWith('en') ? 'AI Assistant disabled (token limit)' : 'KI-Assistent deaktiviert (Token-Limit geschützt)')
+                  : t('chat.inputPlaceholder')
               }
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -560,7 +564,7 @@ export const PortfolioChatWidget: FC = () => {
             <button
               type="submit"
               disabled={!inputValue.trim() || chatMutation.isPending || isDisabled}
-              aria-label="Nachricht senden"
+              aria-label={t('chat.send')}
               className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white flex items-center justify-center active:scale-90 transition-all duration-150 shadow-md shadow-indigo-600/25 disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
             >
               <CornerDownLeft className="w-4 h-4" />

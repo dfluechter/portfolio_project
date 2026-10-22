@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from portfolio.models import Certificate, Project, Provider, Skill, Track
+from portfolio.models import Certificate, Project, Provider, Skill, SkillCategory, Track
 
 User = get_user_model()
 
@@ -26,13 +26,13 @@ def admin_user(db: None) -> Any:
 @pytest.fixture
 def sample_data(db: None) -> dict[str, Any]:
     track = Track.objects.create(name="Cloud & DevOps", slug="cloud-devops", icon="cloud")
-    provider = Provider.objects.create(provider="AWS", is_active=True)
+    provider = Provider.objects.create(provider="AWS", aktiv=True)
     project = Project.objects.create(
         title="Cloud Pipeline",
         description="CI/CD Pipeline mit GitHub Actions",
         is_published=True,
     )
-    skill = Skill.objects.create(name="Docker", level=90, category="DevOps")
+    skill = Skill.objects.create(name="Docker", proficiency=90, category=SkillCategory.DEVOPS)
     cert = Certificate.objects.create(
         title="AWS Solutions Architect",
         provider=provider,
@@ -155,7 +155,7 @@ def test_provider_and_track_signals_trigger_invalidation(
     resp_prov1 = api_client.get(url_prov)
     etag_prov1 = resp_prov1.headers["ETag"]
 
-    Provider.objects.create(provider="Google Cloud", is_active=True)
+    Provider.objects.create(provider="Google Cloud", aktiv=True)
     resp_prov2 = api_client.get(url_prov)
     etag_prov2 = resp_prov2.headers["ETag"]
     assert etag_prov2 != etag_prov1

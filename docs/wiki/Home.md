@@ -59,11 +59,12 @@ graph TB
 
 ## 🎯 Kern-Features
 
-1. **RAG Portfolio-Copilot (`/api/ai/chat/`)**:
-   - Semantische Beantwortung von Besucherfragen strictly grounded in Portfolio-Daten.
-   - HNSW-Vektorsuche über Projekte, Skills, Zertifikate und Werdegang.
-   - Zero-Cost Guardrails gegen Prompt Injections (0-Token Pre-Flight Drop).
-   - Klickbare Deep-Link Badges mit optischem Scroll- und Glow-Highlight im UI.
+1. **RAG Portfolio-Copilot & Native `pgvector` Vektorsuche (`/api/ai/chat/`)**:
+   - **Semantisches Chunking (`KnowledgeChunk`)**: Alle veröffentlichten Projekte, Zertifikate (inklusive OCR-Volltexten), Skills und Werdegangs-Einträge werden automatisch in granulare semantische Wissens-Chunks zerlegt.
+   - **HNSW-Vektorindex & Hybrid Retrieval**: In der Neon-PostgreSQL-Produktionsumgebung indiziert ein `pgvector` HNSW-Index (`vector_cosine_ops`) 768-dimensionale Embeddings (`text-embedding-004`) für performante Kosinus-Ähnlichkeitssuchen (`CosineDistance`). Auf SQLite greift transparent ein Keyword-Retrieval-Fallback.
+   - **$O(1)$ Signal-Invalidierung & Versioniertes Caching**: Django Signals (`post_save`, `post_delete`) halten die Vektordatenbank bei Datenänderungen synchron, invalidieren den Kontext sofort und inkrementieren atomar die Cache-Version `portfolio_rag_context_version_v1`.
+   - **Zero-Cost Guardrails (0-Token Drop)**: Pre-Flight Regex-Filter identifizieren Prompt-Injection- und Jailbreak-Muster vorab. Die Anfrage wird defensiv beantwortet, ohne das Google-Gemini-LLM aufzurufen (0 API-Tokens verbraucht).
+   - **Interaktives UI Deep-Linking**: Quellangaben in KI-Antworten werden als klickbare Badges gerendert (`#project-<id>`, `#cert-<id>`), die Besucher sanft zur Zielkarte scrollen und diese mit einem optischen 2-Sekunden-Glow-Ring hervorheben.
 
 2. **Zertifikats-Lifecycle & 3-Stufen Hybrid OCR**:
    - **Presigned Direct-to-Storage (Supabase S3)**: Uploads aus dem Browser erfolgen über eine signierte PUT-URL direkt an den S3-Storage, was den Web-Server entlastet.
@@ -78,6 +79,17 @@ graph TB
    - **Neon Connection Separation**: Web-Requests nutzen zur Skalierung den PgBouncer-Pooler (`DATABASE_URL`). Datenbank-Migrationen (`migrate` in `build.sh`) verwenden automatisch die direkte Compute-Verbindung (`DIRECT_DATABASE_URL`).
    - **Ephemeres Neon Branching in GitHub Actions**: CI-Pipeline-Läufe erstellen einen isolierten Datenbank-Branch (`ci-${{ github.run_id }}-${{ github.run_attempt }}`). Nach Ausführung der Testsuite gegen echtes PostgreSQL inkl. `pgvector` wird dieser Branch automatisch verworfen.
    - **Performance & Frontend Cold-Start-UX**: Die Admin-Komponenten (`DashboardPage`, `LoginPage`, `PasswordResetConfirmPage`) werden träge nachgeladen (`React.lazy`). Bei Nutzung der kostenlosen Server-Instanz auf Render weist ein `ColdStartBanner` den Nutzer auf das Aufwachen des Containers hin.
+
+4. **Inbox-Automatisierung & Batch-Processing (US 14.1 & US 14.2)**:
+   - **Strikter Read-Only Quellschutz**: Der Import-Scanner (`scan_inbox`) greift gemäß Schutzregeln ausschließlich lesend auf `CERTIFICATES_PATH` zu (keine Modifikationen, kein Löschen am Ursprungsort).
+   - **Idempotente Duplikatserkennung**: Anhand des SHA-256-Dateihashes überspringt der Scanner bereits vorhandene Zertifikate (`Certificate`) sowie bereits erfasste Inbox-Kandidaten (`PendingCertificate`), wodurch wiederholte Importläufe vollkommen zustandssicher sind.
+   - **Bulk-Approve & Bulk-Reject**: Über die REST-Batch-Endpunkte (`/api/pending-certificates/bulk_approve/` und `/bulk_reject/`) sowie im Django-Admin können mehrere Kandidaten gleichzeitig freigegeben oder abgelehnt werden.
+   - **Track-Konsistenz & Teilerfolg**: Bei der Massenfreigabe werden optional gemeinsame Tracks zugewiesen oder auf die heuristischen `suggested_tracks` zurückgegriffen; Einzelfehler (z. B. fehlende Quelldatei) blockieren nicht den gesamten Batch, sondern werden transparent mit detaillierten Fehlerberichten quittiert.
+
+5. **HTTP Conditional Caching & ETag-Strategie (US 15.1)**:
+   - **Versionsbasierte ETags**: Schwache ETags (`W/"<ressource>_v<version>"`) werden direkt aus der atomaren Signal-Cache-Version (`portfolio_rag_context_version_v1`) abgeleitet und an öffentliche Lese-Endpunkte angehängt.
+   - **`304 Not Modified` Early Exit**: Sendet der Client den Header `If-None-Match`, prüft das Backend via `ConditionalCacheMixin` die Version bereits vor der Ausführung teurer Datenbankabfragen oder Serialisierungen und antwortet unmittelbar mit einem leeren `304 Not Modified`.
+   - **Cache-Control & Dashboard-Bypass**: Öffentliche Lese-Endpunkte (`/api/projects/`, `/api/tracks/`, `/api/skills/`, `/api/certificates/`) liefern `Cache-Control: public, max-age=300, stale-while-revalidate=60`. Für authentifizierte Administratoren im Dashboard wird das Caching automatisch umgangen (`Cache-Control: no-cache, private`), sodass Änderungen sofort sichtbar sind.
 
 ---
 

@@ -30,7 +30,7 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 |---|---|---|---|
 | **Epic 1** | CI/CD- & Build-Pipeline-Stabilität | Abgeschlossen | US 1.1 |
 | **Epic 2** | Frontend-Architektur-Dokumentation | Abgeschlossen | US 2.1 |
-| **Epic 3** | Repository-Hygiene & Dateistruktur | Abgeschlossen | US 3.1 |
+| **Epic 3** | Repository-Hygiene & Dateistruktur | In Bearbeitung | US 3.1 abgeschlossen, US 3.2 bereit |
 | **Epic 4** | Deployment & Operations Leitfaden | Abgeschlossen | US 4.1 |
 | **Epic 5** | Zertifikats-Review & Dashboard-Skalierung | Abgeschlossen | US 5.1, US 5.2 |
 | **Epic 6** | Public Track-Filterung & Cold-Start UX | Abgeschlossen | US 6.1, US 6.2 |
@@ -41,8 +41,9 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 11** | RAG Portfolio-Copilot, pgvector Hybrid Retrieval, Guardrails | Abgeschlossen | US 11.1 bis 11.5 |
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Solid Icons | Abgeschlossen | US 12.1 bis 12.4 |
 | **Epic 13** | Robuste OCR-Extraktion, Show File & Commitlint-Governance | Abgeschlossen | US 13.1 bis 13.4 |
-| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | Bereit zur Umsetzung (Ready) | US 14.1, 14.2, 14.3 |
+| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | In Bearbeitung | US 14.1 abgeschlossen, US 14.2 bereit |
 | **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | In Bearbeitung | US 15.1 abgeschlossen |
+| **Epic 16** | Internationalisierung (i18n), Accessibility & Theme Polish | Geplant (Backlog) | US 16.1, US 16.2 |
 
 ---
 
