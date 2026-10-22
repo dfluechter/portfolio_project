@@ -643,7 +643,7 @@ def extract_via_gemini_vision(
         )
         return None
 
-    gemini_model = model or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+    gemini_model: str = str(model or os.getenv("GEMINI_MODEL") or "gemini-3.8-flash")
 
     try:
         from google import genai
@@ -655,9 +655,10 @@ def extract_via_gemini_vision(
             file_bytes = f.read()
 
         part = types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
+        contents_payload: Any = [part, prompt]
         response = client.models.generate_content(
             model=gemini_model,
-            contents=[part, prompt],
+            contents=contents_payload,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.1,
