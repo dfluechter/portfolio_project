@@ -59,9 +59,22 @@ export const TimelineSection: React.FC = () => {
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs font-semibold mb-3">
-              <Milestone className="w-3.5 h-3.5" />
-              Erfahrung & Meilensteine {searchTerm && `(${filteredEntries.length} Treffer)`}
+            <div className="flex items-center gap-2 mb-2 text-xs font-mono text-indigo-600 dark:text-indigo-400">
+              <span>04 // Career Chronology</span>
+              <span className="text-slate-300 dark:text-slate-700">/</span>
+              <span className="inline-flex items-center gap-1.5">
+                <Milestone className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Werdegang & Meilensteine ({entries.length})</span>
+              </span>
+              {searchTerm && (
+                <span
+                  role="status"
+                  aria-atomic="true"
+                  className="text-slate-500 dark:text-slate-400 font-sans font-normal"
+                >
+                  • {filteredEntries.length} gefiltert
+                </span>
+              )}
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Beruflicher Werdegang
@@ -87,8 +100,8 @@ export const TimelineSection: React.FC = () => {
           />
         ) : (
           <div className="relative max-w-3xl mx-auto">
-            {/* Vertical Line */}
-            <div className="absolute left-4 sm:left-6 top-4 bottom-4 w-0.5 bg-gradient-to-b from-indigo-500 via-violet-500 to-transparent" />
+            {/* Vertical Line — Schweizer Hairline Grid Divider */}
+            <div className="absolute left-4 sm:left-6 top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-800" />
 
             <div className="space-y-8">
               <AnimatePresence>
@@ -107,19 +120,19 @@ export const TimelineSection: React.FC = () => {
                       className="relative flex items-start gap-4 sm:gap-6 group"
                     >
                       {/* Node Dot */}
-                      <div className="relative z-10 flex-shrink-0 w-8 h-8 sm:w-12 sm:h-12 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
+                      <div className="relative z-10 flex-shrink-0 w-8 h-8 sm:w-12 sm:h-12 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 flex items-center justify-center transition-colors">
+                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                       </div>
 
                       {/* Content Card */}
                       <div className="flex-1 p-6 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500/40 transition-all">
                         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                          <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md">
+                          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md whitespace-nowrap">
                             {entry.entry_type_display || entry.entry_type}
                           </span>
 
                           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                            <Calendar className="w-3.5 h-3.5" />
+                            <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
                             <span>
                               {new Date(entry.start_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })}
                               {' — '}
@@ -142,7 +155,7 @@ export const TimelineSection: React.FC = () => {
                           </span>
                           {entry.location && (
                             <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3 text-slate-400" />
+                              <MapPin className="w-3 h-3 text-slate-400" aria-hidden="true" />
                               {entry.location}
                             </span>
                           )}

@@ -131,10 +131,10 @@ export const UploadCertificateModal: React.FC<UploadCertificateModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="cursor-pointer p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             aria-label="Schließen"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -290,23 +290,23 @@ export const UploadCertificateModal: React.FC<UploadCertificateModalProps> = ({
                 type="button"
                 onClick={onClose}
                 disabled={directUploadMutation.isPending}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="cursor-pointer px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               >
                 Abbrechen
               </button>
               <button
                 type="submit"
                 disabled={directUploadMutation.isPending}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="cursor-pointer px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               >
                 {directUploadMutation.isPending ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
                     <span>Lädt hoch...</span>
                   </>
                 ) : (
                   <>
-                    <CloudUpload className="w-3.5 h-3.5" />
+                    <CloudUpload className="w-3.5 h-3.5" aria-hidden="true" />
                     <span>Direct-Upload starten</span>
                   </>
                 )}

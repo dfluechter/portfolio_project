@@ -28,35 +28,24 @@ def test_gemini_vision_graceful_degradation_without_api_key(dummy_image_file):
 
 
 def test_gemini_vision_successful_extraction(dummy_image_file):
-    """Testet den erfolgreichen Aufruf der Gemini Vision API mit gemocktem HTTP-Response."""
-    mock_gemini_response = {
-        "candidates": [
-            {
-                "content": {
-                    "parts": [
-                        {
-                            "text": json.dumps(
-                                {
-                                    "title": "AWS Certified Solutions Architect",
-                                    "provider": "Amazon Web Services",
-                                    "credential_id": "AWS-123456",
-                                    "issued_date": "2024-05-15",
-                                    "extracted_text": "This certifies that Jane Doe has successfully completed...",
-                                    "tracks": ["cloud-devops", "backend"],
-                                }
-                            )
-                        }
-                    ]
-                }
-            }
-        ]
+    """Testet den erfolgreichen Aufruf der Gemini Vision API mit gemocktem genai.Client."""
+    mock_payload = {
+        "title": "AWS Certified Solutions Architect",
+        "provider": "Amazon Web Services",
+        "credential_id": "AWS-123456",
+        "issued_date": "2024-05-15",
+        "extracted_text": "This certifies that Jane Doe has successfully completed...",
+        "tracks": ["cloud-devops", "backend"],
     }
 
     mock_resp = MagicMock()
-    mock_resp.read.return_value = json.dumps(mock_gemini_response).encode("utf-8")
-    mock_resp.__enter__.return_value = mock_resp
+    mock_resp.text = json.dumps(mock_payload)
+    mock_resp.usage_metadata.total_token_count = 150
 
-    with patch("urllib.request.urlopen", return_value=mock_resp):
+    mock_client = MagicMock()
+    mock_client.models.generate_content.return_value = mock_resp
+
+    with patch("google.genai.Client", return_value=mock_client):
         result = extract_via_gemini_vision(dummy_image_file, api_key="dummy-test-key")
 
     assert result is not None
@@ -69,9 +58,10 @@ def test_gemini_vision_successful_extraction(dummy_image_file):
 
 def test_gemini_vision_handles_api_error_gracefully(dummy_image_file):
     """Testet, dass API-Fehler (z.B. HTTP 500 oder Netzwerkfehler) abgefangen werden."""
-    with patch(
-        "urllib.request.urlopen", side_effect=OSError("Network connection refused")
-    ):
+    mock_client = MagicMock()
+    mock_client.models.generate_content.side_effect = RuntimeError("API connection failed")
+
+    with patch("google.genai.Client", return_value=mock_client):
         result = extract_via_gemini_vision(dummy_image_file, api_key="dummy-test-key")
         assert result is None
 
@@ -123,11 +113,11 @@ def test_gemini_vision_disabled_when_flag_false(dummy_image_file):
             os.environ,
             {"GEMINI_API_KEY": "dummy-key", "GEMINI_VISION_ENABLED": "False"},
         ),
-        patch("urllib.request.urlopen") as mock_urlopen,
+        patch("google.genai.Client") as mock_client,
     ):
         result = extract_via_gemini_vision(dummy_image_file, api_key="dummy-key")
         assert result is None
-        mock_urlopen.assert_not_called()
+        mock_client.assert_not_called()
 
 
 def test_gemini_vision_skips_oversized_file_to_prevent_token_spike(
@@ -139,11 +129,11 @@ def test_gemini_vision_skips_oversized_file_to_prevent_token_spike(
             os.environ,
             {"GEMINI_API_KEY": "dummy-key", "GEMINI_VISION_MAX_FILE_BYTES": "10"},
         ),
-        patch("urllib.request.urlopen") as mock_urlopen,
+        patch("google.genai.Client") as mock_client,
     ):
         result = extract_via_gemini_vision(dummy_image_file, api_key="dummy-key")
         assert result is None
-        mock_urlopen.assert_not_called()
+        mock_client.assert_not_called()
 
 
 def test_gemini_vision_blocked_when_daily_token_limit_reached(dummy_image_file):
@@ -156,9 +146,93 @@ def test_gemini_vision_blocked_when_daily_token_limit_reached(dummy_image_file):
             os.environ,
             {"GEMINI_API_KEY": "dummy-key", "GEMINI_DAILY_TOKEN_LIMIT": "5"},
         ),
-        patch("urllib.request.urlopen") as mock_urlopen,
+        patch("google.genai.Client") as mock_client,
     ):
         result = extract_via_gemini_vision(dummy_image_file, api_key="dummy-key")
         assert result is None
-        mock_urlopen.assert_not_called()
+        mock_client.assert_not_called()
     cache.clear()
+
+
+def test_guess_title_ignores_owner_name_and_phrases():
+    """Prüft, dass der Name des Inhabers und reine Floskeln nicht als Titel fehlinterpretiert werden."""
+    from portfolio.services.extractor import guess_title
+
+    text = (
+        "Certificate of Completion\n"
+        "This is to certify that Dominik Flüchter has successfully completed the course\n"
+        "Fullstack Architecture with Django and React"
+    )
+    title = guess_title(text, "file.pdf", {})
+    assert "Fullstack Architecture with Django and React" in title
+    assert "Dominik" not in title
+    assert "Flüchter" not in title
+
+
+def test_udemy_certificate_structure_extraction_live_example():
+    """Prüft das reale Udemy-Beispiel: UC-3fOea848-5950-4fe9-ad31-7d4cb00039d3."""
+    from portfolio.services.extractor import (
+        extract_credential_id,
+        extract_issued_date,
+        guess_provider,
+        guess_title,
+    )
+
+    udemy_text = (
+        "ZERTIFIKAT ÜBER DIE ERFOLGREICHE TEILNAHME\n"
+        "Data Science - Datenvorbereitung und Qualitätssicherung Excel\n"
+        "Lehrkraft: Dr. Example\n"
+        "Dominik Flüchter\n"
+        "Datum: 28. Nov. 2023\n"
+        "Dauer: 5 Gesamtstunden\n"
+        "Zertifikat-Nr.: UC-3fOea848-5950-4fe9-ad31-7d4cb00039d3\n"
+        "Zertifikat-URL: ude.my/UC-3fOea848-5950-4fe9-ad31-7d4cb00039d3\n"
+        "Referenznummer: 0004"
+    )
+
+    # 1. Titel darf niemals der temp-Dateiname sein
+    title = guess_title(udemy_text, "tmplz6lmxh3.pdf", {})
+    assert title == "Data Science - Datenvorbereitung und Qualitätssicherung Excel"
+
+    # 2. Provider muss als Udemy erkannt werden
+    provider = guess_provider(udemy_text, "tmplz6lmxh3.pdf")
+    assert provider == "Udemy"
+
+    # 3. Credential-ID muss exakt matchen
+    cred_id = extract_credential_id(udemy_text)
+    assert cred_id == "UC-3fOea848-5950-4fe9-ad31-7d4cb00039d3"
+
+    # 4. Datum muss 2023-11-28 sein
+    issued = extract_issued_date(udemy_text)
+    assert issued == "2023-11-28"
+
+
+def test_real_downloaded_udemy_pdf_extraction():
+    """Testet die echte heruntergeladene Udemy-PDF, falls sie im lokalen Cache vorhanden ist."""
+    from pathlib import Path
+    from portfolio.models import TRACK_RULES
+    from portfolio.services.extractor import extract_metadata
+
+    pdf_path = Path(
+        r"C:\Users\domin\.gemini\antigravity-cli\brain\267cc78e-2285-4de8-8426-fff6f7143c91\.tempmediaStorage\60853499b5dd8817.pdf"
+    )
+    if not pdf_path.exists():
+        # Fallback auf Downloads-Ordner des Users
+        pdf_path = Path(
+            r"C:\Users\domin\Downloads\data-science-datenvorbereitung-und-qualitatssicherung-excel.pdf"
+        )
+    if pdf_path.exists():
+        res = extract_metadata(
+            pdf_path,
+            pdf_path.parent,
+            TRACK_RULES,
+            enable_ocr=False,
+            known_providers=["Udemy"],
+        )
+        assert res is not None
+        assert "Data Science" in res.guessed_title
+        assert res.guessed_provider == "Udemy"
+        assert res.issued_date == "2023-11-28"
+        assert res.credential_id.startswith("UC-")
+
+

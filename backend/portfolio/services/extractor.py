@@ -1,4 +1,3 @@
-import base64
 import datetime
 import hashlib
 import io
@@ -6,7 +5,6 @@ import json
 import logging
 import os
 import re
-import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -322,6 +320,17 @@ def guess_title(text: str, filename: str, pdf_meta: dict, provider: str = "") ->
     """
     Ermittelt den Zertifikatstitel aus Text-Mustern, PDF-Metadaten oder Dateinamen.
     """
+    # 0. Strukturmuster für Plattformen (mehrzeilig vor Zeilenende-Mustern)
+    # Udemy Deutsch & Englisch: "Zertifikat über die erfolgreiche Teilnahme\n<Kursname>\nLehrkraft..."
+    udemy_match = re.search(
+        r"(?i)(?:zertifikat\s+(?:über\s+die\s+erfolgreiche\s+teilnahme|der\s+fertigstellung)|certificate\s+of\s+completion)\s*\n+([^\n\r]+?)(?:\s*\n+(?:lehrkraft|instructors?|dozent|unterrichtet\s+von|datum|date|zertifikat-nr|certificate\s+no|dauer|length|referenznummer))",
+        text,
+    )
+    if udemy_match:
+        cand = udemy_match.group(1).strip(" :,-_")
+        if cand and len(cand) > 3 and not any(n in cand.lower() for n in ["dominik flüchter", "dominik", "completion", "zertifikat"]):
+            return cand
+
     title_patterns = [
         r"(?i)certificate\s+of\s+(?:completion|achievement|accomplishment|attendance)[\s:]*(?:for)?\s*([^\n\r]+)",
         r"(?i)has\s+successfully\s+completed\s+(?:the\s+(?:course|program|specialization)\s+)?([^\n\r]+)",
@@ -334,9 +343,22 @@ def guess_title(text: str, filename: str, pdf_meta: dict, provider: str = "") ->
         match = re.search(pat, text)
         if match:
             candidate = match.group(1).strip(" :,-_")
-            # Kürzen falls zu lang
+            # Kürzen falls mehrzeilig
             if "\n" in candidate:
                 candidate = candidate.split("\n")[0].strip()
+            
+            # Negativprüfung: Name des Teilnehmers oder reine Standardfloskeln verwerfen
+            candidate_lower = candidate.lower()
+            owner_name = os.getenv("PORTFOLIO_OWNER_NAME", "Dominik Flüchter").lower()
+            if (
+                any(n in candidate_lower for n in [owner_name, "dominik flüchter", "dominik fluechter", "dominik"])
+                or candidate_lower in {
+                    "completion", "achievement", "accomplishment", "attendance",
+                    "erfolgreich", "teilnahme", "certificate", "zertifikat",
+                }
+            ):
+                continue
+
             if candidate and len(candidate) > 3 and len(candidate) <= 120:
                 return candidate
 
@@ -353,6 +375,10 @@ def guess_title(text: str, filename: str, pdf_meta: dict, provider: str = "") ->
 
     # 3. Fallback: Bereinigter Dateiname
     stem = Path(filename).stem
+    # Temporäre System-Dateinamen (z. B. tmplz6lmxh3) niemals als Titel verwenden
+    if re.match(r"^tmp[a-z0-9_]{4,}$", stem.lower()):
+        return ""
+
     # Provider aus Dateinamen entfernen, falls vorhanden
     if provider:
         stem = re.sub(rf"(?i)\b{re.escape(provider)}\b", "", stem)
@@ -416,8 +442,9 @@ def _extract_from_pdf(
                     pages_text.append(text)
             extracted_text = "\n".join(pages_text).strip()
 
-            # Wenn Textlayer vorhanden ist (>= 15 Zeichen)
-            if len(extracted_text) >= 15:
+            # Wenn echter Textlayer vorhanden ist (>= 60 Zeichen und >= 8 Wörter)
+            words = extracted_text.split()
+            if len(extracted_text) >= 60 and len(words) >= 8:
                 ocr_pending = False
             else:
                 # Bildbasierte PDF: OCR auf ersten 2 Seiten ausführen
@@ -505,9 +532,9 @@ def _extract_from_image(
 
 
 MAX_GEMINI_VISION_FILE_BYTES = (
-    2 * 1024 * 1024
-)  # Max. 2 MB um Token-Spitzen zu verhindern
-MAX_GEMINI_VISION_OUTPUT_TOKENS = 500
+    10 * 1024 * 1024
+)  # Max. 10 MB für hochauflösende Scans und Vektor-PDFs
+MAX_GEMINI_VISION_OUTPUT_TOKENS = 2048
 
 
 def extract_via_gemini_vision(
@@ -517,7 +544,7 @@ def extract_via_gemini_vision(
 ) -> dict[str, Any] | None:
     """
     Stufe 3 der Metadaten-Extraktion:
-    Analysiert gescannte oder bildbasierte Zertifikate via Google Gemini 1.5/2.5 Flash Vision.
+    Analysiert gescannte oder bildbasierte Zertifikate via Google Gemini 2.5 Flash Vision.
     Fällt transparent auf None zurück, wenn kein GEMINI_API_KEY konfiguriert ist oder
     Token-Grenzen/Circuit-Breaker greifen (0-Kosten-Garantie & Graceful Degradation).
     """
@@ -577,10 +604,10 @@ def extract_via_gemini_vision(
         return None
 
     prompt = (
-        "Du bist ein Experte für die Analyse von Zertifikaten und Weiterbildungsnachweisen. "
+        "Du bist ein Experte für die präzise Analyse von Zertifikaten und Weiterbildungsnachweisen. "
         "Extrahiere die Metadaten dieses Zertifikats und antworte ausschließlich als valides JSON "
         "mit den folgenden Feldern:\n"
-        "- title: Der genaue Titel des Zertifikats oder Kurses\n"
+        "- title: Der genaue Titel des Zertifikats oder Kurses. ACHTUNG: Der Name der zertifizierten Person (z. B. Dominik Flüchter) ist NIEMALS der Titel!\n"
         "- provider: Der Name des Ausstellers oder der Plattform (z. B. AWS, Google Cloud, Coursera, Udemy, etc.)\n"
         "- credential_id: Identifikationsnummer oder Lizenznummer des Zertifikats (falls vorhanden, sonst leer)\n"
         "- issued_date: Ausstellungsdatum im ISO-Format YYYY-MM-DD (falls erkennbar, sonst leer)\n"
@@ -598,65 +625,40 @@ def extract_via_gemini_vision(
         )
         return None
 
-    gemini_model = model or os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent"
-        f"?key={key}"
-    )
+    gemini_model = model or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
     try:
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=key)
+
         with open(file_path, "rb") as f:
             file_bytes = f.read()
-        b64_data = base64.b64encode(file_bytes).decode("utf-8")
 
-        payload = {
-            "contents": [
-                {
-                    "parts": [
-                        {"text": prompt},
-                        {
-                            "inline_data": {
-                                "mime_type": mime_type,
-                                "data": b64_data,
-                            }
-                        },
-                    ]
-                }
-            ],
-            "generationConfig": {
-                "response_mime_type": "application/json",
-                "temperature": 0.1,
-                "maxOutputTokens": MAX_GEMINI_VISION_OUTPUT_TOKENS,
-            },
-        }
-
-        req_data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            url,
-            data=req_data,
-            headers={"Content-Type": "application/json"},
-            method="POST",
+        part = types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
+        response = client.models.generate_content(
+            model=gemini_model,
+            contents=[part, prompt],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.1,
+                max_output_tokens=MAX_GEMINI_VISION_OUTPUT_TOKENS,
+            ),
         )
 
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            resp_body = resp.read().decode("utf-8")
-            data = json.loads(resp_body)
-
-        usage_meta = data.get("usageMetadata", {})
-        if isinstance(usage_meta, dict):
-            actual_total = usage_meta.get("totalTokenCount")
+        if hasattr(response, "usage_metadata") and response.usage_metadata:
+            actual_total = getattr(response.usage_metadata, "total_token_count", None)
             if isinstance(actual_total, int):
                 record_actual_ai_tokens(estimated_tokens, actual_total)
 
-        candidates = data.get("candidates", [])
-        if not candidates:
+        raw_text = (response.text or "").strip()
+        if raw_text.startswith("```"):
+            raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
+            raw_text = re.sub(r"\s*```$", "", raw_text)
+        if not raw_text:
             return None
 
-        content_parts = candidates[0].get("content", {}).get("parts", [])
-        if not content_parts:
-            return None
-
-        raw_text = content_parts[0].get("text", "").strip()
         parsed_json: dict[str, Any] = json.loads(raw_text)
         return parsed_json
     except Exception as exc:  # noqa: BLE001
@@ -680,6 +682,7 @@ def extract_metadata(
     track_rules: dict[str, list[str]],
     enable_ocr: bool = True,
     known_providers: list[str] | None = None,
+    original_filename: str | None = None,
 ) -> ExtractionResult | None:
     """
     Extrahiert Metadaten, Volltext und Tracks aus einer Quelldatei.
@@ -691,6 +694,7 @@ def extract_metadata(
     if not file_path.exists() or not file_path.is_file():
         return None
 
+    effective_filename = original_filename or file_path.name
     file_size = file_path.stat().st_size
     sha256_hash = compute_file_hash(file_path)
 
@@ -714,9 +718,9 @@ def extract_metadata(
     else:
         return None
 
-    guessed_provider = guess_provider(extracted_text, file_path.name, known_providers)
+    guessed_provider = guess_provider(extracted_text, effective_filename, known_providers)
     guessed_title = guess_title(
-        extracted_text, file_path.name, pdf_meta, guessed_provider
+        extracted_text, effective_filename, pdf_meta, guessed_provider
     )
     credential_id = extract_credential_id(extracted_text)
     issued_date = extract_issued_date(extracted_text)
@@ -726,12 +730,19 @@ def extract_metadata(
     guessed_track_slugs = guess_tracks(guessed_title, track_rules, extracted_text)
     guessed_track_slug = guessed_track_slugs[0] if guessed_track_slugs else ""
 
-    # Stufe 3: Multimodaler Gemini 1.5 Flash Vision Fallback
-    # Triggert, wenn nach Stufe 1 & 2 der Text fehlt/sehr kurz ist oder Titel/Aussteller fehlen
+    # Stufe 3: Multimodaler Gemini Flash Vision Fallback
+    # Triggert, wenn Text unvollständig ist, Titel minderwertig/fehlt oder Aussteller fehlt
+    is_weak_title = (
+        not guessed_title
+        or guessed_title.lower() in {"certificate", "zertifikat", "document", "scan"}
+        or guessed_title == Path(file_path.name).stem
+        or (len(guessed_title.split()) <= 1 and len(guessed_title) < 15)
+        or any(n in guessed_title.lower() for n in ["dominik flüchter", "dominik fluechter"])
+    )
     if (
         ocr_pending
-        or len(extracted_text) < 20
-        or not guessed_title
+        or len(extracted_text) < 60
+        or is_weak_title
         or not guessed_provider
     ):
         gemini_data = extract_via_gemini_vision(file_path)

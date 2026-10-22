@@ -155,13 +155,25 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
                 Eingelesen am: {new Date(selectedPending.created_at).toLocaleString('de-DE')}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={handleCancelReview}
-              className="text-xs text-slate-400 hover:text-white px-2 py-1"
-            >
-              Abbrechen
-            </button>
+            <div className="flex items-center gap-2">
+              <a
+                href={`/api/pending-certificates/${selectedPending.id}/file/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cursor-pointer flex items-center gap-1.5 px-3 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-lg text-xs font-semibold transition-colors"
+                title="Originaldatei im neuen Tab ansehen"
+              >
+                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                Show File ({selectedPending.original_file_name.split('.').pop()?.toUpperCase()})
+              </a>
+              <button
+                type="button"
+                onClick={handleCancelReview}
+                className="text-xs text-slate-400 hover:text-white px-2 py-1"
+              >
+                Abbrechen
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleApprove} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -218,7 +230,7 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
                           setEditTrackIds([...editTrackIds, t.id]);
                         }
                       }}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                      className={`cursor-pointer px-3 py-1 rounded-lg text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                         isChecked
                           ? 'bg-indigo-600/30 border-indigo-500 text-indigo-300'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
@@ -236,16 +248,16 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
               <button
                 type="button"
                 onClick={handleCancelReview}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-colors"
+                className="cursor-pointer px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               >
                 Abbrechen
               </button>
               <button
                 type="submit"
                 disabled={approveMutation.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                className="cursor-pointer flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors shadow-lg shadow-emerald-600/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               >
-                <CheckCircle className="w-3.5 h-3.5" />
+                <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
                 {approveMutation.isPending ? 'Wird übertragen...' : 'Freigeben & Übertragen'}
               </button>
             </div>
@@ -258,7 +270,7 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
         <div className="p-8 text-center text-xs text-slate-500">Lade ausstehende Zertifikate...</div>
       ) : filteredList.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-2">
-          <Clock className="w-8 h-8 text-slate-600 mx-auto" />
+          <Clock className="w-8 h-8 text-slate-600 mx-auto" aria-hidden="true" />
           <h3 className="text-sm font-semibold text-slate-300">Keine ausstehenden Zertifikate</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             {searchTerm
@@ -275,7 +287,7 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-amber-400 shrink-0" />
+                  <FileText className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
                   <span className="text-xs font-bold text-white break-all">
                     {item.guessed_title || item.original_file_name}
                   </span>
@@ -297,21 +309,31 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={`/api/pending-certificates/${item.id}/file/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  title="Originaldatei im neuen Tab ansehen"
+                >
+                  <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                  Show File
+                </a>
                 <button
                   type="button"
                   onClick={() => handleStartReview(item)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors"
+                  className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                   Prüfen & Freigeben
                 </button>
                 <button
                   type="button"
                   onClick={() => handleReject(item)}
                   disabled={rejectMutation.isPending}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-semibold transition-colors"
+                  className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
-                  <XCircle className="w-3.5 h-3.5" />
+                  <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
                   Ablehnen
                 </button>
               </div>

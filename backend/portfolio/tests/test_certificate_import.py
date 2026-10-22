@@ -547,6 +547,54 @@ class TestPromotionWorkflowAPIAndAdmin:
         assert pending.certificate is not None
         assert pending.certificate.title == "Admin Cert"
 
+    def test_pending_certificate_show_file_in_admin_and_api(self, tmp_path):
+        """Prüft, dass der Show-File-Endpunkt im Admin und der API die Datei inline streamt."""
+        from django.contrib.admin.sites import AdminSite
+        from django.contrib.auth import get_user_model
+        from django.test import RequestFactory
+        from rest_framework.test import APIClient
+
+        from portfolio.admin import PendingCertificateAdmin
+
+        file = tmp_path / "preview_cert.pdf"
+        file.write_bytes(b"%PDF-1.4 test preview stream")
+
+        pending = PendingCertificate.objects.create(
+            original_file_name="preview_cert.pdf",
+            file_path=str(file),
+            guessed_title="Preview Cert",
+        )
+
+        user_model = get_user_model()
+        staff_user = user_model.objects.create_user(
+            email="preview_admin@example.com", password="password", is_staff=True
+        )
+
+        # 1. Admin show_file_view
+        rf = RequestFactory()
+        req = rf.get(f"/admin/portfolio/pendingcertificate/{pending.pk}/show-file/")
+        req.user = staff_user
+
+        admin_instance = PendingCertificateAdmin(PendingCertificate, AdminSite())
+        resp = admin_instance.show_file_view(req, str(pending.pk))
+        assert resp.status_code == 200
+        assert resp["Content-Type"] == "application/pdf"
+        assert 'inline; filename="preview_cert.pdf"' in resp["Content-Disposition"]
+
+        # Button rendering
+        button_html = admin_instance.show_file_button(pending)
+        assert "Show File (PDF)" in button_html
+        assert f"/admin/portfolio/pendingcertificate/{pending.pk}/show-file/" in button_html
+
+        # 2. REST API /api/pending-certificates/{id}/file/
+        client = APIClient()
+        client.force_authenticate(user=staff_user)
+        api_resp = client.get(f"/api/pending-certificates/{pending.pk}/file/")
+        assert api_resp.status_code == 200
+        assert api_resp["Content-Type"] == "application/pdf"
+        assert 'inline; filename="preview_cert.pdf"' in api_resp["Content-Disposition"]
+
+
 
 class TestExtractorServiceAndOCR:
     """Umfassende Tests für die erweiterte Metadaten- und OCR-Pipeline."""

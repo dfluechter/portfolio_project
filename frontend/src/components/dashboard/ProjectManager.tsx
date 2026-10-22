@@ -331,7 +331,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
             <button
               type="submit"
               disabled={isSaving}
-              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="cursor-pointer flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               {isSaving ? (
                 <>
@@ -340,12 +340,12 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
                 </>
               ) : editingProject ? (
                 <>
-                  <Save className="w-3.5 h-3.5" />
+                  <Save className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Änderungen speichern</span>
                 </>
               ) : (
                 <>
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Projekt anlegen</span>
                 </>
               )}
@@ -355,7 +355,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
               <button
                 type="button"
                 onClick={resetForm}
-                className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition-colors"
+                className="cursor-pointer py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               >
                 Abbrechen
               </button>
@@ -466,7 +466,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => handleStartEdit(proj)}
-                      className={`p-2 transition-colors rounded-lg ${
+                      className={`cursor-pointer p-2 transition-colors rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                         editingProject?.id === proj.id
                           ? 'text-indigo-400 bg-indigo-500/20'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -474,17 +474,17 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
                       title="Projekt bearbeiten"
                       aria-label={`Projekt ${proj.title} bearbeiten`}
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="w-4 h-4" aria-hidden="true" />
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setProjectToDelete({ id: proj.id, title: proj.title })}
-                      className="p-2 text-slate-500 hover:text-red-400 transition-colors rounded-lg hover:bg-slate-800"
+                      className="cursor-pointer p-2 text-slate-500 hover:text-red-400 transition-colors rounded-lg hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       title="Projekt löschen"
                       aria-label={`Projekt ${proj.title} löschen`}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
                 </div>

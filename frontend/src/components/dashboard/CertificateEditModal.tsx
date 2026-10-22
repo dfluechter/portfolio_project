@@ -228,16 +228,16 @@ export const CertificateOcrSuggestionsBanner: React.FC<CertificateOcrSuggestions
           type="button"
           onClick={onRunOcr}
           disabled={isExtracting || !hasPdfFile}
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 flex items-center gap-1.5 shrink-0 transition-colors shadow-sm shadow-indigo-600/30"
+          className="cursor-pointer px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0 transition-colors shadow-sm shadow-indigo-600/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         >
           {isExtracting ? (
             <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
               <span>Analysiere...</span>
             </>
           ) : (
             <>
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Metadaten per OCR analysieren</span>
             </>
           )}
@@ -254,7 +254,7 @@ export const CertificateOcrSuggestionsBanner: React.FC<CertificateOcrSuggestions
             <button
               type="button"
               onClick={onApplyAll}
-              className="text-xs font-bold text-indigo-400 hover:text-indigo-300 underline"
+              className="cursor-pointer text-xs font-bold text-indigo-400 hover:text-indigo-300 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded px-1"
             >
               Alle Vorschläge übernehmen
             </button>
@@ -517,10 +517,10 @@ export const CertificateEditModal: React.FC<CertificateEditModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="cursor-pointer p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               aria-label="Schließen"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -681,7 +681,7 @@ export const CertificateEditModal: React.FC<CertificateEditModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors"
+            className="cursor-pointer px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
             Abbrechen
           </button>
@@ -692,12 +692,12 @@ export const CertificateEditModal: React.FC<CertificateEditModalProps> = ({
               type="button"
               onClick={() => handleSave()}
               disabled={updateMutation.isPending}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 flex items-center gap-1.5 transition-colors border border-slate-700"
+              className="cursor-pointer px-4 py-2 rounded-xl text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors border border-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               {updateMutation.isPending ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
               ) : (
-                <Save className="w-3.5 h-3.5" />
+                <Save className="w-3.5 h-3.5" aria-hidden="true" />
               )}
               Speichern
             </button>
@@ -707,7 +707,7 @@ export const CertificateEditModal: React.FC<CertificateEditModalProps> = ({
               type="button"
               onClick={() => handleSave(true)}
               disabled={updateMutation.isPending || trackIds.length === 0}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors shadow-sm shadow-emerald-600/30"
+              className="cursor-pointer px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors shadow-sm shadow-emerald-600/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               title={
                 trackIds.length === 0
                   ? 'Mindestens ein Track erforderlich für Veröffentlichung'
@@ -715,9 +715,9 @@ export const CertificateEditModal: React.FC<CertificateEditModalProps> = ({
               }
             >
               {updateMutation.isPending ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
               ) : (
-                <Globe className="w-3.5 h-3.5" />
+                <Globe className="w-3.5 h-3.5" aria-hidden="true" />
               )}
               Speichern & Veröffentlichen
             </button>

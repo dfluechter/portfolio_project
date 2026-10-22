@@ -7,7 +7,7 @@ from typing import Any
 
 from django.db import connection
 from django.db.models import Prefetch, ProtectedError, Q, QuerySet
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import FileResponse, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status, viewsets
@@ -431,12 +431,14 @@ class CertificateViewSet(viewsets.ModelViewSet):
                 known_providers = list(
                     Provider.objects.values_list("provider", flat=True)
                 )
+                original_name = Path(cert.pdf_file.name).name
                 result = extract_metadata(
                     file_path=tmp_path,
                     source_root=tmp_path.parent,
                     track_rules=TRACK_RULES,
                     enable_ocr=True,
                     known_providers=known_providers,
+                    original_filename=original_name,
                 )
             finally:
                 if tmp_path and tmp_path.exists():
@@ -654,6 +656,34 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         return Response({"detail": "Abgelehnt."}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["get"])
+    def file(self, request: Request, pk: str | None = None) -> FileResponse | Response:
+        """Gibt die Quelldatei des ausstehenden Zertifikats (PDF, PNG, JPG) zur Ansicht zurück."""
+        pending = self.get_object()
+        if not pending.file_path:
+            return Response(
+                {"detail": "Kein lokaler Dateipfad hinterlegt."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        file_path = Path(pending.file_path)
+        if not file_path.exists() or not file_path.is_file():
+            return Response(
+                {"detail": f"Datei '{pending.original_file_name}' existiert lokal nicht mehr."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        ext = file_path.suffix.lower()
+        content_type = "application/pdf"
+        if ext == ".png":
+            content_type = "image/png"
+        elif ext in {".jpg", ".jpeg"}:
+            content_type = "image/jpeg"
+
+        response = FileResponse(open(file_path, "rb"), content_type=content_type)
+        response["Content-Disposition"] = f'inline; filename="{pending.original_file_name}"'
+        return response
 
 
 class AIChatView(APIView):

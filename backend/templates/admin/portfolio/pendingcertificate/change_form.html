@@ -1,0 +1,13 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  {% if original and original.pk %}
+    <li>
+      <a href="{% url 'admin:portfolio_pendingcertificate_show_file' original.pk %}" class="viewsitelink" target="_blank" rel="noopener noreferrer" style="background-color: #2563eb !important; color: #ffffff !important; font-weight: bold; padding: 6px 14px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+        📄 Show File
+      </a>
+    </li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

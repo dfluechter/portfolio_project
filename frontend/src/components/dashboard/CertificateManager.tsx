@@ -188,7 +188,7 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
             <button
               type="button"
               onClick={() => handleStatusFilterChange('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              className={`cursor-pointer px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 filterStatus === 'all'
                   ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                   : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
@@ -199,37 +199,37 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
             <button
               type="button"
               onClick={() => handleStatusFilterChange('published')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+              className={`cursor-pointer px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 filterStatus === 'published'
                   ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
                   : 'bg-slate-900 text-emerald-400 hover:text-emerald-300 hover:bg-slate-800'
               }`}
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
               Veröffentlicht
             </button>
             <button
               type="button"
               onClick={() => handleStatusFilterChange('unpublished')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+              className={`cursor-pointer px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 filterStatus === 'unpublished'
                   ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/30'
                   : 'bg-slate-900 text-amber-400 hover:text-amber-300 hover:bg-slate-800'
               }`}
             >
-              <EyeOff className="w-3.5 h-3.5" />
+              <EyeOff className="w-3.5 h-3.5" aria-hidden="true" />
               Entwürfe
             </button>
             <button
               type="button"
               onClick={() => handleStatusFilterChange('incomplete')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+              className={`cursor-pointer px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 filterStatus === 'incomplete'
                   ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/30'
                   : 'bg-slate-900 text-rose-400 hover:text-rose-300 hover:bg-slate-800'
               }`}
             >
-              <AlertCircle className="w-3.5 h-3.5" />
+              <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />
               Unvollständig (Prüfbedarf)
             </button>
           </div>
@@ -384,11 +384,11 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
                         href={cert.pdf_file}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 text-indigo-400 hover:text-indigo-300 rounded-lg hover:bg-slate-800 transition-colors"
+                        className="cursor-pointer p-2 text-indigo-400 hover:text-indigo-300 rounded-lg hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                         title="Zertifikat ansehen"
                         aria-label={`Zertifikat ${cert.title} ansehen`}
                       >
-                        <ExternalLink className="w-4 h-4" />
+                        <ExternalLink className="w-4 h-4" aria-hidden="true" />
                       </a>
                     )}
                     {cert.credential_url && (
@@ -396,30 +396,30 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
                         href={cert.credential_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 text-emerald-400 hover:text-emerald-300 rounded-lg hover:bg-slate-800 transition-colors"
+                        className="cursor-pointer p-2 text-emerald-400 hover:text-emerald-300 rounded-lg hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                         title={`Online-Verifizierung öffnen (${cert.credential_url})`}
                         aria-label={`Online-Verifizierung für ${cert.title} öffnen`}
                       >
-                        <Globe className="w-4 h-4" />
+                        <Globe className="w-4 h-4" aria-hidden="true" />
                       </a>
                     )}
                     <button
                       type="button"
                       onClick={() => setCertToEdit(cert)}
-                      className="p-2 text-slate-400 hover:text-indigo-300 transition-colors rounded-lg hover:bg-slate-800"
+                      className="cursor-pointer p-2 text-slate-400 hover:text-indigo-300 transition-colors rounded-lg hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                       title="Review-Modal öffnen"
                       aria-label={`Zertifikat ${cert.title} überprüfen`}
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="w-4 h-4" aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       onClick={() => setCertToDelete({ id: cert.id, title: cert.title })}
-                      className="p-2 text-slate-500 hover:text-red-400 transition-colors rounded-lg hover:bg-slate-800"
+                      className="cursor-pointer p-2 text-slate-500 hover:text-red-400 transition-colors rounded-lg hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       title="Zertifikat löschen"
                       aria-label={`Zertifikat ${cert.title} löschen`}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -443,9 +443,9 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
               type="button"
               disabled={page <= 1 || loadingCerts}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+              className="cursor-pointer px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="w-3.5 h-3.5" aria-hidden="true" />
               Vorherige
             </button>
             <span className="px-2 text-slate-300 font-medium">
@@ -455,10 +455,10 @@ export const CertificateManager: React.FC<CertificateManagerProps> = ({ onNotify
               type="button"
               disabled={page >= totalPages || loadingCerts}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+              className="cursor-pointer px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               Nächste
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
             </button>
           </div>
         </div>
