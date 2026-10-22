@@ -121,8 +121,8 @@ class TestModelSignalsTriggerCacheInvalidation:
         assert cache.get(RAG_VERSION_KEY) == 23
 
     def test_certificate_lifecycle_triggers_invalidation(self):
-        cache.set(RAG_VERSION_KEY, 30)
         provider = Provider.objects.create(provider="Coursera")
+        cache.set(RAG_VERSION_KEY, 30)
 
         # 1. Create
         cert = Certificate.objects.create(

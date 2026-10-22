@@ -42,7 +42,7 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 11** | RAG Portfolio-Copilot, pgvector Hybrid Retrieval, Guardrails & UI-Skills Polish | Abgeschlossen | US 11.1, US 11.2, US 11.3, US 11.4, US 11.5 |
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
 | **Epic 13** | Robuste OCR-Extraktion, Dokumentenvorschau & Commitlint-Governance | Abgeschlossen | US 13.1, US 13.2, US 13.3, US 13.4 |
-| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | In Bearbeitung | US 14.1 abgeschlossen, US 14.2 bereit |
+| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | In Bearbeitung | US 14.1 abgeschlossen, US 14.2 in Umsetzung |
 | **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | In Bearbeitung | US 15.1 abgeschlossen |
 | **Epic 16** | Internationalisierung (i18n), Accessibility & Theme Polish | Geplant (Backlog) | US 16.1, US 16.2 |
 

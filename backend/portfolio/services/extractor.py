@@ -425,9 +425,11 @@ def extract_credential_id(text: str) -> str:
         return ""
 
     patterns = [
-        r"(?i)(?:credential[\s-]*id|certificate[\s-]*id|verification[\s-]*code|zertifikat[- ]*(?:id|nr|nummer)|license\s*#?)[\s:]*([A-Za-z0-9-_/]+)",
-        r"(?i)(?:verify\s+(?:at|authenticity\s+at)?|verifizieren\s+unter)[\s:]*https?://\S+/([A-Za-z0-9-_/]+)",
+        r"(?i)(?:credential[\s-]*id|certificate[\s-]*id|verification[\s-]*code|zertifikat[- ]*(?:id|nr\.?|nummer)|license\s*#?)[\s:.]*([A-Za-z0-9-_/]+)",
+        r"(?i)(?:verify\s+(?:at|authenticity\s+at)?|verifizieren\s+unter)[\s:]*(?:https?://)?\S+/([A-Za-z0-9-_/]+)",
         r"(?i)certificate\s+number[\s:]*([A-Za-z0-9-_/]+)",
+        r"(?i)\bude\.my/([A-Za-z0-9-_]+)",
+        r"\b(UC-[A-Za-z0-9-]{16,})\b",
     ]
 
     for pat in patterns:
