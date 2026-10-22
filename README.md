@@ -80,6 +80,7 @@ Alle Architekturentscheidungen, Datenflüsse und Spezifikationen sind im Ordner 
 | [`docs/ai-assistant-rag.md`](docs/ai-assistant-rag.md) | RAG Portfolio-Copilot, `pgvector` Hybrid Retrieval, Signals Caching, Guardrails & UI Deep-Linking |
 | [`docs/frontend.md`](docs/frontend.md) | React 19 Komponenten-Architektur, TanStack Query State, JWT-Interceptor, Code-Splitting & Testing |
 | [`docs/deployment.md`](docs/deployment.md) | Render Deployment, `build.sh`, Neon Pooled/Direct Connections, CI-Branching, S3-CORS & `CODEOWNERS` |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | Sicherheitsarchitektur, Defense-in-Depth, Zero-Cost AI Circuit Breaker, Read-Only-Governance & Disclosure |
 | [`docs/glossary.md`](docs/glossary.md) | Verbindliches Fachglossar (Entitäten, Zertifikats-Lifecycle, Infrastruktur- & RAG-Begriffe) |
 | [`docs/backlog.md`](docs/backlog.md) | Agiles Product Backlog (Epics 1–12), User Stories, Definition of Ready (DoR) & Definition of Done (DoD) |
 | [`docs/adrs/`](docs/adrs/) | Architectural Decision Records ([ADR-001](docs/adrs/001-monorepo.md) bis [ADR-007](docs/adrs/007-rag-copilot-caching-guardrails.md)) |

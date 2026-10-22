@@ -125,6 +125,55 @@ Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_projec
 
 In Kombination mit der GitHub Branch-Protection-Regel *"Require review from Code Owners"* auf `main` erzwingt dies automatische Review-Zuweisungen bei Pull Requests auf kritischen Infrastruktur- und Sicherheitspfaden.
 
+### 3.2 Automatisierte Qualitätssicherung durch Git-Hooks und Commitlint
+
+Lokale Git-Hooks fungieren als erste Verteidigungslinie. Mithilfe von Werkzeugen wie *Husky* wird der `commit-msg`-Hook genutzt, um Formatierungs- und Syntaxfehler im Vorfeld zu verhindern.
+
+Die Validierung der Commit-Nachrichten folgt der *Conventional Commits*-Spezifikation:
+```text
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+#### Zulässige Commit-Typen ([`.commitlintrc.json`](file:///d:/dev/portfolio_project/.commitlintrc.json)):
+
+* `build`: Änderungen an Build-Systemen, CI-Pipelines oder Abhängigkeiten.
+* `chore`: Administrative Aufgaben, die keinen Anwendungscode betreffen.
+* `enh`: Verbesserungen bestehender Funktionalitäten.
+* `docs`: Reine Dokumentationsänderungen.
+* `feat`: Einführung neuer Funktionen.
+* `fix`: Behebung von Softwarefehlern.
+* `perf`: Performance-Optimierungen.
+* `refactor`: Code-Umstrukturierungen ohne Funktionsänderung oder Bugfix.
+* `revert`: Rücknahme vorheriger Commits.
+* `style`: Formatierungen, fehlende Semikolons, Reformatierung von Whitespaces.
+* `test`: Ergänzung oder Korrektur von automatisierten Tests.
+
+#### Formale Regeln für Commit-Nachrichten:
+
+* **Verwendung des Imperativs im Präsens:** z. B. `change` statt `changed` oder `changes`.
+* **Kleinschreibung des Subjects:** `subject-case` ist strikt `lower-case`.
+* **Kein Punkt (`.`) am Ende des Headers:** Verhindert Satzzeichen im Einzeiler.
+* **Maximale Header-Länge:** 72 Zeichen (`header-max-length`).
+* **Konfigurierte Casing-Regeln:** Der Scope muss in `camelCase` formatiert sein (`scope-case`: `camel-case`), das Subject in Kleinschreibung (`lower-case`).
+* **Optionaler Footer:** Kennzeichnung von Breaking Changes mit `BREAKING CHANGE:`, Angabe von Ticket-Referenzen (z. B. `refers to JIRA-1337`) oder Co-Autoren (`Co-authored-by:`).
+
+#### Lokale Ausführung via Husky ([`.husky/commit-msg`](file:///d:/dev/portfolio_project/.husky/commit-msg))
+Bei jedem Aufruf von `git commit` wird der Hook vor dem eigentlichen Commit ausgeführt:
+```bash
+#!/usr/bin/env sh
+npx --no -- commitlint --edit "$1"
+```
+Verstößt eine Commit-Nachricht gegen die Konvention (z. B. Großschreibung im Subject, falscher Scope-Casing oder ungültiger Typ), wird der Commit lokal mit einer präzisen Fehlermeldung abgelehnt, bevor er in den Git-Verlauf gelangt.
+
+#### Synergie mit der CI/CD-Pipeline (`evaluate-commit`)
+Die strikte Einhaltung der Conventional Commits ermöglicht in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_project/.github/workflows/ci.yml) intelligente Skip-Entscheidungen:
+- **`docs(...)` & `style(...)`**: Der teure Server-Build (`backend-build`) und das Deployment (`deploy`) werden automatisch übersprungen.
+- **`feat(...)`, `fix(...)` & `enh(...)`**: Führen den vollständigen Test- und Deployment-Zyklus aus.
+
 ---
 
 ## 4. Benötigte Secrets & Umgebungsvariablen

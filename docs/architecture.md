@@ -2,7 +2,7 @@
 
 Diese Dokumentation beschreibt Architektur, Datenfluss, API-Endpunkte sowie das Authentifizierungs- und Sicherheitskonzept des Portfolios.
 
-Weiterführend: [Frontend-Architektur](frontend.md) · [RAG Portfolio-Copilot](ai-assistant-rag.md) · [Deployment & Operations](deployment.md) · [Glossar](glossary.md) · [Backlog](backlog.md) · [ADRs](adrs/)
+Weiterführend: [Frontend-Architektur](frontend.md) · [RAG Portfolio-Copilot](ai-assistant-rag.md) · [Deployment & Operations](deployment.md) · [Sicherheitskonzept](SECURITY.md) · [Glossar](glossary.md) · [Backlog](backlog.md) · [ADRs](adrs/)
 
 ---
 
@@ -61,7 +61,7 @@ graph TB
 | KI / LLM | Google Gemini & `text-embedding-004` via `google-genai` | RAG Portfolio-Copilot (`/api/ai/chat/`), Hybrid Retrieval & OCR |
 | Media | Supabase Storage (S3-kompatibel, `django-storages` + `boto3`) | Zertifikatsdokumente |
 | Statische Dateien | WhiteNoise | Auslieferung der Django-Static-Files (Swagger-UI, Admin) |
-| OCR | `pypdf`, `pytesseract`, Gemini (optional) | Metadaten-Extraktion |
+| OCR | `pypdf`, `pytesseract`, Gemini 3.8 Flash (`google-genai` SDK) | Zweistufige Metadaten-Extraktion & OCR-Fallback |
 | Hosting | Render (Web Service + Static Site) | Deployment, siehe [deployment.md](deployment.md) |
 
 ---
@@ -203,6 +203,7 @@ Standard-CRUD (`GET` Liste/Detail, `POST`, `PUT`, `PATCH`, `DELETE`) über den `
 | `/api/certificates/<id>/extract_metadata/` | `POST` | Auth | On-Demand-OCR, liefert Vorschläge (überschreibt nichts) |
 | `/api/pending-certificates/<id>/approve/` | `POST` | Staff | Überführt Inbox-Eintrag in ein `Certificate` |
 | `/api/pending-certificates/<id>/reject/` | `POST` | Staff | Verwirft Inbox-Eintrag |
+| `/api/pending-certificates/<id>/file/` | `GET` | Staff | Liefert Originaldatei inline (`FileResponse`) für Vorschau & Show-File |
 
 ### 3.2 Paginierung & Filter für `/api/certificates/`
 

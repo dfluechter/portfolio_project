@@ -41,6 +41,7 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 10** | Supabase S3 Presigned Uploads & Security | Abgeschlossen | US 10.1, US 10.2 |
 | **Epic 11** | RAG Portfolio-Copilot, pgvector Hybrid Retrieval, Guardrails & UI-Skills Polish | Abgeschlossen | US 11.1, US 11.2, US 11.3, US 11.4, US 11.5 |
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
+| **Epic 13** | Robuste OCR-Extraktion, Dokumentenvorschau & Commitlint-Governance | Abgeschlossen | US 13.1, US 13.2, US 13.3, US 13.4 |
 
 ---
 
@@ -464,5 +465,114 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
   - **Given** der Administrator klickt im Review-Drawer auf „Veröffentlichen“
   - **When** das Zertifikat keine Tracks ausgewählt hat
   - **Then** wird der Button deaktiviert bzw. ein klarer Validierungshinweis angezeigt: *„Mindestens ein Track erforderlich für Veröffentlichung“*.
+
+---
+
+### Epic 13: Robuste OCR-Extraktion, Dokumentenvorschau & Commitlint-Governance (P1 - Hoch)
+
+#### User Story 13.1: SDK-Migration auf Gemini 3.8 Flash & Mehrzeiliges Plattform-Parsing
+> **Als** Administrator und Backend-Entwickler  
+> **möchte ich**, dass der Extraktions-Service das moderne `google-genai` SDK mit dem Modell `gemini-3.8-flash` nutzt und mehrzeilige Plattform-Zertifikate (wie Udemy und Coursera) semantisch korrekt extrahiert,  
+> **damit** Metadaten-Extraktionen auch für Neunutzer fehlerfrei funktionieren und Kurstitel nicht mehr durch Floskeln oder temporäre Dateinamen verfälscht werden.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (Gemini 3.8 Flash & google-genai SDK Migration):**
+  - **Given** ein PDF oder Bildzertifikat ohne ausreichenden Textlayer
+  - **When** der Fallback auf LLM-Vision ausgelöst wird
+  - **Then** verwendet der Extraktor das offizielle `google-genai` SDK (`from google import genai`) mit dem Modell `gemini-3.8-flash`.
+  - **And** Anfragen an veraltete Modelle (z. B. `gemini-2.5-flash`), die für Neunutzer HTTP-404-Fehler erzeugen, sind vollständig abgelöst.
+- [x] **Szenario 2 (Mehrzeiliges Plattform-Parsing für Udemy & Coursera):**
+  - **Given** ein Zertifikatstext mit mehrzeiligem Header wie `Zertifikat über die erfolgreiche Teilnahme\n<Kursname>\nLehrkraft...`
+  - **When** die Regex- und Heuristik-Pipeline durchlaufen wird
+  - **Then** wird der tatsächliche Kursname isoliert und Floskeln sowie Dozentennamen werden strikt abgeschnitten.
+- [x] **Szenario 3 (Namens- & Floskelfilter):**
+  - **Given** ein Zertifikat mit dem Namen des Inhabers (z. B. *„Dominik Flüchter“*) oder Standardphrasen (*„Certificate of Completion“*)
+  - **When** der Titel bestimmt wird
+  - **Then** wird der Inhabername niemals als Kurstitel übernommen.
+- [x] **Szenario 4 (Sperre für temporäre Dateinamen & Originalnamen-Durchreichung):**
+  - **Given** ein On-Demand-Extraktionsaufruf über ein temporäres Django-File (z. B. `tmplz6lmxh3.pdf`)
+  - **When** der Dateiname als Fallback herangezogen werden müsste
+  - **Then** werden Muster wie `^tmp[a-z0-9_]+$` geblockt und stattdessen der echte `original_filename` aus dem Model übergeben.
+- [x] **Szenario 5 (Robuste Schwellenwerte & Limits):**
+  - **Given** ein eingehendes Dokument
+  - **When** der Textlayer analysiert wird
+  - **Then** gilt dieser erst ab $\ge 60$ Zeichen und $\ge 8$ Wörtern als valide (vorher $\ge 20$ / $\ge 3$), um unvollständige OCR-Treffer zu vermeiden.
+  - **And** Payloads sind auf 10 MB begrenzt und `max_output_tokens` auf 2048 konfiguriert.
+
+---
+
+#### User Story 13.2: „Show File“-Button & Live-Dokumentenvorschau in Django-Admin & Dashboard
+> **Als** Administrator  
+> **möchte ich** im Django-Admin und im Admin-Dashboard für ausstehende Zertifikate einen direkten „Show File“-Button sowie eine interaktive Inline-Dokumentenvorschau (PDF/Bild),  
+> **damit** ich Zertifikatsdateien vor der Freigabe visuell kontrollieren kann, ohne den Tab zu verlassen oder die Datei separat herunterladen zu müssen.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (Django-Admin File View):**
+  - **Given** ein `PendingCertificate`-Datensatz im Django-Admin
+  - **When** ein Administrator die Detailansicht aufruft
+  - **Then** existiert eine URL-Action `show_file_view`, die die Originaldatei als inline `FileResponse` mit korrektem MIME-Type (`application/pdf`, `image/png`, `image/jpeg`) streamt.
+- [x] **Szenario 2 (Aktions-Button im Admin `change_form.html`):**
+  - **Given** die Bearbeitungsseite eines ausstehenden Zertifikats im Admin
+  - **When** die Seite geladen wird
+  - **Then** wird in den `object-tools` oben rechts ein klickbarer Button `📄 Show File` angezeigt, der die Datei in einem neuen Browser-Tab öffnet (`target="_blank"`).
+- [x] **Szenario 3 (Inline-Vorschau im Admin):**
+  - **Given** ein ausstehendes Zertifikat im Django-Admin
+  - **When** die Change-Form gerendert wird
+  - **Then** zeigt das Readonly-Feld `show_file_button` eine interaktive Live-Vorschau an (PDF als `<iframe>` mit 550px Höhe, Bilder als skaliertes `<img>`).
+- [x] **Szenario 4 (REST-API Dateiendpunkt):**
+  - **Given** ein autorisierter Staff-User
+  - **When** `GET /api/pending-certificates/{id}/file/` aufgerufen wird
+  - **Then** liefert die API den Dateistrom mit passendem Content-Type und `Content-Disposition: inline`.
+- [x] **Szenario 5 (Dashboard React UI):**
+  - **Given** die Inbox-Verwaltung in `PendingCertificateManager.tsx`
+  - **When** die Kartenliste oder das Review-Modal gerendert wird
+  - **Then** steht ein `Show File`-Button zur Verfügung, der die Datei via API-Endpunkt öffnet.
+
+---
+
+#### User Story 13.3: Konventionelle Git-Commit-Governance & Commitlint-Härtung
+> **Als** Maintainer und DevOps-Ingenieur  
+> **möchte ich** einheitliche, automatisierte Commitlint-Regeln mit Unterstützung für den Typ `enh`, `camelCase`-Scopes und maximal 72 Zeichen Header-Länge,  
+> **damit** alle Git-Commits im Monorepo einer einheitlichen, sauberen Konvention folgen und keine fehlerhaften Commit-Messages in den Verlauf gelangen.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (.commitlintrc.json Konfiguration):**
+  - **Given** ein lokaler Git-Commit
+  - **When** der Husky `commit-msg` Hook ausgeführt wird
+  - **Then** werden folgende Commit-Typen akzeptiert: `build`, `chore`, `enh`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
+  - **And** die Header-Länge ist auf maximal 72 Zeichen begrenzt (`header-max-length: [2, "always", 72]`).
+  - **And** Schlusspunkte im Header sind verboten (`header-full-stop: [2, "never"]`).
+  - **And** das Subject muss in Kleinschreibung vorliegen (`subject-case: [2, "always", "lower-case"]`).
+  - **And** der Scope muss in `camelCase` formatiert sein (`scope-case: [2, "always", "camel-case"]`).
+- [x] **Szenario 2 (Dokumentation in deployment.md):**
+  - **Given** ein Entwickler möchte einen Commit erstellen
+  - **When** er [`docs/deployment.md`](deployment.md#32-konventionelle-commit-nachrichten--git-hooks) konsultiert
+  - **Then** sind alle Regeln, Scopes, Typen und Beispiele transparent aufgeführt.
+
+---
+
+#### User Story 13.4: Systemweite Sicherheitsdokumentation (`docs/SECURITY.md`)
+> **Als** Security Auditor und Open-Source Maintainer  
+> **möchte ich** eine umfassende Sicherheitsarchitektur-Dokumentation im Repository,  
+> **damit** Sicherheitsmechanismen, Read-Only-Governance, Zero-Cost Circuit Breaker und Responsible-Disclosure-Richtlinien klar nachvollziehbar sind.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [x] **Szenario 1 (SECURITY.md Erstellung & README-Verlinkung):**
+  - **Given** das Repository-Wurzelverzeichnis
+  - **When** die Dokumentationsmatrix in [`README.md`](../README.md) geprüft wird
+  - **Then** ist [`docs/SECURITY.md`](SECURITY.md) prominent verlinkt.
+- [x] **Szenario 2 (Strikter Read-Only-Schutz für Zertifikate):**
+  - **Given** die Umgebungsvariable `CERTIFICATES_PATH`
+  - **When** Import-Pipelines, Scanner oder Agenten ausgeführt werden
+  - **Then** ist dokumentiert und technisch sichergestellt, dass keine Dateien geändert, verschoben oder gelöscht werden (Read-Only Policy).
+- [x] **Szenario 3 (Zero-Cost Circuit Breaker & KI-Sicherheit):**
+  - **Given** Anfragen an `/api/ai/chat/`
+  - **When** bösartige Prompts oder Budget-Überschreitungen auftreten
+  - **Then** greifen Pre-Flight-Regex-Filter (0-Token Drop) und tägliche Quotas ohne LLM-Kosten.
+- [x] **Szenario 4 (Defense-in-Depth Architektur):**
+  - **Given** die Sicherheitsmatrix
+  - **When** das Dokument auditiert wird
+  - **Then** sind RBAC, Magic-Byte-Prüfung, Hashing, HSTS/CSP, JWT-Refresh-Loops und Neon Connection Isolation lückenlos dokumentiert.
+
 
 

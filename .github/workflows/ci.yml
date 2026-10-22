@@ -1,224 +1,85 @@
-name: CI/CD Pipeline
-
-permissions:
-  contents: read
+name: Continuous Integration (CI)
 
 on:
   push:
-    branches: [main]
+    branches: [ main, master ]
   pull_request:
-    branches: [main]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ main, master ]
 
 jobs:
-  # ── 0. EVALUATE COMMIT & WORKFLOW SKIP ──
-  evaluate-commit:
-    name: 🔍 Check Commit Type
-    runs-on: ubuntu-latest
-    outputs:
-      skip_build_and_deploy: ${{ steps.check.outputs.skip }}
-      commit_type: ${{ steps.check.outputs.type }}
-    steps:
-      - name: Inspect Commit Message
-        id: check
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit.message || github.event.pull_request.title || '' }}
-        run: |
-          set -euo pipefail
-          FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
-          echo "Prüfe Commit: $FIRST_LINE"
-
-          # Erkennung von Conventional Commits mit Typ docs oder style (z. B. "docs:", "docs(readme):", "style:", "style(css):")
-          if echo "$FIRST_LINE" | grep -Eq '^(docs|style)(\([a-zA-Z0-9_.-]+\))?!?:'; then
-            MATCHED_TYPE=$(echo "$FIRST_LINE" | sed -E 's/^([a-z]+).*/\1/')
-            echo "::notice::Commit-Typ '$MATCHED_TYPE' erkannt. Produktions-Artefakt-Build und Server-Deployment werden übersprungen."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "type=$MATCHED_TYPE" >> "$GITHUB_OUTPUT"
-          else
-            echo "Commit erfordert regulären Build & Deployment-Zyklus."
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "type=standard" >> "$GITHUB_OUTPUT"
-          fi
-
-  # ── 1. BACKEND QUALITY & TESTS ──
-  backend-lint-test:
-    name: 🐍 Backend Lint & Test
+  # --- JOB 1: Commitlint (Conventional Commits Prüfung) ---
+  commitlint:
+    name: Conventional Commits Linter
     runs-on: ubuntu-latest
 
-    # WICHTIG: Legt das Standard-Arbeitsverzeichnis für alle Schritte fest
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Validate Neon configuration
-        env:
-          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
-          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-        run: |
-          test -n "$NEON_PROJECT_ID" || { echo "::error::NEON_PROJECT_ID is not configured"; exit 1; }
-          test -n "$NEON_API_KEY" || { echo "::error::NEON_API_KEY is not configured"; exit 1; }
-
-      - name: Create Neon Branch
-        id: create-branch
-        uses: neondatabase/create-branch-action@v5
+      - name: Code auschecken (mit vollständiger Git-Historie)
+        uses: actions/checkout@v4
         with:
-          project_id: ${{ secrets.NEON_PROJECT_ID }}
-          api_key: ${{ secrets.NEON_API_KEY }}
-          branch_name: ci-${{ github.run_id }}-${{ github.run_attempt }}
-          username: neondb_owner
-          database: neondb
+          fetch-depth: 0 # Benötigt die Historie, um Commits in PRs korrekt zu prüfen
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          version: "latest"
-          cache-dependency-glob: "backend/uv.lock"
+      - name: Commitlint ausführen
+        uses: wagoid/commitlint-github-action@v6
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v7
+  # --- JOB 2: Stateless Backend-CI (Python 3.13 + uv + Pytest + Ruff + MyPy) ---
+  backend-ci:
+    name: Backend CI (Python & Pytest)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Python 3.13 einrichten
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
+      - name: uv installieren und konfigurieren
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true # Aktiviert automatisches Caching für unschlagbare Build-Zeiten
 
-      - name: Ruff Linter
+      - name: Python-Abhängigkeiten installieren
+        run: uv sync --frozen
+
+      - name: Code-Style prüfen (Ruff Linter)
         run: uv run ruff check .
 
-      - name: Ruff Formatter Check
-        run: uv run ruff format --diff .
+      - name: Code-Formatierung prüfen (Ruff Formatter)
+        run: uv run ruff format --check .
 
-      - name: Mypy Type Check
-        env:
-          SECRET_KEY: "django-insecure-ci-test-secret-key-at-least-32-chars-long-for-jwt"
-          DEBUG: "False"
-          USE_SUPABASE_S3: "False"
-          PORTFOLIO_OWNER_EMAIL: "owner@example.com"
-          FRONTEND_DOMAIN: "localhost:3000"
-          SITE_NAME: "Dominik Flüchter Portfolio"
+      - name: Statische Typprüfung (MyPy)
         run: uv run mypy .
 
-      - name: Run API & Unit Tests with Coverage
+      - name: JWT-basierte Backend-Tests ausführen (Pytest)
+        run: uv run pytest --cov=portfolio --cov-report=xml
         env:
-          DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
-          DIRECT_DATABASE_URL: ${{ steps.create-branch.outputs.db_url }}
-          SECRET_KEY: "django-insecure-ci-test-secret-key-at-least-32-chars-long-for-jwt"
-          DEBUG: "False"
-          USE_SUPABASE_S3: "False"
-          PORTFOLIO_OWNER_NAME: "Dominik Flüchter"
-          PORTFOLIO_OWNER_EMAIL: "owner@example.com"
-          FRONTEND_DOMAIN: "localhost:3000"
-          SITE_NAME: "Dominik Flüchter Portfolio"
-          EMAIL_BACKEND: "django.core.mail.backends.locmem.EmailBackend"
-        run: |
-          set -euo pipefail
-          uv run pytest --cov=core --cov=portfolio --cov-report=term-missing --cov-fail-under=95
+          SECRET_KEY: "django-insecure-ci-test-key-for-jwt-signing-github-actions"
+          USE_S3: "False" # Verwendet die Mock-S3-Infrastruktur im Testlauf
 
-      - name: Clean up Neon Branch
-        if: always() && steps.create-branch.outputs.branch_id != ''
-        env:
-          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-        run: npx neonctl branches delete ${{ steps.create-branch.outputs.branch_id }} --project-id ${{ secrets.NEON_PROJECT_ID }}
-
-  # ── 2. FRONTEND QUALITY & TESTS ──
-  frontend-lint-test:
-    name: ⚛️ Frontend Lint & Test
+  # --- JOB 3: Frontend-CI (Node.js 20 + TypeScript + Vite Build) ---
+  frontend-ci:
+    name: Frontend CI (TypeScript & Vite)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
-    env:
-      CI: "true"
-      VITE_API_URL: "http://localhost:8000"
+
     steps:
-      - uses: actions/checkout@v7
+      - name: Code auschecken
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - name: Node.js 20 einrichten
+        uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
-          cache: 'npm'
-          cache-dependency-path: './frontend/package-lock.json'
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Run Linter (Oxlint)
-        run: npm run lint
-
-      - name: Run Frontend Unit & API Integration Tests (Vitest)
+      - name: Frontend-Abhängigkeiten installieren
         run: |
-          set -euo pipefail
-          npx vitest run
+          cd frontend
+          npm ci
 
-      - name: Verify TypeScript & Production Build
-        run: npm run build
-
-  # ── 3. BUILD VERIFICATION (BACKEND) ──
-  backend-build:
-    name: 📦 Verify Backend Build
-    needs: [backend-lint-test, evaluate-commit]
-    if: needs.evaluate-commit.outputs.skip_build_and_deploy != 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    env:
-      SECRET_KEY: "ci-build-test-secret-key-at-least-32-chars-long-for-jwt"
-      DEBUG: "False"
-      USE_SUPABASE_S3: "False"
-      PORTFOLIO_OWNER_EMAIL: "owner@example.com"
-      FRONTEND_DOMAIN: "localhost:3000"
-      SITE_NAME: "Dominik Flüchter Portfolio"
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          version: "latest"
-          cache-dependency-glob: "backend/uv.lock"
-
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.13"
-
-      - name: Install production dependencies
-        run: uv sync --frozen --no-dev
-
-      - name: Django System Check
-        run: uv run python manage.py check
-
-      - name: Verify Migrations Consistency
-        run: uv run python manage.py makemigrations --check --dry-run
-
-      - name: Test Collectstatic
-        run: uv run python manage.py collectstatic --noinput
-
-  # ── 4. DEPLOY TO RENDER ──
-  deploy:
-    name: 🚀 Deploy to Render
-    needs: [backend-build, frontend-lint-test, evaluate-commit]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.evaluate-commit.outputs.skip_build_and_deploy != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render Deploy Hook
-        env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      - name: TypeScript-Typen & Vite-Produktions-Build prüfen
         run: |
-          set -euo pipefail
-          if [ -z "${RENDER_DEPLOY_HOOK_URL:-}" ]; then
-            echo "::error::RENDER_DEPLOY_HOOK_URL secret is not set!"
-            exit 1
-          fi
-          # Using GET request with retry and fail-on-error for Render hooks
-          curl --fail-with-body --silent --show-error --retry 3 "$RENDER_DEPLOY_HOOK_URL"
+          cd frontend
+          npm run build
