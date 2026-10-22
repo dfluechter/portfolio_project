@@ -2,10 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCertificates, usePendingCertificates, useProjects } from '../hooks/usePortfolio';
-import { Award, FolderGit2, Inbox, LayoutDashboard, LogOut, X } from 'lucide-react';
+import { Award, FolderGit2, Inbox, LogOut, X } from 'lucide-react';
 import { CertificateManager } from '../components/dashboard/CertificateManager';
 import { PendingCertificateManager } from '../components/dashboard/PendingCertificateManager';
 import { ProjectManager } from '../components/dashboard/ProjectManager';
+
+const LOGO_SRC = import.meta.env.DEV
+  ? '/static/img/icons/logo_df_1.png'
+  : `${(import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')}/static/img/icons/logo_df_1.png`;
 
 export const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -46,9 +50,11 @@ export const DashboardPage: React.FC = () => {
       <header className="bg-slate-950/90 border-b border-slate-800/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-indigo-400 flex items-center justify-center">
-              <LayoutDashboard className="w-5 h-5" aria-hidden="true" />
-            </div>
+            <img
+              src={LOGO_SRC}
+              alt="Logo"
+              className="w-9 h-9 rounded-xl object-contain border border-slate-800 bg-black shadow-sm"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-sm font-bold text-white leading-tight">Portfolio Admin Dashboard</h1>

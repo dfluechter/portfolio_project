@@ -2,6 +2,9 @@ import axios from 'axios';
 import { apiClient } from '../api/client';
 import type {
   AIChatResponse,
+  BulkApprovePayload,
+  BulkApproveResponse,
+  BulkRejectResponse,
   Certificate,
   CreateCertificatePayload,
   ExtractedCertificateMetadata,
@@ -201,6 +204,24 @@ export const portfolioService = {
   async rejectPendingCertificate(id: number): Promise<{ detail: string }> {
     const { data } = await apiClient.post<{ detail: string }>(
       `/api/pending-certificates/${id}/reject/`,
+    );
+    return data;
+  },
+
+  // Ausstehende Zertifikate im Batch freigeben (Admin)
+  async bulkApprovePendingCertificates(payload: BulkApprovePayload): Promise<BulkApproveResponse> {
+    const { data } = await apiClient.post<BulkApproveResponse>(
+      '/api/pending-certificates/bulk_approve/',
+      payload,
+    );
+    return data;
+  },
+
+  // Ausstehende Zertifikate im Batch ablehnen (Admin)
+  async bulkRejectPendingCertificates(ids: number[]): Promise<BulkRejectResponse> {
+    const { data } = await apiClient.post<BulkRejectResponse>(
+      '/api/pending-certificates/bulk_reject/',
+      { ids },
     );
     return data;
   },

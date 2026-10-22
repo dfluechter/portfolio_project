@@ -127,6 +127,42 @@ export interface PendingCertificate {
   created_at: string;
 }
 
+export interface BulkApprovePayload {
+  ids: number[];
+  track_ids?: number[];
+}
+
+export interface BulkApproveResultItem {
+  id: number;
+  certificate_id: number;
+  status: string;
+  title: string;
+}
+
+export interface BulkErrorItem {
+  id: number;
+  error: string;
+}
+
+export interface BulkApproveResponse {
+  approved_count: number;
+  failed_count: number;
+  results: BulkApproveResultItem[];
+  errors: BulkErrorItem[];
+}
+
+export interface BulkRejectResultItem {
+  id: number;
+  status: string;
+}
+
+export interface BulkRejectResponse {
+  rejected_count: number;
+  failed_count: number;
+  results: BulkRejectResultItem[];
+  errors: BulkErrorItem[];
+}
+
 export type ImportRunStatus = 'running' | 'success' | 'partial' | 'failed';
 
 export interface CertificateImportRun {

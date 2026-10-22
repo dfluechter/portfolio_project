@@ -1,4 +1,9 @@
 import '@testing-library/jest-dom/vitest';
+import './i18n';
+import i18n from './i18n';
+
+// In Tests immer standardmäßig auf Deutsch stellen
+i18n.changeLanguage('de');
 
 // JSDOM Mock für window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
