@@ -25,14 +25,18 @@ def admin_user(db: None) -> Any:
 
 @pytest.fixture
 def sample_data(db: None) -> dict[str, Any]:
-    track = Track.objects.create(name="Cloud & DevOps", slug="cloud-devops", icon="cloud")
+    track = Track.objects.create(
+        name="Cloud & DevOps", slug="cloud-devops", icon="cloud"
+    )
     provider = Provider.objects.create(provider="AWS", aktiv=True)
     project = Project.objects.create(
         title="Cloud Pipeline",
         description="CI/CD Pipeline mit GitHub Actions",
         is_published=True,
     )
-    skill = Skill.objects.create(name="Docker", proficiency=90, category=SkillCategory.DEVOPS)
+    skill = Skill.objects.create(
+        name="Docker", proficiency=90, category=SkillCategory.DEVOPS
+    )
     cert = Certificate.objects.create(
         title="AWS Solutions Architect",
         provider=provider,

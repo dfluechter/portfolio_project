@@ -158,9 +158,9 @@ class ConditionalCacheMixin:
             resource_name = self.__class__.__name__.lower()
 
         query_str = request.META.get("QUERY_STRING", "")
-        pk = getattr(self, "kwargs", {}).get("pk") or getattr(
-            self, "kwargs", {}
-        ).get("id")
+        pk = getattr(self, "kwargs", {}).get("pk") or getattr(self, "kwargs", {}).get(
+            "id"
+        )
         scope = f"{resource_name}_{pk}" if pk else resource_name
 
         if query_str:
