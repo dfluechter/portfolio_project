@@ -43,7 +43,7 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
 | **Epic 13** | Robuste OCR-Extraktion, Dokumentenvorschau & Commitlint-Governance | Abgeschlossen | US 13.1, US 13.2, US 13.3, US 13.4 |
 | **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | Bereit zur Umsetzung (Ready) | US 14.1, US 14.2, US 14.3 |
-| **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | In Umsetzung | US 15.1 (In Bearbeitung) |
+| **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | In Bearbeitung | US 15.1 abgeschlossen |
 
 ---
 
@@ -645,7 +645,7 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 
 ### Epic 15: Public Performance, HTTP-Caching & Core Web Vitals (P2 - Mittel)
 
-#### User Story 15.1: HTTP Conditional Caching (ETag & Cache-Control) für Read-Only APIs (In Umsetzung)
+#### User Story 15.1: HTTP Conditional Caching (ETag & Cache-Control) für Read-Only APIs (Abgeschlossen)
 > *Spezifikation & Blueprint: Siehe [`docs/specs/us-15-1-conditional-caching.md`](specs/us-15-1-conditional-caching.md)*
 >
 > **Als** Portfolio-Besucher und Betreiber
@@ -653,18 +653,22 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 > **damit** wiederkehrende Besuche blitzschnell laden und unnötige Datenbankabfragen auf Neon vermieden werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [ ] **Szenario 1 (ETag-Generierung auf Basis der Signal-Cache-Version):**
+- [x] **Szenario 1 (ETag-Generierung auf Basis der Signal-Cache-Version):**
   - **Given** eine Lese-Anfrage an `/api/projects/`
   - **When** die Antwort generiert wird
   - **Then** enthält die Response einen `ETag`-Header, der an die aktuelle Version `portfolio_rag_context_version_v1` gekoppelt ist.
-- [ ] **Szenario 2 (304 Not Modified Support):**
+- [x] **Szenario 2 (304 Not Modified Support):**
   - **Given** der Client sendet den Request mit `If-None-Match: "<etag>"`
   - **When** sich seit der letzten Anfrage keine Daten geändert haben
   - **Then** antwortet Django sofort mit `304 Not Modified` ohne Serializer- und Query-Overhead.
-- [ ] **Szenario 3 (Cache-Control Header):**
+- [x] **Szenario 3 (Cache-Control Header):**
   - **Given** unauthentifizierte Anfragen
   - **When** Responses ausgeliefert werden
   - **Then** ist `Cache-Control: public, max-age=300, stale-while-revalidate=60` gesetzt.
+- [x] **Szenario 4 (Bypass für authentifizierte Dashboard-Zugriffe):**
+  - **Given** ein authentifizierter Administrator (`request.user.is_authenticated == True`)
+  - **When** Endpunkte abgefragt werden
+  - **Then** ist `Cache-Control: no-cache, private` gesetzt und If-None-Match liefert frische Daten statt 304.
 
 ---
 

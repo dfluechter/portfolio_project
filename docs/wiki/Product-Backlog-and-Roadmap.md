@@ -42,7 +42,7 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Solid Icons | Abgeschlossen | US 12.1 bis 12.4 |
 | **Epic 13** | Robuste OCR-Extraktion, Show File & Commitlint-Governance | Abgeschlossen | US 13.1 bis 13.4 |
 | **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | Bereit zur Umsetzung (Ready) | US 14.1, 14.2, 14.3 |
-| **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | In Umsetzung | US 15.1 (In Bearbeitung) |
+| **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | In Bearbeitung | US 15.1 abgeschlossen |
 
 ---
 

@@ -5,9 +5,16 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from django.core.cache import cache
 from django.db import connection
 from django.db.models import Prefetch, ProtectedError, Q, QuerySet
-from django.http import FileResponse, HttpRequest, HttpResponse, JsonResponse
+from django.http import (
+    FileResponse,
+    HttpRequest,
+    HttpResponse,
+    HttpResponseNotModified,
+    JsonResponse,
+)
 from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status, viewsets
@@ -44,7 +51,7 @@ from .serializers import (
     TimelineEntrySerializer,
     TrackSerializer,
 )
-from .services.ai_assistant import answer_portfolio_query
+from .services.ai_assistant import RAG_VERSION_KEY, answer_portfolio_query
 from .services.extractor import extract_metadata
 from .services.icon_service import ensure_track_icon
 from .services.promotion import (
@@ -124,7 +131,91 @@ def health_check_view(request: HttpRequest) -> JsonResponse:
 # ── API ViewSets für CRUD-Operationen ──
 
 
-class ProjectViewSet(viewsets.ModelViewSet):
+class ConditionalCacheMixin:
+    """
+    HTTP Conditional Caching Mixin für DRF ViewSets.
+
+    Berechnet schwache ETags basierend auf dem Ressourcennamen, Parametern und der
+    atomaren Cache-Version (portfolio_rag_context_version_v1).
+    Liefert schnelles HTTP 304 Not Modified bei übereinstimmendem If-None-Match
+    für unauthentifizierte GET/HEAD Anfragen, ohne SQL-Queries oder Serialisierung.
+    """
+
+    def _get_cache_version(self) -> int | str:
+        version = cache.get(RAG_VERSION_KEY)
+        return version if version is not None else 1
+
+    def _get_etag(self, request: Request) -> str:
+        version = self._get_cache_version()
+        basename = getattr(self, "basename", None) or getattr(
+            getattr(self, "queryset", None), "model", None
+        )
+        if basename and hasattr(basename, "__name__"):
+            resource_name = basename.__name__.lower()
+        elif isinstance(basename, str):
+            resource_name = basename.lower()
+        else:
+            resource_name = self.__class__.__name__.lower()
+
+        query_str = request.META.get("QUERY_STRING", "")
+        pk = getattr(self, "kwargs", {}).get("pk") or getattr(
+            self, "kwargs", {}
+        ).get("id")
+        scope = f"{resource_name}_{pk}" if pk else resource_name
+
+        if query_str:
+            query_hash = hashlib.md5(query_str.encode("utf-8")).hexdigest()[:8]
+            return f'W/"{scope}_v{version}_{query_hash}"'
+        return f'W/"{scope}_v{version}"'
+
+    def check_conditional_cache(self, request: Request) -> HttpResponse | None:
+        if request.method in ("GET", "HEAD") and not request.user.is_authenticated:
+            if_none_match = request.META.get("HTTP_IF_NONE_MATCH")
+            if if_none_match:
+                etag = self._get_etag(request)
+                req_etags = [e.strip() for e in if_none_match.split(",")]
+                if etag in req_etags or "*" in req_etags:
+                    response = HttpResponseNotModified()
+                    response["ETag"] = etag
+                    response["Cache-Control"] = (
+                        "public, max-age=300, stale-while-revalidate=60"
+                    )
+                    return response
+        return None
+
+    def list(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response | HttpResponse:
+        cached_response = self.check_conditional_cache(request)
+        if cached_response is not None:
+            return cached_response
+        return super().list(request, *args, **kwargs)
+
+    def retrieve(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response | HttpResponse:
+        cached_response = self.check_conditional_cache(request)
+        if cached_response is not None:
+            return cached_response
+        return super().retrieve(request, *args, **kwargs)
+
+    def finalize_response(
+        self, request: Request, response: Response, *args: Any, **kwargs: Any
+    ) -> Response:
+        response = super().finalize_response(request, response, *args, **kwargs)
+        if request.method in ("GET", "HEAD"):
+            if not request.user.is_authenticated:
+                etag = self._get_etag(request)
+                response["ETag"] = etag
+                response["Cache-Control"] = (
+                    "public, max-age=300, stale-while-revalidate=60"
+                )
+            else:
+                response["Cache-Control"] = "no-cache, private"
+        return response
+
+
+class ProjectViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
@@ -135,7 +226,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return qs
 
 
-class ProviderViewSet(viewsets.ModelViewSet):
+class ProviderViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     serializer_class = ProviderSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
@@ -159,7 +250,7 @@ class ProviderViewSet(viewsets.ModelViewSet):
             )
 
 
-class CertificateViewSet(viewsets.ModelViewSet):
+class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     serializer_class = CertificateSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
     pagination_class = StandardResultsSetPagination
@@ -497,19 +588,19 @@ class CertificateViewSet(viewsets.ModelViewSet):
             )
 
 
-class SkillViewSet(viewsets.ModelViewSet):
+class SkillViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     queryset = Skill.objects.all()
     serializer_class = SkillSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
 
-class TimelineEntryViewSet(viewsets.ModelViewSet):
+class TimelineEntryViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     queryset = TimelineEntry.objects.all().prefetch_related("skills")
     serializer_class = TimelineEntrySerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
 
-class TrackViewSet(viewsets.ModelViewSet):
+class TrackViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     queryset = Track.objects.all().prefetch_related(
         Prefetch(
             "certificates",

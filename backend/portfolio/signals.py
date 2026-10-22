@@ -6,7 +6,7 @@ from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from portfolio.models import Certificate, Project, Skill, TimelineEntry
+from portfolio.models import Certificate, Project, Provider, Skill, TimelineEntry, Track
 from portfolio.services.ai_assistant import (
     GROUNDING_CACHE_KEY,
     RAG_VERSION_KEY,
@@ -35,6 +35,8 @@ def invalidate_portfolio_cache() -> None:
 @receiver(post_save, sender=Skill)
 @receiver(post_save, sender=Certificate)
 @receiver(post_save, sender=TimelineEntry)
+@receiver(post_save, sender=Provider)
+@receiver(post_save, sender=Track)
 def handle_portfolio_save(sender: Any, instance: Any, **kwargs: Any) -> None:
     """Aktualisiert Chunks und invalidiert den Cache bei Änderungen."""
     logger.info(
@@ -58,6 +60,8 @@ def handle_portfolio_save(sender: Any, instance: Any, **kwargs: Any) -> None:
 @receiver(post_delete, sender=Skill)
 @receiver(post_delete, sender=Certificate)
 @receiver(post_delete, sender=TimelineEntry)
+@receiver(post_delete, sender=Provider)
+@receiver(post_delete, sender=Track)
 def handle_portfolio_delete(sender: Any, instance: Any, **kwargs: Any) -> None:
     """Entfernt Chunks und invalidiert den Cache bei Löschungen."""
     logger.info(
