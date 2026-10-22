@@ -20,13 +20,12 @@ import {
   useUpdateProject,
 } from '../../hooks/usePortfolio';
 import { ConfirmModal } from './ConfirmModal';
+import { resolveProjectImageUrl } from '../../utils/mediaUrl';
 import type { Project } from '../../types';
 
 interface ProjectManagerProps {
   onNotify: (msg: { type: 'success' | 'error'; text: string }) => void;
 }
-
-import { resolveProjectImageUrl } from '../../utils/mediaUrl';
 
 export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
   const { data: projects = [], isLoading } = useProjects();

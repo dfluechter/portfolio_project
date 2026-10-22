@@ -42,6 +42,8 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 11** | RAG Portfolio-Copilot, pgvector Hybrid Retrieval, Guardrails & UI-Skills Polish | Abgeschlossen | US 11.1, US 11.2, US 11.3, US 11.4, US 11.5 |
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
 | **Epic 13** | Robuste OCR-Extraktion, Dokumentenvorschau & Commitlint-Governance | Abgeschlossen | US 13.1, US 13.2, US 13.3, US 13.4 |
+| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | Bereit zur Umsetzung (Ready) | US 14.1, US 14.2, US 14.3 |
+| **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | Bereit zur Umsetzung (Ready) | US 15.1, US 15.2, US 15.3 |
 
 ---
 
@@ -573,6 +575,125 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
   - **Given** die Sicherheitsmatrix
   - **When** das Dokument auditiert wird
   - **Then** sind RBAC, Magic-Byte-Prüfung, Hashing, HSTS/CSP, JWT-Refresh-Loops und Neon Connection Isolation lückenlos dokumentiert.
+
+---
+
+### Epic 14: Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing (P2 - Mittel)
+
+#### User Story 14.1: Automatisierter Inbox-Scan mit Duplikats- & Re-Import-Erkennung
+> **Als** Administrator  
+> **möchte ich**, dass der Inbox-Scanner (`scan_inbox`) bereits vorhandene Zertifikate (anhand von SHA-256 Hash und Quellpfad) automatisch erkennt und überspringt,  
+> **damit** keine redundanten Einträge in `PendingCertificate` erzeugt werden und der Import-Lauf idempotent und sicher ist.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [ ] **Szenario 1 (Hash-basierte Duplikatserkennung gegen `Certificate`):**
+  - **Given** eine Datei im Posteingang besitzt einen SHA-256 Hash, der bereits in der Tabelle `portfolio_certificate` existiert
+  - **When** der Befehl `python manage.py scan_inbox` ausgeführt wird
+  - **Then** wird die Datei ignoriert und im Log als `SKIPPED (Already published: <title>)` vermerkt.
+- [ ] **Szenario 2 (Duplikatserkennung gegen bestehende `PendingCertificate`):**
+  - **Given** ein Dokument liegt bereits als `PendingCertificate` mit demselben Hash oder Dateinamen vor
+  - **When** `scan_inbox` erneut läuft
+  - **Then** wird kein zweiter Eintrag erzeugt, sondern der bestehende Eintrag beibehalten (`SKIPPED (Pending: <id>)`).
+- [ ] **Szenario 3 (Dry-Run Genauigkeit & Statistik):**
+  - **Given** der Aufruf `python manage.py scan_inbox --dry-run`
+  - **When** der Scan abgeschlossen ist
+  - **Then** gibt der Command eine strukturierte Zusammenfassung aus (Gefunden, Neu, Duplikate/Übersprungen, Fehlerhaft).
+
+---
+
+#### User Story 14.2: Bulk-Approve und Bulk-Reject im Django-Admin und React-Dashboard
+> **Als** Administrator  
+> **möchte ich** mehrere ausstehende Zertifikate gleichzeitig freigeben oder ablehnen können,  
+> **damit** ich bei großen Zertifikatsstapeln nicht jeden Eintrag einzeln öffnen und bestätigen muss.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [ ] **Szenario 1 (Django-Admin Bulk-Action):**
+  - **Given** eine Auswahl mehrerer Checkboxen in der Changelist von `PendingCertificateAdmin`
+  - **When** der Administrator die Aktion *„Ausgewählte Zertifikate genehmigen und übertragen“* wählt
+  - **Then** werden die ausgewählten Einträge in einer atomaren Datenbanktransaktion (`transaction.atomic`) in `Certificate`-Datensätze überführt.
+- [ ] **Szenario 2 (Track-Default bei Bulk-Approve):**
+  - **Given** Zertifikate werden per Bulk freigegeben
+  - **When** vor der Freigabe Tracks zugewiesen werden müssen (gemäß Track-Pflicht aus Epic 12)
+  - **Then** öffnet sich ein Zwischenformular oder ein Standard-Track wird vergeben, sodass die Integritätsregel nicht verletzt wird.
+- [ ] **Szenario 3 (REST-API Batch-Endpunkte):**
+  - **Given** `POST /api/pending-certificates/bulk_approve/` mit Payload `{"ids": [1, 2, 3], "track_ids": [4]}`
+  - **When** ein Staff-Benutzer den Request sendet
+  - **Then** antwortet die API mit `200 OK` und den erzeugten Zertifikat-IDs.
+
+---
+
+#### User Story 14.3: Automatisierte Integritäts- und Bereinigungs-Checks
+> **Als** Systembetreuer  
+> **möchte ich** einen Management-Befehl `verify_certificate_integrity`, der alle Zertifikate gegen den S3-Storage abgleicht,  
+> **damit** tote Links, fehlende Storage-Objekte oder Hash-Inkonsistenzen sofort aufgedeckt werden.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [ ] **Szenario 1 (Storage-Sync-Audit):**
+  - **Given** die in der Datenbank hinterlegten `Certificate.storage_key` und `pdf_file`-Pfade
+  - **When** `python manage.py verify_certificate_integrity` ausgeführt wird
+  - **Then** prüft der Befehl via S3 `head_object`, ob alle Dateien physisch existieren.
+- [ ] **Szenario 2 (Orphan-File-Erkennung):**
+  - **Given** Dateien im S3-Storage-Bucket unter `certificates/`
+  - **When** der Audit-Lauf durchgeführt wird
+  - **Then** identifiziert das Skript verwaiste Dateien (Orphans), die keinem Datenbankobjekt mehr zugeordnet sind, und listet sie auf.
+
+---
+
+### Epic 15: Public Performance, HTTP-Caching & Core Web Vitals (P2 - Mittel)
+
+#### User Story 15.1: HTTP Conditional Caching (ETag & Cache-Control) für Read-Only APIs
+> **Als** Portfolio-Besucher und Betreiber  
+> **möchte ich**, dass öffentliche Lese-Endpunkte (`/api/projects/`, `/api/tracks/`, `/api/skills/`, `/api/certificates/`) HTTP-Caching-Header (`ETag`, `Cache-Control`, `304 Not Modified`) unterstützen,  
+> **damit** wiederkehrende Besuche blitzschnell laden und unnötige Datenbankabfragen auf Neon vermieden werden.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [ ] **Szenario 1 (ETag-Generierung auf Basis der Signal-Cache-Version):**
+  - **Given** eine Lese-Anfrage an `/api/projects/`
+  - **When** die Antwort generiert wird
+  - **Then** enthält die Response einen `ETag`-Header, der an die aktuelle Version `portfolio_rag_context_version_v1` gekoppelt ist.
+- [ ] **Szenario 2 (304 Not Modified Support):**
+  - **Given** der Client sendet den Request mit `If-None-Match: "<etag>"`
+  - **When** sich seit der letzten Anfrage keine Daten geändert haben
+  - **Then** antwortet Django sofort mit `304 Not Modified` ohne Serializer- und Query-Overhead.
+- [ ] **Szenario 3 (Cache-Control Header):**
+  - **Given** unauthentifizierte Anfragen
+  - **When** Responses ausgeliefert werden
+  - **Then** ist `Cache-Control: public, max-age=300, stale-while-revalidate=60` gesetzt.
+
+---
+
+#### User Story 15.2: Image & Media Optimization (Responsive WebP & Blur-Up)
+> **Als** Mobil-Nutzer mit schwacher Internetverbindung  
+> **möchte ich**, dass Projekt-Vorschaubilder und Zertifikats-Thumbnails als moderne WebP-Bilder in optimierter Auflösung ausgeliefert werden,  
+> **damit** das Datenvolumen minimiert wird und die Seite flüssig aufbaut.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [ ] **Szenario 1 (WebP-Bildoptimierung):**
+  - **Given** hochgeladene Projekt- und Zertifikats-Bilder (PNG/JPEG)
+  - **When** sie im Frontend gerendert werden
+  - **Then** werden optimierte WebP-Versionen bevorzugt geladen (`<picture>`-Tag mit WebP-Source).
+- [ ] **Szenario 2 (Blur-Up Placeholder & Cumulative Layout Shift = 0):**
+  - **Given** Zertifikats- und Projektkarten auf der Startseite
+  - **When** die Seite initial gerendert wird
+  - **Then** verhindern feste Aspect-Ratio-Container (`aspect-video` / `aspect-[4/3]`) jeglichen Layout Shift (CLS < 0.05).
+
+---
+
+#### User Story 15.3: Core Web Vitals Auditing & CI-Performance-Gate
+> **Als** Frontend-Developer und Maintainer  
+> **möchte ich**, dass die Core Web Vitals (LCP < 2.5s, CLS < 0.1, INP < 200ms) automatisiert per Lighthouse-CI überwacht werden,  
+> **damit** Performance-Regressionen bei zukünftigen Releases sofort erkannt und verhindert werden.
+
+**Akzeptanzkriterien (Acceptance Criteria):**
+- [ ] **Szenario 1 (Lighthouse CI Integration):**
+  - **Given** ein Pull-Request gegen `main`
+  - **When** die GitHub Actions CI läuft
+  - **Then** führt ein Audit-Job Lighthouse auf dem gebauten Frontend aus.
+- [ ] **Szenario 2 (Schwellenwerte):**
+  - **Given** der Lighthouse-Report
+  - **When** Performance, Accessibility, Best Practices oder SEO unter einen Score von 90 fallen
+  - **Then** wird im PR eine Warnung ausgegeben.
+
 
 
 

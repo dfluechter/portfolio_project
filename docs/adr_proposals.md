@@ -20,6 +20,7 @@ Das Portfolio-Projekt ist als Monorepo strukturiert:
 | [`docs/deployment.md`](deployment.md) | ✅ **Abgeschlossen** | Detaillierte Deployment-Pipeline, Neon Direct/Pooled Connections, Bucket-CORS & Render Build-Hook. |
 | [`docs/glossary.md`](glossary.md) | ✅ **Abgeschlossen** | Fachbegriffe, Domänen-Glossar und Definitionen für einheitliche Terminologie. |
 | [`docs/backlog.md`](backlog.md) | ✅ **Abgeschlossen** | Agiles Backlog mit Epics, User Stories, DoR und DoD für Entwickler. |
+| [`docs/SECURITY.md`](SECURITY.md) | ✅ **Abgeschlossen** | Sicherheitsarchitektur, Defense-in-Depth, Zero-Cost Circuit Breaker & Read-Only Policy. |
 | [`docs/adrs/`](adrs/) | ✅ **Abgeschlossen** | ADR-001 bis ADR-007 vollständig dokumentiert. |
 
 ---

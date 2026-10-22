@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useState, type ComponentType } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -6,9 +6,29 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ColdStartBanner } from './components/ColdStartBanner';
 import { PortfolioPage } from './pages/PortfolioPage';
 
-const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
-const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
-const PasswordResetConfirmPage = lazy(() =>
+/**
+ * Lädt dynamische Komponenten resilient nach und fängt temporäre Netzwerkfehler
+ * oder veraltete Vite-Chunk-Hashes nach Server-Neustarts via Einmal-Reload ab.
+ */
+function lazyRetry<T extends ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+) {
+  return lazy(() =>
+    factory().catch((error) => {
+      const hasReloaded = sessionStorage.getItem('chunk_reload_retry');
+      if (!hasReloaded) {
+        sessionStorage.setItem('chunk_reload_retry', 'true');
+        window.location.reload();
+      }
+      sessionStorage.removeItem('chunk_reload_retry');
+      throw error;
+    })
+  );
+}
+
+const LoginPage = lazyRetry(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const DashboardPage = lazyRetry(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const PasswordResetConfirmPage = lazyRetry(() =>
   import('./pages/PasswordResetConfirmPage').then((m) => ({ default: m.PasswordResetConfirmPage }))
 );
 

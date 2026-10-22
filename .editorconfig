@@ -1,22 +1,29 @@
-root = true
+# Top-most EditorConfig-Datei 
+root = true 
 
+# Globale Standardregeln für alle Dateien
 [*]
 charset = utf-8
-end_of_line = lf
-insert_final_newline = true
-trim_trailing_whitespace = true
+end_of_line = lf 
+insert_final_newline = true 
+trim_trailing_whitespace = true 
 
+# Python-Spezifisch (PEP 8 Standard)
 [*.py]
+indent_style = space 
+indent_size = 4 
+
+# Frontend / Web-Standards (React, TypeScript, JSON, YAML)
+[*.{js,jsx,ts,tsx,json,yaml,yml,html,css}]
+indent_style = space 
+indent_size = 2 
+
+# Shell-Skripte
+[*.sh] 
 indent_style = space
-indent_size = 4
-max_line_length = 88
+indent_size = 2 
+end_of_line = lf 
 
-[*.{ts,tsx,js,jsx,json,css,html,yml,yaml}]
-indent_style = space
-indent_size = 2
-
-[*.md]
-trim_trailing_whitespace = false
-
-[Makefile]
+# Makefiles erfordern strikt echte Tabulatoren
+[{Makefile,makefile}]
 indent_style = tab

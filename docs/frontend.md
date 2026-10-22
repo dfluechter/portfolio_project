@@ -238,3 +238,23 @@ Mit **Epic 11** wurde der RAG Portfolio-Copilot nahtlos in die React-SPA integri
 - **Copy-to-Clipboard**: Kopieren von Antworten mit animiertem Morphing von Copy-Icon zu Checkmark-Icon.
 - **Barrierefreiheit (a11y)**: Vollständige ARIA-Attribute (`aria-live="polite"`, `role="log"`), Tastatur-Bedienbarkeit (ESC zum Schließen) und sichtbare Fokus-Ringe (`focus-visible:ring-2`).
 
+---
+
+## 11. Core Web Vitals, Media Optimization & Resilientes Lazy Loading (Epic 15)
+
+Zur Sicherstellung herausragender Nutzererfahrung und optimaler Lighthouse-Scores ($\ge 90$) gelten folgende Standards:
+
+### 11.1 Cumulative Layout Shift (CLS) Eliminierung
+- Alle dynamisch geladenen Bilder und Zertifikatsvorschauen müssen in Container mit explizitem Seitenverhältnis (`aspect-video` bzw. `aspect-[4/3]`) gebettet sein.
+- Ein neutraler Platzhalter (`bg-slate-900 animate-pulse`) reserviert den Platz im Dokumentenfluss vor dem Eintreffen der Bildressource.
+
+### 11.2 Largest Contentful Paint (LCP) & Ladeoptimierung
+- **Priorisiertes Laden**: Das Hero-Element der Startseite nutzt `fetchpriority="high"` und wird ohne Lazy-Loading gerendert.
+- **Lazy Loading**: Nachgelagerte Medien in Projekt- und Zertifikatskarten verwenden natives `loading="lazy"` und `decoding="async"`.
+- **Moderne Bildformate**: Bevorzugte Bereitstellung von WebP-Bildern via `<picture>`-Elemente mit automatischem PNG/JPEG-Fallback.
+
+### 11.3 Resilientes Dynamic Import Retry (`lazyRetry`)
+Bei dynamischem Code-Splitting via `React.lazy` (z. B. für `/dashboard`) kann nach Server-Neustarts oder Deployments ein Netzwerkfehler auftreten (`Failed to fetch dynamically imported module`). 
+- Durch Einbindung eines `lazyRetry`-Wrappers um `import()` führt die Anwendung bei einem Fetch-Fehler automatisch einen einmaligen Hard-Reload durch (`sessionStorage`-gesichert gegen Reload-Loops), sodass Benutzer nahtlos auf die neueste Modul-Version zugreifen können, ohne auf einer Fehlerseite zu landen.
+
+

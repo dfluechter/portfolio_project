@@ -172,6 +172,13 @@ Für interaktive Besucherfragen steht der Portfolio-Copilot bereit (`POST /api/a
 - **Deep-Linking**: Generierte Antworten enthalten Quellhinweise, die vom Frontend in klickbare Badges umgewandelt werden (`#project-<id>`, `#cert-<id>`) und das Ziel für 2 Sekunden optisch hervorheben.
 - Ausführliche Dokumentation: siehe [docs/ai-assistant-rag.md](ai-assistant-rag.md) und [ADR-007](adrs/007-rag-copilot-caching-guardrails.md).
 
+### 2.6 HTTP Conditional Caching & ETag-Strategie (Epic 15)
+
+Um Datenbank-Queries auf Neon und Rechenzeit auf Render minimal zu halten, unterstützen alle öffentlichen Lese-Endpunkte (`/api/projects/`, `/api/tracks/`, `/api/skills/`, `/api/certificates/`) standardmäßiges HTTP Conditional Caching:
+- **ETag-Berechnung**: Schwache ETags (`W/"<ressource>_<version>"`) basieren auf der atomaren Signal-Cache-Version `portfolio_rag_context_version_v1`. Ändern sich Daten (Create, Update, Delete), inkrementieren die Django-Signals die Version in $O(1)$.
+- **`304 Not Modified`**: Sendet der Client den Header `If-None-Match`, prüft das Backend die Version bereits vor der Ausführung teurer Datenbankabfragen und Serialisierungen. Stimmen die Versionen überein, wird unmittelbar ein leerer Response mit Status `304 Not Modified` zurückgegeben.
+- **Cache-Control**: Für unauthentifizierte Anfragen gilt `Cache-Control: public, max-age=300, stale-while-revalidate=60`. Authentifizierte Requests (Admin-Dashboard) umgehen das Caching (`Cache-Control: no-cache, private`).
+
 ---
 
 ## 3. API-Endpunkte
