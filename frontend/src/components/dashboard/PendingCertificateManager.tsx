@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
 import {
   CheckCircle,
+  CheckSquare,
   Clock,
   ExternalLink,
   FileText,
+  Layers,
   Search,
+  Square,
+  Trash2,
+  X,
   XCircle,
 } from 'lucide-react';
 import {
   useApprovePendingCertificate,
+  useBulkApprovePendingCertificates,
+  useBulkRejectPendingCertificates,
   usePendingCertificates,
   useProviders,
   useRejectPendingCertificate,
@@ -29,9 +36,16 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
 
   const approveMutation = useApprovePendingCertificate();
   const rejectMutation = useRejectPendingCertificate();
+  const bulkApproveMutation = useBulkApprovePendingCertificates();
+  const bulkRejectMutation = useBulkRejectPendingCertificates();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPending, setSelectedPending] = useState<PendingCertificate | null>(null);
+
+  // Multi-Select & Bulk State
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [bulkTrackIds, setBulkTrackIds] = useState<number[]>([]);
+  const [showBulkTrackPicker, setShowBulkTrackPicker] = useState(false);
 
   // Edit-State für Freigabe
   const [editTitle, setEditTitle] = useState('');
@@ -94,10 +108,92 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
       if (selectedPending?.id === item.id) {
         setSelectedPending(null);
       }
+      setSelectedIds((prev) => prev.filter((id) => id !== item.id));
     } catch {
       onNotify({
         type: 'error',
         text: 'Fehler beim Ablehnen des Zertifikats.',
+      });
+    }
+  };
+
+  // Multi-Select Handler
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = (visibleItems: PendingCertificate[]) => {
+    const visibleIds = visibleItems.map((item) => item.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) return;
+
+    try {
+      const res = await bulkApproveMutation.mutateAsync({
+        ids: selectedIds,
+        track_ids: bulkTrackIds.length > 0 ? bulkTrackIds : undefined,
+      });
+
+      if (res.approved_count > 0 && res.failed_count === 0) {
+        onNotify({
+          type: 'success',
+          text: `${res.approved_count} Zertifikat(e) erfolgreich freigegeben und übertragen.`,
+        });
+      } else if (res.approved_count > 0 && res.failed_count > 0) {
+        onNotify({
+          type: 'success',
+          text: `${res.approved_count} erfolgreich freigegeben, ${res.failed_count} fehlgeschlagen.`,
+        });
+      } else {
+        const errorDetails = res.errors.map((e) => e.error).join(', ');
+        onNotify({
+          type: 'error',
+          text: `Keine Zertifikate freigegeben: ${errorDetails}`,
+        });
+      }
+
+      setSelectedIds([]);
+      setBulkTrackIds([]);
+      setShowBulkTrackPicker(false);
+    } catch {
+      onNotify({
+        type: 'error',
+        text: 'Fehler bei der Massenfreigabe der Zertifikate.',
+      });
+    }
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedIds.length === 0) return;
+    if (
+      !window.confirm(
+        `Möchtest du die ${selectedIds.length} ausgewählten Zertifikate wirklich ablehnen?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await bulkRejectMutation.mutateAsync(selectedIds);
+      onNotify({
+        type: 'success',
+        text: `${res.rejected_count} Zertifikat(e) abgelehnt.`,
+      });
+      setSelectedIds([]);
+      setShowBulkTrackPicker(false);
+    } catch {
+      onNotify({
+        type: 'error',
+        text: 'Fehler bei der Massenablehnung der Zertifikate.',
       });
     }
   };

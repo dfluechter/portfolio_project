@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { portfolioService } from '../services/portfolioService';
-import type { Certificate, CreateCertificatePayload } from '../types';
+import type { BulkApprovePayload, Certificate, CreateCertificatePayload } from '../types';
 
 export const portfolioKeys = {
   all: ['portfolio'] as const,
@@ -242,6 +242,31 @@ export const useRejectPendingCertificate = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => portfolioService.rejectPendingCertificate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.pendingCertificates() });
+    },
+  });
+};
+
+export const useBulkApprovePendingCertificates = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: BulkApprovePayload) =>
+      portfolioService.bulkApprovePendingCertificates(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.pendingCertificates() });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.certificates() });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.tracks() });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.providers() });
+    },
+  });
+};
+
+export const useBulkRejectPendingCertificates = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      portfolioService.bulkRejectPendingCertificates(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: portfolioKeys.pendingCertificates() });
     },
