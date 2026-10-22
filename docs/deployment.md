@@ -158,7 +158,7 @@ Die Validierung der Commit-Nachrichten folgt der *Conventional Commits*-Spezifik
 * **Kleinschreibung des Subjects:** `subject-case` ist strikt `lower-case`.
 * **Kein Punkt (`.`) am Ende des Headers:** Verhindert Satzzeichen im Einzeiler.
 * **Maximale Header-Länge:** 72 Zeichen (`header-max-length`).
-* **Konfigurierte Casing-Regeln:** Der Scope muss in `camelCase` formatiert sein (`scope-case`: `camel-case`), das Subject in Kleinschreibung (`lower-case`).
+* **Konfigurierte Casing-Regeln:** Der Scope unterstützt `camelCase`, `kebab-case` (z. B. für Dependabot `deps-backend`, `deps-frontend`) und `lower-case` (`scope-case`), das Subject ist strikt in Kleinschreibung (`lower-case`).
 * **Optionaler Footer:** Kennzeichnung von Breaking Changes mit `BREAKING CHANGE:`, Angabe von Ticket-Referenzen (z. B. `refers to JIRA-1337`) oder Co-Autoren (`Co-authored-by:`).
 
 #### Lokale Ausführung via Husky ([`.husky/commit-msg`](file:///d:/dev/portfolio_project/.husky/commit-msg))

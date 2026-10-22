@@ -23,6 +23,6 @@
     "header-max-length": [2, "always", 72],
     "header-full-stop": [2, "never", "."],
     "subject-case": [2, "always", "lower-case"],
-    "scope-case": [2, "always", "camel-case"]
+    "scope-case": [2, "always", ["camel-case", "kebab-case", "lower-case"]]
   }
 }
