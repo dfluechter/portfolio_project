@@ -38,15 +38,18 @@ Cloud-native **Headless Django REST API** (Backend) und **React 19 Single Page A
 - **Interaktives UI Deep-Linking**: Klickbare Quell-Badges (`#project-<id>`, `#cert-<id>`) im `PortfolioChatWidget` scrollen sanft zur jeweiligen Karte und heben diese für 2 Sekunden mit einem optischen Glow-Ring hervor.
 
 ### 📜 2. Zertifikats-Lifecycle, 3-Stufen Hybrid OCR & Direct-to-Storage Uploads
-- **Presigned Direct-to-Storage (Supabase S3)**: Browser-Uploads erfolgen direkt per signierter `PUT`-URL nach Supabase S3, ohne den Render-Webservice zu belasten.
-- **Serverseitige S3-Integritätsprüfung**: Vor Registrierung eines `storage_key` verifiziert das Backend Existenz und Dateigröße ($\le 10\text{ MB}$) via `head_object`, prüft per Range-Request (`bytes=0-2047`) die echten Header-Magic-Bytes (`%PDF`, `\x89PNG`, `\xFF\xD8\xFF`) gegen Dateiendungs-Spoofing und validiert die SHA-256-Prüfsumme.
-- **Kaskadierende 3-Stufen-OCR**: Extrahiert Metadaten im Review-Drawer on-demand über 1. lokalen PDF-Textlayer (`pypdf`), 2. lokale Tesseract-OCR (`pytesseract`) und 3. multimodale **Google Gemini Flash Vision API**.
-- **Track-Pflicht & Lokale FontAwesome SVG-Icons**: Zertifikate erfordern vor der Veröffentlichung (`is_published=True`) mindestens einen zugewiesenen Track. Track-Icons werden beim ersten Abruf validiert und lokal unter `/static/img/icons/` gecacht.
+- **Presigned Direct-to-Storage (Supabase S3)**: Uploads aus dem Browser erfolgen über eine signierte PUT-URL direkt an den S3-Storage. Der Web-Server wird dadurch entlastet.
+- **Serverseitige S3-Integritätsprüfung**: Vor Registrierung eines `storage_key` prüft das Backend via `head_object` Existenz und Dateigröße ($\le 10\text{ MB}$). Ein Range-Request (`bytes=0-2047`) verifiziert die Magic Bytes (`%PDF`, `\x89PNG`, `\xFF\xD8\xFF`) gegen Dateiendungs-Spoofing. Zudem wird die SHA-256-Prüfsumme validiert.
+- **Kaskadierende 3-Stufen-OCR**: Die Metadatenextraktion erfolgt im Review-Drawer bei Bedarf stufenweise:
+  - **Stufe 1**: Lokaler PDF-Textlayer (`pypdf`).
+  - **Stufe 2**: Lokale Tesseract-OCR (`pytesseract`).
+  - **Stufe 3**: Multimodale Google Gemini Flash Vision API.
+- **Track-Pflicht & Icon-Caching**: Bevor ein Zertifikat veröffentlicht werden kann (`is_published=True`), muss ihm mindestens ein Fachbereich (Track) zugewiesen sein. Die zugehörigen FontAwesome SVG-Icons werden beim Erstabruf validiert und lokal unter `/static/img/icons/` geordnet gespeichert.
 
-### ⚡ 3. Cloud-Native Infrastruktur, Performance & CI/CD
-- **Neon Connection Separation**: Reguläre Web-Requests nutzen den PgBouncer-Pooler (`DATABASE_URL`), während Schema-Migrationen (`migrate` in `build.sh`) automatisch die direkte Compute-Verbindung (`DIRECT_DATABASE_URL`) priorisieren.
-- **Isoliertes Neon Branching in GitHub Actions**: Jeder CI-Lauf provisioniert einen eindeutigen ephemeren Datenbank-Branch (`ci-${{ github.run_id }}-${{ github.run_attempt }}`), führt alle 314 Backend-Tests gegen echtes PostgreSQL + `pgvector` aus und räumt den Branch anschließend zuverlässig auf.
-- **Frontend Bundle-Splitting & Cold-Start-UX**: Admin-Routen (`DashboardPage`, `LoginPage`, `PasswordResetConfirmPage`) werden via `React.lazy` geladen; ein `ColdStartBanner` informiert Besucher transparent beim Aufwachen des Render Free-Tier-Containers.
+### ⚡ 3. Infrastruktur, Performance & CI/CD-Pipelines
+- **Neon Connection Separation**: Web-Requests nutzen zur Skalierung den PgBouncer-Pooler (`DATABASE_URL`). Datenbank-Migrationen (`migrate` in `build.sh`) verwenden automatisch die direkte Compute-Verbindung (`DIRECT_DATABASE_URL`).
+- **Ephemeres Neon Branching in GitHub Actions**: CI-Pipeline-Läufe erstellen einen isolierten Datenbank-Branch (`ci-${{ github.run_id }}-${{ github.run_attempt }}`). Nach Ausführung der Testsuite gegen echtes PostgreSQL inkl. `pgvector` wird dieser Branch automatisch verworfen.
+- **Performance & Frontend Cold-Start-UX**: Die Admin-Komponenten (`DashboardPage`, `LoginPage`, `PasswordResetConfirmPage`) werden träge nachgeladen (`React.lazy`). Bei Nutzung der kostenlosen Server-Instanz auf Render weist ein `ColdStartBanner` den Nutzer auf das Aufwachen des Containers hin.
 
 ---
 
