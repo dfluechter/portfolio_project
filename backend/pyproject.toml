@@ -62,13 +62,20 @@ extend-select = ["I", "BLE", "RUF"]
 profile = "django"
 ignore = "H014"
 
+[tool.djlint]
+profile = "django"
+ignore = "H014"
+
 # Hier sagen wir uv/setuptools explizit, wo der Python-Code liegt
 [tool.setuptools.packages.find]
 include = ["core*", "portfolio*"]
 
 [dependency-groups]
 dev = [
+<<<<<<< Updated upstream:backend/pyproject.toml
     "django-stubs>=6.1.1",
+=======
+>>>>>>> Stashed changes:pyproject.toml
     "djlint>=1.44.2",
     "mypy>=2.3.0",
     "pytest>=9.1.1",

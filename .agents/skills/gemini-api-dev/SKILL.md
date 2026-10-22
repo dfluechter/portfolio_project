@@ -68,9 +68,14 @@ description: Use this skill when writing code that calls the Gemini API for text
 from google import genai
 
 client = genai.Client()
+<<<<<<< Updated upstream
 
 interaction = client.interactions.create(
     model="gemini-3.8-flash", input="Tell me a short joke about programming."
+=======
+response = client.models.generate_content(
+    model="gemini-3.6-flash", contents="Explain quantum computing"
+>>>>>>> Stashed changes
 )
 print(interaction.output_text)
 ```

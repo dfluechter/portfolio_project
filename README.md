@@ -1,6 +1,10 @@
 # Portfolio Projekt — Dominik Flüchter
 
+<<<<<<< Updated upstream
 [![CI/CD Pipeline](https://github.com/dfluechter/portfolio_project/actions/workflows/ci.yml/badge.svg)](https://github.com/dfluechter/portfolio_project/actions/workflows/ci.yml)
+=======
+Django REST API und interaktives Verwaltungs-Dashboard für mein persönliches Portfolio. Verwaltet Zertifikate, Projekte und Zertifikatsanbieter über ein geschütztes Custom-Dashboard.
+>>>>>>> Stashed changes
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/dfluechter/portfolio_project/CI%2FCD%20Pipeline?branch=main&style=for-the-badge&logo=github)
 ![Coverage](https://img.shields.io/badge/Coverage-%3E95%25-brightgreen?style=for-the-badge&logo=pytest)
@@ -54,6 +58,7 @@ Cloud-native **Headless Django REST API** (Backend) und **React 19 Single Page A
 
 | Komponente | Technologie |
 |---|---|
+<<<<<<< Updated upstream
 | **Frontend Framework** | React 19 + TypeScript 5.8 + Vite 8 (Rolldown) |
 | **Frontend Styling** | Tailwind CSS v4 (`@tailwindcss/vite`) + Framer Motion + Lucide React |
 | **Frontend Server-State** | TanStack Query v5 + Axios (Concurrency-Safe 401 Token-Refresh-Queue) |
@@ -67,6 +72,18 @@ Cloud-native **Headless Django REST API** (Backend) und **React 19 Single Page A
 | **Static Files** | WhiteNoise (`CompressedManifestStaticFilesStorage`) |
 | **Auth** | Djoser + SimpleJWT (`api/auth/`, E-Mail-Login, Passwort-Reset-Flow) |
 | **Deployment & Governance** | Render (`render.yaml` Blueprint) + GitHub Actions CI/CD + `.github/CODEOWNERS` |
+=======
+| Framework | Django 5.2 |
+| REST API | Django REST Framework (DRF) |
+| Sprache | Python 3.13 |
+| Package Manager | uv |
+| Datenbank (lokal) | SQLite |
+| Datenbank (Produktion) | Neon PostgreSQL |
+| Media Storage | Supabase (S3-kompatibel) |
+| Static Files | WhiteNoise |
+| Auth | Session (Dashboard) & Djoser + JWT (APIs) |
+| Deployment | Render |
+>>>>>>> Stashed changes
 
 ---
 
@@ -110,9 +127,15 @@ cd backend
 # 2. Abhängigkeiten installieren (erstellt automatisch .venv)
 uv sync
 
+<<<<<<< Updated upstream
 # 3. Umgebungsvariablen konfigurieren
 cp ../.env.example ../.env
 # .env anpassen (SECRET_KEY, optional DATABASE_URL, GEMINI_API_KEY, etc.)
+=======
+# 3. .env anlegen
+cp .env.example .env
+# .env anpassen (SECRET_KEY, ggf. DATABASE_URL und Supabase-S3-Werte)
+>>>>>>> Stashed changes
 
 # 4. Datenbank migrieren & RAG-Chunks initial indizieren
 uv run python manage.py migrate
@@ -136,6 +159,7 @@ npm install
 npm run dev
 ```
 
+<<<<<<< Updated upstream
 * **React Portfolio (Public)**: http://localhost:3000/
 * **React Admin Dashboard**: http://localhost:3000/dashboard
 * **Django Swagger-UI (OpenAPI)**: http://localhost:8000/api/docs/
@@ -144,6 +168,17 @@ npm run dev
 ---
 
 ## 🔒 Auth- & Sicherheitskonfiguration
+=======
+* **Dashboard & Login-Seite**: http://localhost:8000/
+* **Verwaltung (nach Login)**: http://localhost:8000/dashboard/
+* *Hinweis: Das standardmäßige Django-Admin-Interface `/admin/` wurde aus Sicherheitsgründen vollständig deaktiviert.*
+
+## Auth- & Sicherheitskonfiguration
+
+* **Custom User Model**: Die Anmeldung erfolgt ausschließlich über eine eindeutige E-Mail-Adresse (`email`). Es gibt kein `username`-Feld mehr.
+* **Registrierung gesperrt**: Djoser's Registrierungs-Endpunkt (`api/auth/users/` POST) wurde über die Permission-Klasse `DenyAny` vollständig deaktiviert. Neue Benutzer können nur direkt über das Terminal via `createsuperuser` angelegt werden.
+* **API-Sperren**: Die Änderung von E-Mail-Adressen sowie das Löschen von Konten über Djoser-API-Endpunkte sind vollständig gesperrt.
+>>>>>>> Stashed changes
 
 * **Custom User Model (`portfolio.User`)**: Die Anmeldung erfolgt ausschließlich über eine eindeutige E-Mail-Adresse (`email`, kein `username`-Feld).
 * **Geschlossene Registrierung**: Öffentliche Selbstregistrierung (`POST /api/auth/users/`) ist über `IsAdminUser` deaktiviert. Administratoren werden kontrolliert via `createsuperuser` angelegt.
@@ -151,9 +186,62 @@ npm run dev
 * **Session-Sync & Refresh-Queue**: Das Frontend erneuert abgelaufene Access-Tokens transparent im Hintergrund und loggt den Benutzer bei ungültigem Refresh-Token über das Event `auth:unauthorized` sauber aus.
 * **Strikter Quellordner-Schutz**: Der lokale Zertifikate-Quellordner (`CERTIFICATES_PATH`) ist gemäß [`AGENTS.md`](AGENTS.md) **strikt Read-Only** und wird niemals durch Import- oder Sync-Skripte verändert oder gelöscht.
 
+<<<<<<< Updated upstream
 ---
 
 ## 💻 Wichtige Befehle
+=======
+### Web & Dashboard
+
+| Endpunkt | Methode | Beschreibung |
+|---|---|---|
+| `/` | GET / POST | Login-Seite (Session-basiertes Login) |
+| `/dashboard/` | GET | Geschütztes Portfolio-Verwaltungsdashboard |
+| `/logout/` | GET | Abmelden aus der Session |
+
+### REST-API (`/api/`)
+
+Alle API-Routen erfordern eine Authentifizierung (Session-Cookie oder JWT-Bearer).
+
+| Endpunkt | Methoden | Beschreibung |
+|---|---|---|
+| `api/projects/` | GET / POST | Projekte auflisten oder erstellen |
+| `api/projects/<id>/` | GET / PUT / PATCH / DELETE | Einzelnes Projekt verwalten |
+| `api/certificates/` | GET / POST | Zertifikate auflisten oder erstellen |
+| `api/certificates/<id>/` | GET / PUT / PATCH / DELETE | Einzelnes Zertifikat verwalten |
+| `api/providers/` | GET / POST | Zertifikatsanbieter auflisten oder erstellen |
+| `api/providers/<id>/` | GET / PUT / PATCH / DELETE | Einzelnen Anbieter verwalten |
+
+### Auth-API (`/api/auth/` via Djoser & JWT)
+
+| Endpunkt | Methode | Beschreibung |
+|---|---|---|
+| `api/auth/jwt/create/` | POST | Login $\rightarrow$ `access` + `refresh` Token |
+| `api/auth/jwt/refresh/` | POST | Access Token erneuern |
+| `api/auth/jwt/verify/` | POST | Token validieren |
+| `api/auth/users/reset_password/` | POST | Passwort-Reset-Mail anfordern |
+| `api/auth/users/reset_password_confirm/` | POST | Neues Passwort setzen |
+
+* **Header für JWT-Endpunkte**: `Authorization: Bearer <access_token>`
+* **Laufzeiten**: Access 60 min · Refresh 7 Tage
+
+## Datenmodelle
+
+### `User`
+Custom User Model mit den Feldern `email`, `is_active`, `is_staff` und `date_joined`.
+
+### `Certificate`
+Zertifikate mit Datei-Upload. Upload-Pfad: `certificates/<slugified-issuer>/<filename>`.
+Erlaubte Formate: `.pdf`, `.png`, `.jpg` · Maximale Dateigröße: 5 MB
+
+### `Provider`
+Zertifikatsanbieter mit Name, Status (`aktiv`) und optionalem Logo sowie URL.
+
+### `Project`
+Portfolio-Projekte mit Name, Beschreibung, Vorschaubild sowie GitHub- und Live-URL.
+
+## Befehle
+>>>>>>> Stashed changes
 
 ### Backend (im Verzeichnis `backend/`)
 ```bash
@@ -165,6 +253,7 @@ uv run ruff check .                        # Ruff Linter
 uv run ruff format --diff .                # Ruff Formatter Check
 uv run mypy .                              # Statische Typüberprüfung (Mypy)
 
+<<<<<<< Updated upstream
 # RAG & Zertifikats-Management-Commands
 uv run python manage.py index_rag_chunks               # RAG Chunks synchronisieren (ohne API-Call)
 uv run python manage.py index_rag_chunks --with-embeddings # RAG Chunks inkl. Gemini Embeddings erzeugen
@@ -182,6 +271,52 @@ npx vitest run                             # Vitest Unit- & Komponententests (CI
 ```
 
 ---
+=======
+# Linter ausführen
+uv run ruff check .
+
+# Code automatisch formatieren
+uv run ruff format .
+
+# Statische Typüberprüfung (Mypy)
+uv run mypy .
+
+# Statische Dateien einsammeln (WhiteNoise)
+uv run python manage.py collectstatic --noinput
+```
+
+## Test Coverage
+
+Ergebnis vom letzten Testlauf (10 Tests, alle bestanden):
+
+```
+Name                                                   Stmts   Miss  Cover   Missing
+------------------------------------------------------------------------------------
+core\__init__.py                                           0      0   100%
+core\asgi.py                                               4      4     0%   1-16
+core\settings.py                                          60      0   100%
+core\settings_test.py                                      8      0   100%
+core\urls.py                                              10      0   100%
+core\wsgi.py                                               4      4     0%   1-16
+portfolio\__init__.py                                      0      0   100%
+portfolio\admin.py                                        35      0   100%
+portfolio\apps.py                                          4      0   100%
+portfolio\management\__init__.py                           0      0   100%
+portfolio\management\commands\__init__.py                  0      0   100%
+portfolio\management\commands\import_certificates.py      47     47     0%   1-66
+portfolio\management\commands\scan_certificates.py        29     29     0%   1-63
+portfolio\models.py                                       81      7    91%   18, 23-26, 40-42
+portfolio\serializers.py                                  15      0   100%
+portfolio\tests\__init__.py                                0      0   100%
+portfolio\tests\test_models.py                            27      0   100%
+portfolio\tests\test_views.py                             16      0   100%
+portfolio\views.py                                        55     24    56%   17-22, 24-25, 28-36, 40-42, 69-70
+------------------------------------------------------------------------------------
+TOTAL                                                    399    115    71%
+```
+
+> Die 0%-Abdeckung bei `asgi.py`, `wsgi.py` und den Management Commands ist erwartetes Verhalten — diese Dateien werden in Unit-Tests nicht ausgeführt.
+>>>>>>> Stashed changes
 
 ## 🧪 Test Coverage & Qualitätssicherung
 
@@ -196,6 +331,7 @@ Sowohl Backend als auch Frontend werden bei jedem Push und Pull Request automati
 
 ```text
 portfolio_project/
+<<<<<<< Updated upstream
 ├── .github/
 │   ├── CODEOWNERS               # Verbindliche PR-Review-Regeln für kritische Systempfade
 │   ├── dependabot.yml           # Automatische Dependency-Updates
@@ -233,4 +369,28 @@ portfolio_project/
 ├── AGENTS.md                    # Projektrichtlinien & Read-Only Schutzregeln für Agenten
 ├── build.sh                     # Resilientes Root-Build-Skript (delegiert an backend/build.sh)
 └── render.yaml                  # Deklaratives Render Blueprint (Backend Web Service + Frontend Static Site)
+=======
+├── core/
+│   ├── settings.py          # Haupt-Settings (Prod + Dev + DRF + Djoser)
+│   ├── settings_test.py     # Test-Settings
+│   └── urls.py              # URL-Konfiguration (Router + Login/Dashboard)
+├── portfolio/
+│   ├── admin.py             # Admin-Konfiguration (Custom UserAdmin)
+│   ├── models.py            # Custom User, Certificate, Provider, Project
+│   ├── serializers.py       # DRF-Serialisierer für CRUD-Routen
+│   ├── views.py             # Login/Dashboard-Views & API-ViewSets
+│   ├── management/
+│   │   └── commands/        # import_certificates, scan_certificates
+│   ├── migrations/          # Datenbank-Migrationen ab 0001_initial
+│   └── tests/
+│       ├── test_models.py
+│       └── test_views.py
+├── templates/
+│   ├── login.html           # Login-Template mit integriertem Reset-Flow
+│   └── dashboard.html       # Interaktives Vanilla CSS/JS Dashboard (CRUD)
+├── build.sh                 # Render Build-Hook
+├── render.yaml              # Render Deployment-Konfiguration
+├── pyproject.toml           # Abhängigkeiten + Tool-Konfiguration (Ruff, Mypy)
+└── pytest.ini               # Pytest-Konfiguration
+>>>>>>> Stashed changes
 ```
