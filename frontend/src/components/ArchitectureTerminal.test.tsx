@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ArchitectureTerminal } from './ArchitectureTerminal';
 
@@ -40,8 +40,12 @@ describe('ArchitectureTerminal', () => {
     render(<ArchitectureTerminal />);
 
     const copyBtn = screen.getByTitle('Terminal-Ausgabe kopieren');
-    fireEvent.click(copyBtn);
+    await act(async () => {
+      fireEvent.click(copyBtn);
+    });
 
     expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('sys.inspect --runtime'));
+    expect(screen.getByLabelText('Ausgabe kopiert')).toBeInTheDocument();
   });
 });
+

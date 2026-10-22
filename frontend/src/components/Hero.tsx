@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowRight, Award, Database, Layers, ShieldCheck } from 'lucide-react';
 import type { Variants } from 'framer-motion';
 import { motion } from 'framer-motion';
 import { HeroSearch } from './HeroSearch';
 import { ArchitectureTerminal } from './ArchitectureTerminal';
+import { HeroBanner } from './HeroBanner';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -37,6 +38,8 @@ const techBadges = [
 ];
 
 export const Hero: React.FC = () => {
+  const [showcaseMode, setShowcaseMode] = useState<'banner' | 'terminal'>('banner');
+
   return (
     <section id="about" className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden transition-colors duration-300">
       {/* Subtiles architektonisches Raster im Hintergrund */}
@@ -102,14 +105,48 @@ export const Hero: React.FC = () => {
             </motion.div>
           </motion.div>
 
-          {/* Rechte Spalte: Interaktives System- & Architektur-Terminal */}
+          {/* Rechte Spalte: Interaktives System- & Architektur-Showcase (Banner / Terminal) */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="lg:col-span-5 w-full pt-2 lg:pt-0"
+            className="lg:col-span-5 w-full pt-2 lg:pt-0 space-y-3"
           >
-            <ArchitectureTerminal />
+            {/* Showcase View Toggle */}
+            <div className="flex items-center justify-end">
+              <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowcaseMode('banner')}
+                  aria-pressed={showcaseMode === 'banner'}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold font-mono transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                    showcaseMode === 'banner'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Visualisierung
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowcaseMode('terminal')}
+                  aria-pressed={showcaseMode === 'terminal'}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold font-mono transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                    showcaseMode === 'terminal'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Live-Terminal
+                </button>
+              </div>
+            </div>
+
+            {showcaseMode === 'banner' ? (
+              <HeroBanner />
+            ) : (
+              <ArchitectureTerminal />
+            )}
           </motion.div>
         </div>
 
