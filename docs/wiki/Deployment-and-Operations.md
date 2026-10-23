@@ -6,7 +6,7 @@ Diese Seite dokumentiert den Verteilungs-, Build- und Betriebsprozess auf [Rende
 
 ## 1. Hosting-Architektur auf Render
 
-Das Projekt wird deklarativ über [render.yaml](file:///d:/dev/portfolio_project/render.yaml) verwaltet:
+Das Projekt wird deklarativ über [render.yaml](../../render.yaml) verwaltet:
 
 1. **Backend Web Service (`portfolio-backend`)**:
    - Runtime: Python 3.13 mit Gunicorn.

@@ -30,7 +30,7 @@ Besucher, Recruiter und Tech-Leads möchten auf dem Portfolio gezielte Fachfrage
 
 ### 3. Mehrstufige Sicherheits-Guardrails & Zero-Cost Circuit-Breaker
 * **0-Token Pre-Flight Regex-Filter:** Bekannte Prompt-Injection-, Jailbreak- und System-Prompt-Leak-Muster werden vor dem LLM-Aufruf erkannt und mit 0 Token Verbrauch abgewiesen.
-* **Strikte System-Instruktionen:** Google Gemini (`gemini-2.5-flash`) antwortet ausschließlich auf Basis der bereitgestellten Portfolio-Chunks und verweigert Off-Topic-Anfragen höflich.
+* **Strikte System-Instruktionen:** Google Gemini (`gemini-3.8-flash`) antwortet ausschließlich auf Basis der bereitgestellten Portfolio-Chunks und verweigert Off-Topic-Anfragen höflich.
 * **Zero-Cost Circuit-Breaker:** Ein tägliches Request- und Token-Budget im Cache schützt zuverlässig vor Kosten-Spitzen; die Standard-Quota bleibt im kostenlosen Free-Tier.
 
 ### 4. Interaktives Deep-Linking & UI-Skills Polish

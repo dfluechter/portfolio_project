@@ -111,7 +111,7 @@ Das Mixin muss den folgenden öffentlichen ViewSets vorangestellt werden:
 
 ## 5. Testplan & Definition of Done (DoD)
 
-Der QA-Tester / Django-Experte erstellt die Testsuite [`backend/portfolio/tests/test_caching.py`](file:///d:/dev/portfolio_project/backend/portfolio/tests/test_caching.py) mit folgenden Testfällen:
+Der QA-Tester / Django-Experte erstellt die Testsuite [`backend/portfolio/tests/test_caching.py`](../../backend/portfolio/tests/test_caching.py) mit folgenden Testfällen:
 1. `test_etag_header_present_on_public_list_views`: Verifiziert `ETag`-Header auf `/api/projects/`, `/api/tracks/`, `/api/skills/`, `/api/certificates/`.
 2. `test_if_none_match_returns_304`: Zweiter Request mit passendem ETag liefert `304 Not Modified` mit leerem Inhalt.
 3. `test_model_save_increments_version_and_invalidates_etag`: Änderung an einem Projekt oder Track ändert den ETag; alter ETag liefert `200 OK`.

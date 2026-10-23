@@ -24,12 +24,14 @@ Das Frontend ist eine moderne Single Page Application (SPA), optimiert für Perf
 
 ## 2. Verzeichnisstruktur
 
-```
+```text
 frontend/src/
 ├── api/
 │   ├── client.ts                 # Axios Instanz mit JWT-Injektion & 401-Refresh-Queue
 │   └── client.test.ts            # Tests für Interceptors und Queue-Verhalten
 ├── components/
+│   ├── blocks/
+│   │   └── hero-section-5.tsx    # Zusammengesetzte Hero-Sektion
 │   ├── chat/                     # RAG KI-Copilot Chat-Widget
 │   │   ├── PortfolioChatWidget.tsx    # Vercel/ibelick Polish, Deep-Linking & Glassmorphism
 │   │   └── PortfolioChatWidget.test.tsx # Vitest Komponententests
@@ -39,14 +41,31 @@ frontend/src/
 │   │   ├── ConfirmModal.tsx           # Sicherheitsdialog für Löschaktionen
 │   │   ├── PendingCertificateManager.tsx # Inbox-Review & Freigabe
 │   │   ├── ProjectManager.tsx         # Projekt-Verwaltung
-│   │   ├── SkillManager.tsx           # Skill-Verwaltung
-│   │   ├── TimelineManager.tsx        # Werdegangs-Verwaltung
 │   │   └── UploadCertificateModal.tsx # Direct-to-Storage S3 Upload-Dialog
+│   ├── ui/                       # shadcn/ui & Animation-Komponenten (12 Dateien)
+│   │   ├── button.tsx            # Radix Slot / CVA Button-Komponente
+│   │   ├── demo.tsx              # UI Demonstrator
+│   │   ├── hero-section-5.tsx    # Zusammengesetzte Hero-Sektion
+│   │   ├── infinite-slider.tsx   # Endlos animierter Slider für Tech-Stacks
+│   │   ├── motion-footer.tsx     # CinematicFooter mit dynamischem Cursor & Federmechanik
+│   │   ├── motion-footer.test.tsx # 24 Vitest-Tests für den Motion-Footer
+│   │   ├── motion-footer-demo.tsx # Demo für Motion-Footer
+│   │   ├── progressive-blur.tsx  # Blur-Masken-Overlay
+│   │   ├── stack-feature-section.tsx # Feature-Präsentationssektion
+│   │   ├── stack-feature-section-demo.tsx # Feature-Präsentation Demo
+│   │   ├── stacked-cards-interaction.tsx # Interaktive 3D-Kartenstapel (in Footer eingebunden)
+│   │   └── stacked-cards-demo.tsx # Demo für Stacked Cards
+│   ├── ArchitectureTerminal.tsx  # Interaktive Systemarchitektur-Terminalansicht
 │   ├── CertificatesSection.tsx   # Startseiten-Zertifikate mit Track-Chips
 │   ├── ColdStartBanner.tsx       # Transparenter Ladebalken bei Render-Kaltstart
+│   ├── ContactSection.tsx        # Kontaktsektion mit direkten Interaktionslinks
 │   ├── ErrorBoundary.tsx         # Globaler React ErrorBoundary für Crash-Resilienz
+│   ├── Footer.tsx                # Footer mit integrierter stacked-cards-interaction
+│   ├── Hero.tsx                  # Hero-Präsentationsbereich
+│   ├── HeroBanner.tsx            # Hero Banner & Teaser
 │   ├── HeroSearch.tsx            # Interaktive Suche im Hero-Bereich
-│   ├── Navbar.tsx / Footer.tsx   # Layout-Komponenten
+│   ├── LanguageSwitcher.tsx      # DE/EN Sprachumschalter (i18n)
+│   ├── Navbar.tsx                # Navigationsleiste mit i18n & Theme-Umschalter
 │   ├── ProjectsSection.tsx       # Projektübersicht mit Skills
 │   ├── SectionEmptyState.tsx     # Benutzerfreundliche Leeransicht bei Filtern
 │   ├── SkillsSection.tsx         # Skill-Kategorien & Fortschrittsbalken
@@ -60,6 +79,9 @@ frontend/src/
 │   ├── useColdStartTracker.ts    # Misst API-Latenzen und meldet Server-Kaltstarts
 │   ├── usePortfolio.ts           # TanStack Query Hooks (useCertificatesPaginated, useDirectCertificateUpload, ...)
 │   └── usePortfolioSearch.ts     # Client-seitige Volltextsuche und Filterung
+├── locales/
+│   ├── de.json                   # Lokalisierung: Deutsche Übersetzungstexte
+│   └── en.json                   # Lokalisierung: Englische Übersetzungstexte
 ├── pages/
 │   ├── PortfolioPage.tsx         # Öffentliche Portfolio-Startseite (Home)
 │   ├── LoginPage.tsx             # JWT-Login & Passwort-Reset-Anforderung (lazy)
@@ -67,9 +89,12 @@ frontend/src/
 │   └── DashboardPage.tsx         # Geschütztes Dashboard mit Review-Drawer (lazy)
 ├── services/
 │   └── portfolioService.ts       # Zentraler Service für API-Calls & direkten S3-Upload
+├── shims/
+│   └── next-link.tsx             # React-Router Shim für Next.js Link-Kompatibilität
 ├── types/
 │   └── index.ts                  # TypeScript Schnittstellen (Certificate, Project, Track, User, ...)
 ├── App.tsx                       # Router-Konfiguration, Suspense & Provider-Setup
+├── i18n.ts                       # i18next Initialisierung & LanguageDetector
 └── main.tsx                      # Einstiegspunkt (QueryClientProvider, DOM Mounting)
 ```
 
@@ -163,7 +188,7 @@ Gemäß **User Story 7.2** ist das Frontend für minimale Ladezeiten der öffent
   - `vendor-query`: `@tanstack/react-query`
   - `vendor-motion`: `framer-motion`
   - `vendor-icons`: `lucide-react`
-  Der Haupt-Initial-Chunk unterschreitet damit deutlich die 100-kB-Marke (~77 kB).
+  Die Chunks sind hochgradig optimiert: Der Haupt-Anwendungs-Chunk (`index.js`) liegt bei ca. 163 kB (gzip 42 kB), während das isolierte `vendor-react`-Bundle ca. 333 kB (gzip 105 kB) umfasst.
 
 ---
 
@@ -215,7 +240,7 @@ npm run lint
 npm run build
 ```
 
-- **Vitest**: Ausführung aller 82 Komponenten-, Hook-, Seiten- und Interceptor-Tests in isolierten Umgebungen.
+- **Vitest**: Ausführung von 117 Tests in 22 Testdateien (Komponenten-, Hook-, Seiten-, Interceptor- und UI-Tests) in isolierten Umgebungen.
 - **React Testing Library**: Nutzerzentrierte Tests basierend auf Accessibility-Rollen (`getByRole`, `findByText`).
 - **Oxlint**: Extrem schneller Rust-basierter Linter zur Einhaltung von Code-Standards.
 

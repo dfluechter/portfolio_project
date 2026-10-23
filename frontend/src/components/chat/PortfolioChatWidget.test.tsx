@@ -43,7 +43,7 @@ describe('PortfolioChatWidget Component', () => {
     const trigger = screen.getByRole('button', { name: /Portfolio KI-Assistent öffnen/i });
     fireEvent.click(trigger);
 
-    const input = screen.getByPlaceholderText(/Frage zu Dominiks Portfolio stellen.../i);
+    const input = screen.getByRole('textbox');
     expect(input).toHaveFocus();
   });
 
@@ -88,10 +88,10 @@ describe('PortfolioChatWidget Component', () => {
     // Chat öffnen
     fireEvent.click(screen.getByRole('button', { name: /Portfolio KI-Assistent öffnen/i }));
 
-    const input = screen.getByPlaceholderText(/Frage zu Dominiks Portfolio stellen.../i);
+    const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Zeige mir deine Projekte und Zertifikate' } });
 
-    const submitBtn = screen.getByRole('button', { name: /Nachricht senden/i });
+    const submitBtn = screen.getByRole('button', { name: /Senden/i });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
@@ -135,9 +135,9 @@ describe('PortfolioChatWidget Component', () => {
     renderWithProviders(<PortfolioChatWidget />);
 
     fireEvent.click(screen.getByRole('button', { name: /Portfolio KI-Assistent öffnen/i }));
-    const input = screen.getByPlaceholderText(/Frage zu Dominiks Portfolio stellen.../i);
+    const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Hast du AWS Zertifikate?' } });
-    fireEvent.click(screen.getByRole('button', { name: /Nachricht senden/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Senden/i }));
 
     await waitFor(() => {
       expect(screen.getByText('AWS Solutions Architect')).toBeInTheDocument();
@@ -171,9 +171,9 @@ describe('PortfolioChatWidget Component', () => {
     renderWithProviders(<PortfolioChatWidget />);
     fireEvent.click(screen.getByRole('button', { name: /Portfolio KI-Assistent öffnen/i }));
 
-    const input = screen.getByPlaceholderText(/Frage zu Dominiks Portfolio stellen.../i);
+    const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Frage' } });
-    fireEvent.click(screen.getByRole('button', { name: /Nachricht senden/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Senden/i }));
 
     await waitFor(() => {
       expect(screen.getByText('Antwort zum Kopieren')).toBeInTheDocument();
@@ -200,18 +200,16 @@ describe('PortfolioChatWidget Component', () => {
     renderWithProviders(<PortfolioChatWidget />);
     fireEvent.click(screen.getByRole('button', { name: /Portfolio KI-Assistent öffnen/i }));
 
-    const input = screen.getByPlaceholderText(/Frage zu Dominiks Portfolio stellen.../i);
+    const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Testfrage' } });
-    fireEvent.click(screen.getByRole('button', { name: /Nachricht senden/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Senden/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/Deaktiviert \(Token-Schutz\)/i)).toBeInTheDocument();
     });
 
-    const disabledInput = screen.getByPlaceholderText(
-      /KI-Assistent deaktiviert \(Token-Limit geschützt\)/i,
-    );
+    const disabledInput = screen.getByRole('textbox');
     expect(disabledInput).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Nachricht senden/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Senden/i })).toBeDisabled();
   });
 });

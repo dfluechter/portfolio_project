@@ -33,7 +33,7 @@ Die Sicherheitsarchitektur folgt dem Prinzip der mehrschichtigen Verteidigung (*
 
 * **Custom User Model (`portfolio.User`)**: Die Anmeldung nutzt ausschließlich eine eindeutige E-Mail-Adresse (kein Nutzername).
 * **Geschlossene Registrierung**: Öffentliche Registrierungsendpunkte (`POST /api/auth/users/`) sind mittels `IsAdminUser` blockiert. Administrator-Accounts werden manuell über den Befehl `createsuperuser` angelegt.
-* **Passwort-Reset & Session-Sync**: Bietet einen Single-User-Reset-Flow über das Login-Modal und eine gesicherte Bestätigungsseite (`/password/reset/confirm/:uid/:token`). Bei abgelaufenem Refresh-Token sichert ein Axios-Interceptor den sauberen Logout via `auth:unauthorized`.
+* **Passwort-Reset & Session-Sync**: Bietet einen Single-User-Reset-Flow über das Login-Modal und eine gesicherte Bestätigungsseite (`/password-reset/confirm/:uid/:token`). Bei abgelaufenem Refresh-Token sichert ein Axios-Interceptor den sauberen Logout via `auth:unauthorized`.
 
 - **JWT-Architektur:** Implementiert via `djangorestframework-simplejwt` und `djoser`.
 - **Token-Lebenszyklen:**
@@ -45,7 +45,7 @@ Die Sicherheitsarchitektur folgt dem Prinzip der mehrschichtigen Verteidigung (*
 | Ressource / Endpoint | Berechtigungsklasse | Beschreibung |
 |---|---|---|
 | `GET /api/projects/`, `GET /api/skills/`, `GET /api/tracks/` | `AllowAny` / `IsAuthenticatedOrReadOnly` | Öffentliche Portfolio-Daten für Besucher |
-| `POST /api/chat/` | `AllowAny` (Rate-Limited) | Öffentlicher Portfolio-Assistent |
+| `POST /api/ai/chat/` | `AllowAny` (Rate-Limited) | Öffentlicher Portfolio-Assistent |
 | `POST /api/certificates/`, `PATCH /api/certificates/{id}/` | `IsAuthenticated` | Nur authentifizierte Administratoren |
 | `POST /api/certificates/{id}/extract_metadata/` | `IsAuthenticated` | On-Demand OCR & KI-Extraktion |
 | `/api/pending-certificates/` | `IsAdminUser` | Inbox-Management & Freigabe-Workflows |
@@ -58,10 +58,10 @@ Die Sicherheitsarchitektur folgt dem Prinzip der mehrschichtigen Verteidigung (*
 
 ### 4.1 Rate Limiting (DRF Throttling)
 Zur Abwehr von Denial-of-Service-Angriffen (DoS) und API-Missbrauch:
-- **Portfolio-Chatbot (`/api/chat/`):** Scoped Rate Limiting auf **20 Anfragen / Minute** pro IP (`ScopedRateThrottle`).
+- **Portfolio-Chatbot (`/api/ai/chat/`):** Scoped Rate Limiting auf **20 Anfragen / Minute** pro IP (`ScopedRateThrottle`).
 - **Auth-Endpunkte (`/api/auth/jwt/create/`):** Schutz vor Brute-Force-Angriffen durch IP- und Account-basierte Anfragelimits.
 
-### 4.2 Zero-Cost AI Circuit Breaker ([`ai_assistant.py`](file:///d:/dev/portfolio_project/backend/portfolio/services/ai_assistant.py))
+### 4.2 Zero-Cost AI Circuit Breaker ([`ai_assistant.py`](../backend/portfolio/services/ai_assistant.py))
 Um unerwartete Kosten durch Cloud-KI-Aufrufe (Google Gemini 3.8 Flash) garantiert auszuschließen:
 ```mermaid
 flowchart TD
@@ -143,9 +143,9 @@ In der Produktionsumgebung (`DEBUG=False` auf Render):
 ## 8. Secret Management & CI/CD Governance
 
 - **Zero-Secret-Policy im Code:** Keine Passwörter, Tokens oder API-Keys im Git-Repository. Die Datei `.env` ist strikt in `.gitignore` geführt.
-- **Deklaratives Render Blueprint ([`render.yaml`](file:///d:/dev/portfolio_project/render.yaml)):**
+- **Deklaratives Render Blueprint ([`render.yaml`](../render.yaml)):**
   - Alle sensiblen Umgebungsvariablen sind mit `sync: false` deklariert und müssen über das Render-Dashboard gepflegt werden.
-- **Code Ownership ([`.github/CODEOWNERS`](file:///d:/dev/portfolio_project/.github/CODEOWNERS)):**
+- **Code Ownership ([`.github/CODEOWNERS`](../.github/CODEOWNERS)):**
   - Kritische Sicherheits- und Infrastrukturpfade (`/backend/core/settings.py`, `.github/workflows/`, `/render.yaml`) sind geschützt und verlangen Pflicht-Reviews von Code-Ownern.
 
 ---

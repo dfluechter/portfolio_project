@@ -7,8 +7,8 @@ Diese Seite beschreibt die Gesamtsystemarchitektur, Schnittstellen und Datenflü
 ## 1. Architektur-Prinzipien
 
 Das Portfolio folgt modernen Cloud-Native- und Headless-Mustern:
-- **Headless JSON REST-API**: Das Backend ([Django 5.2](https://www.djangoproject.com/)) liefert ausschließlich JSON-APIs. Django-HTML-Templates wurden vollständig abgelöst.
-- **Single Page Application (SPA)**: Die Benutzeroberfläche (öffentliches Portfolio & Admin-Dashboard) ist eine clientseitige [React 19](https://react.dev/)-Anwendung.
+- **Headless JSON REST-API**: Das Backend ([Django 6.0 / >=5.2](https://www.djangoproject.com/)) liefert ausschließlich JSON-APIs. Django-HTML-Templates wurden vollständig abgelöst.
+- **Single Page Application (SPA)**: Die Benutzeroberfläche (öffentliches Portfolio & Admin-Dashboard) ist eine clientseitige [React 19](https://react.dev/)-Anwendung auf Basis von TypeScript 7.x, Vite 8, Tailwind CSS v4 und TanStack Query v5, qualitätsgesichert durch 117 Vitest-Tests in 22 Dateien.
 - **Connection Separation**: Bei der Verbindung zu [Neon PostgreSQL](https://neon.tech/) werden gepoolte Verbindungen (`DATABASE_URL`, PgBouncer) für den regulären Webbetrieb und direkte Verbindungen (`DIRECT_DATABASE_URL`) für Schema-Migrationen und DDL-Operationen getrennt.
 - **Zero-Storage Load auf Backend**: Datei-Uploads fließen via Presigned S3 URLs direkt zwischen Browser und [Supabase Storage](https://supabase.com/), wodurch der Render-Container schlank und zustandslos bleibt.
 
@@ -18,14 +18,14 @@ Das Portfolio folgt modernen Cloud-Native- und Headless-Mustern:
 
 ```mermaid
 graph TD
-    subgraph Frontend["React 19 SPA (frontend/)"]
+    subgraph Frontend["React 19 SPA (frontend/ · TypeScript 7.x · Vite 8 · Tailwind v4 · TanStack v5 · 117 Tests)"]
         PublicView["Public Portfolio (Home, Projects, Tracks, Timeline)"]
         DashboardView["Admin Dashboard (Certificates, Projects, Inbox)"]
         AIChatWidget["RAG Chat Widget (Deep-Linking Badges)"]
         ApiClient["Axios Client (JWT Refresh Queue)"]
     end
 
-    subgraph Backend["Django 5.2 REST API (backend/)"]
+    subgraph Backend["Django 6.0 / >=5.2 REST API (backend/)"]
         Router["DRF DefaultRouter (/api/*)"]
         AuthViews["Djoser + SimpleJWT (/api/auth/*)"]
         ViewSets["ModelViewSets (Project, Certificate, Skill, Track)"]

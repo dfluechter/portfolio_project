@@ -324,3 +324,89 @@ def verify_s3_uploaded_certificate(
         )
 
     return computed_hash
+
+
+def list_s3_certificate_objects(
+    prefix: str = "certificates/",
+) -> list[dict[str, Any]]:
+    """Listet alle Objekte im S3-Bucket unter dem angegebenen Prefix auf.
+
+    Gibt eine Liste von Dicts mit 'storage_key', 'size' und 'last_modified' zurück.
+    """
+    if not _is_s3_configured(allow_endpoint_fallback=True):
+        return []
+
+    bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "portfolio-media")
+    s3_client = get_s3_client()
+    paginator = s3_client.get_paginator("list_objects_v2")
+
+    objects: list[dict[str, Any]] = []
+    try:
+        for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
+            for item in page.get("Contents", []):
+                objects.append(
+                    {
+                        "storage_key": item["Key"],
+                        "size": item["Size"],
+                        "last_modified": item["LastModified"],
+                    }
+                )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Fehler beim Auflisten der S3-Objekte unter Prefix '%s': %s", prefix, exc
+        )
+    return objects
+
+
+def delete_s3_object(storage_key: str) -> bool:
+    """Löscht ein Objekt aus dem S3-Storage. Gibt True bei Erfolg zurück."""
+    if not _is_s3_configured(allow_endpoint_fallback=True):
+        return False
+
+    bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "portfolio-media")
+    s3_client = get_s3_client()
+    try:
+        s3_client.delete_object(Bucket=bucket_name, Key=storage_key)
+        logger.info("S3-Objekt gelöscht: %s", storage_key)
+        return True
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Fehler beim Löschen des S3-Objekts '%s': %s", storage_key, exc)
+        return False
+
+
+def check_s3_object_exists(storage_key: str) -> bool:
+    """Prüft via head_object, ob ein Objekt im S3-Storage existiert."""
+    if not _is_s3_configured(allow_endpoint_fallback=True):
+        return False
+
+    bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "portfolio-media")
+    s3_client = get_s3_client()
+    try:
+        s3_client.head_object(Bucket=bucket_name, Key=storage_key)
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def compute_s3_object_hash(storage_key: str) -> str | None:
+    """Berechnet den SHA-256-Hash eines Objekts im S3-Storage."""
+    if not _is_s3_configured(allow_endpoint_fallback=True):
+        return None
+
+    bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "portfolio-media")
+    s3_client = get_s3_client()
+    try:
+        resp = s3_client.get_object(Bucket=bucket_name, Key=storage_key)
+        sha256 = hashlib.sha256()
+        body = resp["Body"]
+        while True:
+            chunk = body.read(65536)
+            if not chunk:
+                break
+            sha256.update(chunk)
+        return sha256.hexdigest()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Fehler beim Berechnen des Hashs für S3-Objekt '%s': %s", storage_key, exc
+        )
+        return None

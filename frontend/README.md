@@ -10,7 +10,7 @@ Ausführliche Architekturdokumentation, Routing-Konzepte und State-Management-Re
 
 - **Framework:** React 19 (`react`, `react-dom`)
 - **Build-Tool & Bundler:** Vite 6 mit Rollup Code-Splitting (`manualChunks`)
-- **Programmiersprache:** TypeScript 5.8 (Strict Mode)
+- **Programmiersprache:** TypeScript 7.x (Strict Mode)
 - **Styling:** Tailwind CSS v4 (`@tailwindcss/vite`)
 - **Server State & Caching:** TanStack Query v5 (`@tanstack/react-query`)
 - **Icons:** Lucide React (`lucide-react`)

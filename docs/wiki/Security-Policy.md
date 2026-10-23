@@ -25,7 +25,7 @@ Sicherheit folgt im Portfolio-Projekt dem Prinzip der **Defense-in-Depth**. Dies
    - Die Anmeldung erfolgt ausschließlich über eine verifizierte E-Mail-Adresse (`portfolio.User`, kein `username`).
    - Die Registrierung (`POST /api/auth/users/`) ist über `IsAdminUser` gesperrt. Neue Benutzer können nur über die CLI via `createsuperuser` erzeugt werden.
 2. **Passwort-Reset & Session-Sync**:
-   - Bietet einen Single-User-Reset-Flow über das Login-Modal und eine gesicherte Bestätigungsseite (`/password/reset/confirm/:uid/:token`).
+   - Bietet einen Single-User-Reset-Flow über das Login-Modal und eine gesicherte Bestätigungsseite (`/password-reset/confirm/:uid/:token`).
    - Bei abgelaufenem Refresh-Token sichert ein Axios-Interceptor den sauberen Logout via `auth:unauthorized`.
 3. **JWT-Laufzeiten & Auto-Revocation**:
    - Access-Token: 60 Minuten Gültigkeit.

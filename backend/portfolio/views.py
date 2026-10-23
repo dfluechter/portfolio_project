@@ -864,9 +864,7 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
         results: list[dict[str, Any]] = []
         errors: list[dict[str, Any]] = []
 
-        pending_items = {
-            p.id: p for p in PendingCertificate.objects.filter(id__in=ids)
-        }
+        pending_items = {p.id: p for p in PendingCertificate.objects.filter(id__in=ids)}
 
         for raw_id in ids:
             try:

@@ -1,6 +1,6 @@
 # Deployment & Operations Leitfaden
 
-Dieses Dokument beschreibt den Deployment-Prozess auf Render, die CI/CD-Pipeline in GitHub Actions sowie die Konfiguration von Neon Serverless PostgreSQL.
+Dieses Dokument beschreibt den Deployment-Prozess auf Render (Django 6.0 / >=5.2 Headless REST API & React 19 Static Site), die CI/CD-Pipeline in GitHub Actions sowie die Konfiguration von Neon Serverless PostgreSQL.
 
 ---
 
@@ -39,20 +39,35 @@ flowchart LR
 ## 2. Render Web Service Konfiguration
 
 ### 2.1 Konfiguration (`render.yaml`)
-Der Backend-Service ist als Web-Service mit Python-Environment deklariert:
+Das Projekt wird über ein deklaratives Render Blueprint verwaltet, das sowohl den Backend-Web-Service als auch das statische React-Frontend umfasst:
 ```yaml
 services:
   - type: web
     name: portfolio-backend
     env: python
+    autoDeployTrigger: off
     rootDir: backend
-    buildCommand: bash build.sh
-    startCommand: uv run gunicorn core.wsgi:application
+    buildCommand: "./build.sh"
+    startCommand: "uv run gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4"
     healthCheckPath: /health_check
+  - type: web
+    name: portfolio-frontend
+    runtime: static
+    autoDeployTrigger: off
+    rootDir: frontend
+    buildCommand: npm ci --legacy-peer-deps && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://portfolio-backend.onrender.com
 ```
 
 ### 2.2 Ausführungskontext von `build.sh`
-Das primäre Build-Skript liegt unter [`backend/build.sh`](file:///d:/dev/portfolio_project/backend/build.sh). Zusätzlich existiert im Projekt-Root ein resilientes Fallback-Skript [`build.sh`](file:///d:/dev/portfolio_project/build.sh), falls der Service im Render Dashboard ohne konfiguriertes `rootDir` (d. h. im Repository-Root) gestartet wird. Es wechselt automatisch in `backend/` und führt das Backend-Build-Skript aus:
+Das primäre Build-Skript liegt unter [`backend/build.sh`](../backend/build.sh). Zusätzlich existiert im Projekt-Root ein resilientes Fallback-Skript [`build.sh`](../build.sh), falls der Service im Render Dashboard ohne konfiguriertes `rootDir` (d. h. im Repository-Root) gestartet wird. Es wechselt automatisch in `backend/` und führt das Backend-Build-Skript aus:
 
 ```bash
 #!/usr/bin/env bash
@@ -92,7 +107,7 @@ In `core/settings.py` prüft Django automatisch, ob ein Migrationsbefehl aktiv i
 
 ## 3. GitHub Actions CI/CD Pipeline
 
-Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_project/.github/workflows/ci.yml) definiert, nutzt eine `concurrency`-Gruppe (`cancel-in-progress: true`) zur Vermeidung überlappender Läufe und umfasst folgende Jobs:
+Die Pipeline ist in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) definiert, nutzt eine `concurrency`-Gruppe (`cancel-in-progress: true`) zur Vermeidung überlappender Läufe und umfasst folgende Jobs:
 
 0. **`evaluate-commit` (Erkennung & Skip unnötiger Builds)**:
    - Prüft die HEAD-Commit-Message bzw. den PR-Titel auf Conventional-Commit-Typen (`docs:` oder `style:`, optional mit Scope z. B. `docs(readme):` oder `style(css):`).
@@ -105,7 +120,7 @@ Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_projec
    - Führt Ruff Linter (`check`), Ruff Formatter Check (`format --diff`), Mypy und Pytest mit Coverage ($\ge 95\%$, 314 Tests) aus.
    - Bereinigt den eindeutigen Neon-Branch nach Testende (`always()`).
 2. **`frontend-lint-test`**:
-   - Führt `npm ci`, Oxlint, Vitest (82 Tests) und `npm run build` aus.
+   - Führt `npm ci`, Oxlint, Vitest (117 Tests in 22 Dateien) und `npm run build` aus.
 3. **`backend-build` (Produktions-Artefakt-Verifikation)**:
    - Läuft nur, wenn `evaluate-commit.outputs.skip_build_and_deploy != 'true'`.
    - Validiert, dass Python 3.13 und Abhängigkeiten mit `uv` fehlerfrei auflösen.
@@ -114,10 +129,10 @@ Die Pipeline ist in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_projec
 4. **`deploy` (Zero-Downtime Server-Deployment)**:
    - Läuft nur bei erfolgreichem Push auf `main` und wenn `evaluate-commit.outputs.skip_build_and_deploy != 'true'`.
    - Triggert den Render Deploy Hook via `curl` mit Retry-Logik.
-   - In [render.yaml](file:///d:/dev/portfolio_project/render.yaml) sind `autoDeployTrigger: off` und `buildFilter` (ignoriert `*.md`, `docs/**`) hinterlegt, sodass Render nicht bei jedem Git-Push unkoordiniert neu baut, sondern strikt dem GitHub Actions Freigabe-Signal folgt.
+   - In [`render.yaml`](../render.yaml) sind `autoDeployTrigger: off` und `buildFilter` (ignoriert `*.md`, `docs/**`) hinterlegt, sodass Render nicht bei jedem Git-Push unkoordiniert neu baut, sondern strikt dem GitHub Actions Freigabe-Signal folgt.
 
 ### 3.1 Code Ownership & PR-Governance (`.github/CODEOWNERS`)
-Über [`.github/CODEOWNERS`](file:///d:/dev/portfolio_project/.github/CODEOWNERS) sind kritische Pfade im Repository explizit geschützt (`@dfluechter` bzw. erweiterbar auf GitHub-Teams wie `@org/devops` oder `@org/security`):
+Über [`.github/CODEOWNERS`](../.github/CODEOWNERS) sind kritische Pfade im Repository explizit geschützt (`@dfluechter` bzw. erweiterbar auf GitHub-Teams wie `@org/devops` oder `@org/security`):
 - **CI/CD & Deployment:** `/.github/workflows/`, `/render.yaml`, `/build.sh`, `/backend/build.sh`
 - **Backend Security & Schema:** `/backend/core/settings.py`, `/backend/portfolio/migrations/`, `/backend/portfolio/services/`, `/backend/pyproject.toml`
 - **Frontend Auth & Build:** `/frontend/src/api/`, `/frontend/src/context/`, `/frontend/vite.config.ts`
@@ -138,7 +153,7 @@ Die Validierung der Commit-Nachrichten folgt der *Conventional Commits*-Spezifik
 [optional footer(s)]
 ```
 
-#### Zulässige Commit-Typen ([`.commitlintrc.json`](file:///d:/dev/portfolio_project/.commitlintrc.json)):
+#### Zulässige Commit-Typen ([`.commitlintrc.json`](../.commitlintrc.json)):
 
 * `build`: Änderungen an Build-Systemen, CI-Pipelines oder Abhängigkeiten.
 * `chore`: Administrative Aufgaben, die keinen Anwendungscode betreffen.
@@ -161,7 +176,7 @@ Die Validierung der Commit-Nachrichten folgt der *Conventional Commits*-Spezifik
 * **Konfigurierte Casing-Regeln:** Der Scope unterstützt `camelCase`, `kebab-case` (z. B. für Dependabot `deps-backend`, `deps-frontend`) und `lower-case` (`scope-case`), das Subject ist strikt in Kleinschreibung (`lower-case`).
 * **Optionaler Footer:** Kennzeichnung von Breaking Changes mit `BREAKING CHANGE:`, Angabe von Ticket-Referenzen (z. B. `refers to JIRA-1337`) oder Co-Autoren (`Co-authored-by:`).
 
-#### Lokale Ausführung via Husky ([`.husky/commit-msg`](file:///d:/dev/portfolio_project/.husky/commit-msg))
+#### Lokale Ausführung via Husky ([`.husky/commit-msg`](../.husky/commit-msg))
 Bei jedem Aufruf von `git commit` wird der Hook vor dem eigentlichen Commit ausgeführt:
 ```bash
 #!/usr/bin/env sh
@@ -170,7 +185,7 @@ npx --no -- commitlint --edit "$1"
 Verstößt eine Commit-Nachricht gegen die Konvention (z. B. Großschreibung im Subject, falscher Scope-Casing oder ungültiger Typ), wird der Commit lokal mit einer präzisen Fehlermeldung abgelehnt, bevor er in den Git-Verlauf gelangt.
 
 #### Synergie mit der CI/CD-Pipeline (`evaluate-commit`)
-Die strikte Einhaltung der Conventional Commits ermöglicht in [`.github/workflows/ci.yml`](file:///d:/dev/portfolio_project/.github/workflows/ci.yml) intelligente Skip-Entscheidungen:
+Die strikte Einhaltung der Conventional Commits ermöglicht in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) intelligente Skip-Entscheidungen:
 - **`docs(...)` & `style(...)`**: Der teure Server-Build (`backend-build`) und das Deployment (`deploy`) werden automatisch übersprungen.
 - **`feat(...)`, `fix(...)` & `enh(...)`**: Führen den vollständigen Test- und Deployment-Zyklus aus.
 

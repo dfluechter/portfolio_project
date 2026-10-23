@@ -1,23 +1,29 @@
 import hashlib
-from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 from django.contrib.admin.sites import AdminSite
-from django.contrib.messages.storage.fallback import FallbackStorage
 from django.test import RequestFactory
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from portfolio.admin import PendingCertificateAdmin
 from portfolio.models import (
-    Certificate,
     PendingCertificate,
     PendingCertificateStatus,
-    Provider,
     Track,
     User,
 )
+
+
+class DummyMessageStorage:
+    def __init__(self):
+        self.messages = []
+
+    def add(self, level, message, extra_tags=""):
+        self.messages.append(message)
+
+    def __iter__(self):
+        return iter(self.messages)
 
 
 @pytest.fixture
@@ -36,12 +42,16 @@ def auth_client(admin_user):
 
 @pytest.fixture
 def sample_track(db):
-    return Track.objects.create(name="Cloud & DevOps", slug="cloud-devops", icon="cloud")
+    return Track.objects.create(
+        name="Cloud & DevOps", slug="cloud-devops", icon="cloud"
+    )
 
 
 @pytest.fixture
 def second_track(db):
-    return Track.objects.create(name="Backend Engineering", slug="backend", icon="server")
+    return Track.objects.create(
+        name="Backend Engineering", slug="backend", icon="server"
+    )
 
 
 @pytest.fixture
@@ -57,21 +67,35 @@ def dummy_pdf_files(tmp_path):
 class TestPendingCertificateBulkOperations:
     def test_unauthenticated_cannot_bulk_approve(self):
         client = APIClient()
-        resp = client.post("/api/pending-certificates/bulk_approve/", {"ids": [1]})
-        assert resp.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        resp = client.post(
+            "/api/pending-certificates/bulk_approve/", {"ids": [1]}, format="json"
+        )
+        assert resp.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
     def test_unauthenticated_cannot_bulk_reject(self):
         client = APIClient()
-        resp = client.post("/api/pending-certificates/bulk_reject/", {"ids": [1]})
-        assert resp.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        resp = client.post(
+            "/api/pending-certificates/bulk_reject/", {"ids": [1]}, format="json"
+        )
+        assert resp.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
     def test_bulk_approve_empty_payload_fails(self, auth_client):
-        resp = auth_client.post("/api/pending-certificates/bulk_approve/", {"ids": []})
+        resp = auth_client.post(
+            "/api/pending-certificates/bulk_approve/", {"ids": []}, format="json"
+        )
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
         assert "Mindestens eine ID" in resp.data["detail"]
 
     def test_bulk_reject_empty_payload_fails(self, auth_client):
-        resp = auth_client.post("/api/pending-certificates/bulk_reject/", {})
+        resp = auth_client.post(
+            "/api/pending-certificates/bulk_reject/", {}, format="json"
+        )
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
         assert "Mindestens eine ID" in resp.data["detail"]
 
@@ -86,6 +110,7 @@ class TestPendingCertificateBulkOperations:
         resp = auth_client.post(
             "/api/pending-certificates/bulk_approve/",
             {"ids": [p.id], "track_ids": [99999]},
+            format="json",
         )
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
         assert "Track 99999 nicht gefunden" in resp.data["detail"]
@@ -114,6 +139,7 @@ class TestPendingCertificateBulkOperations:
         resp = auth_client.post(
             "/api/pending-certificates/bulk_approve/",
             {"ids": [p1.id, p2.id], "track_ids": [sample_track.id]},
+            format="json",
         )
         assert resp.status_code == status.HTTP_200_OK
         assert resp.data["approved_count"] == 2
@@ -156,16 +182,21 @@ class TestPendingCertificateBulkOperations:
         resp = auth_client.post(
             "/api/pending-certificates/bulk_approve/",
             {"ids": [p1.id, p2.id]},
+            format="json",
         )
         assert resp.status_code == status.HTTP_200_OK
         assert resp.data["approved_count"] == 2
 
         p1.refresh_from_db()
         p2.refresh_from_db()
+        assert p1.certificate is not None
+        assert p2.certificate is not None
         assert p1.certificate.tracks.filter(id=sample_track.id).exists()
         assert p2.certificate.tracks.filter(id=second_track.id).exists()
 
-    def test_bulk_approve_partial_success(self, auth_client, dummy_pdf_files, sample_track):
+    def test_bulk_approve_partial_success(
+        self, auth_client, dummy_pdf_files, sample_track
+    ):
         f1, _ = dummy_pdf_files
         p_valid = PendingCertificate.objects.create(
             original_file_name="cert1.pdf",
@@ -183,6 +214,7 @@ class TestPendingCertificateBulkOperations:
         resp = auth_client.post(
             "/api/pending-certificates/bulk_approve/",
             {"ids": [p_valid.id, p_missing_file.id], "track_ids": [sample_track.id]},
+            format="json",
         )
         assert resp.status_code == status.HTTP_200_OK
         assert resp.data["approved_count"] == 1
@@ -195,7 +227,9 @@ class TestPendingCertificateBulkOperations:
         assert p_valid.status == PendingCertificateStatus.APPROVED
         assert p_missing_file.status == PendingCertificateStatus.PENDING
 
-    def test_bulk_approve_ignores_already_processed_items(self, auth_client, dummy_pdf_files):
+    def test_bulk_approve_ignores_already_processed_items(
+        self, auth_client, dummy_pdf_files
+    ):
         f1, _ = dummy_pdf_files
         p_already_rejected = PendingCertificate.objects.create(
             original_file_name="rejected.pdf",
@@ -206,6 +240,7 @@ class TestPendingCertificateBulkOperations:
         resp = auth_client.post(
             "/api/pending-certificates/bulk_approve/",
             {"ids": [p_already_rejected.id]},
+            format="json",
         )
         assert resp.status_code == status.HTTP_200_OK
         assert resp.data["approved_count"] == 0
@@ -229,6 +264,7 @@ class TestPendingCertificateBulkOperations:
         resp = auth_client.post(
             "/api/pending-certificates/bulk_reject/",
             {"ids": [p1.id, p2.id]},
+            format="json",
         )
         assert resp.status_code == status.HTTP_200_OK
         assert resp.data["rejected_count"] == 2
@@ -253,14 +289,18 @@ class TestPendingCertificateBulkOperations:
         request_factory = RequestFactory()
         request = request_factory.post("/admin/portfolio/pendingcertificate/")
         request.user = admin_user
-        setattr(request, "_messages", FallbackStorage(request))
+        request._messages = DummyMessageStorage()  # type: ignore[attr-defined]
 
-        admin_instance.reject_selected(request, PendingCertificate.objects.filter(id=p.id))
+        admin_instance.reject_selected(
+            request, PendingCertificate.objects.filter(id=p.id)
+        )
 
         p.refresh_from_db()
         assert p.status == PendingCertificateStatus.REJECTED
 
-    def test_django_admin_promote_selected_action(self, admin_user, dummy_pdf_files, sample_track):
+    def test_django_admin_promote_selected_action(
+        self, admin_user, dummy_pdf_files, sample_track
+    ):
         f1, _ = dummy_pdf_files
         admin_site = AdminSite()
         admin_instance = PendingCertificateAdmin(PendingCertificate, admin_site)
@@ -277,9 +317,11 @@ class TestPendingCertificateBulkOperations:
         request_factory = RequestFactory()
         request = request_factory.post("/admin/portfolio/pendingcertificate/")
         request.user = admin_user
-        setattr(request, "_messages", FallbackStorage(request))
+        request._messages = DummyMessageStorage()  # type: ignore[attr-defined]
 
-        admin_instance.promote_selected(request, PendingCertificate.objects.filter(id=p.id))
+        admin_instance.promote_selected(
+            request, PendingCertificate.objects.filter(id=p.id)
+        )
 
         p.refresh_from_db()
         assert p.status == PendingCertificateStatus.APPROVED

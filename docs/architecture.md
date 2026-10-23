@@ -22,7 +22,7 @@ graph TB
         WebService["Web Service: Gunicorn + Django (backend/)"]
     end
 
-    subgraph Backend["Django 5.2 (Headless API)"]
+    subgraph Backend["Django 6.0 (Headless API, Spezifikation django>=5.2)"]
         CoreUrls["URL Routing (core/urls.py)"]
         AuthModule["Djoser + SimpleJWT"]
         ViewSets["DRF ViewSets & Actions (inkl. AIChatView)"]
@@ -54,7 +54,7 @@ graph TB
 
 | Schicht | Technologie | Zweck |
 |---|---|---|
-| Backend | Python 3.13 / Django 5.2 / DRF | REST-API und Geschäftslogik |
+| Backend | Python 3.13 / Django 6.0 (Spezifikation `django>=5.2`) / DRF | REST-API und Geschäftslogik |
 | Paketmanagement | `uv` | Reproduzierbare Abhängigkeiten |
 | Frontend | React 19 / TypeScript / Vite / Tailwind CSS v4 | Öffentliche Seite, Chatbot & Admin-Dashboard |
 | Datenbank | Neon Serverless PostgreSQL + `pgvector` (Prod) / SQLite (Dev) | Relationale Daten & 768-dim. Vektorspeicher (HNSW) |
@@ -153,13 +153,20 @@ sequenceDiagram
 - Pfad-Adressierung (`addressing_style=path`) und Signatur `s3v4` sind für Supabase Pflicht.
 - `AWS_S3_PUBLIC_BUCKET` steuert die URL-Art: `True` → öffentliche, dauerhafte URLs; `False` → signierte, ablaufende URLs (`querystring_auth`).
 - `file_overwrite=False` verhindert stilles Überschreiben.
-- Für Weg B muss im Bucket eine **CORS-Regel** für die Frontend-Domain hinterlegt sein, siehe [deployment.md](deployment.md#5-supabase-storage-cors-für-direct-uploads).
+- Für Weg B muss im Bucket eine **CORS-Regel** für die Frontend-Domain hinterlegt sein, siehe [deployment.md](deployment.md#5-supabase-storage-cors-konfiguration-für-direct-to-storage-uploads).
 
-### 2.4 Datenbank-Routing
+### 2.4 Dual-Database Architektur & Connection Routing
 
-- `DATABASE_URL` gesetzt → Neon PostgreSQL; nicht gesetzt → lokale `db.sqlite3`.
-- Migrationen nutzen bevorzugt `DIRECT_DATABASE_URL` (PgBouncer-Bypass), Details siehe [deployment.md §2.3](deployment.md#23-neon-postgresql-trennung-von-pooled--und-direct-connection).
-- Tests laufen mit `core.settings_test` (gesetzt in `backend/pytest.ini`).
+Das Backend implementiert ein dynamisches Routing zwischen Neon PostgreSQL und lokalem SQLite:
+- **Produktion / Neon PostgreSQL:**
+  - **Gepoolte Verbindung (`DATABASE_URL`):** Verbindet über den Neon PgBouncer-Pooler (`-pooler` Host). Dient dem regulären Gunicorn-Webbetrieb zur ressourceneffizienten Skalierung (`conn_max_age=600`, `conn_health_checks=True`).
+  - **Direkte Verbindung (`DIRECT_DATABASE_URL`):** Direkte Verbindung zum Neon-Compute-Endpunkt ohne PgBouncer. Da DDL-Migrationen exklusive Transaktionssperren und vorbereitete Statements erfordern, schaltet `backend/core/settings.py` bei Migrations-Befehlen (`migrate`, `makemigrations`, `showmigrations`, `sqlmigrate` via `IS_MIGRATION_COMMAND` bzw. `RUNNING_MIGRATION=1`) automatisch auf `DIRECT_DATABASE_URL` um (Details siehe [deployment.md §2.3](deployment.md#23-neon-postgresql-trennung-von-pooled--und-direct-connection)).
+- **Lokale Entwicklung & Fallback (SQLite):**
+  - Ist weder `DATABASE_URL` noch `DIRECT_DATABASE_URL` gesetzt, greift `dj_database_url` automatisch auf die lokale SQLite-Datenbank (`backend/db.sqlite3`) zurück.
+- **pgvector vs. SQLite Kompatibilität:**
+  - **Neon PostgreSQL:** Migration `0014_knowledgechunk_pgvector` aktiviert bedingt `CREATE EXTENSION IF NOT EXISTS vector;` und baut einen performanten HNSW-Index (`using hnsw (embedding vector_cosine_ops)`). Das Retrieval in `portfolio/services/retrieval.py` nutzt native Vektor-Distanzsuchen (`CosineDistance`).
+  - **SQLite:** Das `VectorField` in `portfolio/models.py` deklariert auf SQLite transparent den Datenbanktyp `text`. Beim Retrieval greift automatisch ein robuster Keyword-Fallback (`Q(title__icontains=...) | Q(content__icontains=...)`), sodass sämtliche Tests und Entwicklungs-Workflows ohne externe Abhängigkeiten auf SQLite laufen.
+- **Test-Isolation:** Tests laufen deterministisch mit `core.settings_test` (definiert in `backend/pytest.ini`).
 
 ### 2.5 RAG Portfolio-Copilot, Native `pgvector` Hybrid Retrieval, Signals Caching & Deep-Linking
 
@@ -174,10 +181,12 @@ Für interaktive Besucherfragen steht der Portfolio-Copilot bereit (`POST /api/a
 
 ### 2.6 HTTP Conditional Caching & ETag-Strategie (Epic 15)
 
-Um Datenbank-Queries auf Neon und Rechenzeit auf Render minimal zu halten, unterstützen alle öffentlichen Lese-Endpunkte (`/api/projects/`, `/api/tracks/`, `/api/skills/`, `/api/certificates/`) standardmäßiges HTTP Conditional Caching:
-- **ETag-Berechnung**: Schwache ETags (`W/"<ressource>_<version>"`) basieren auf der atomaren Signal-Cache-Version `portfolio_rag_context_version_v1`. Ändern sich Daten (Create, Update, Delete), inkrementieren die Django-Signals die Version in $O(1)$.
-- **`304 Not Modified`**: Sendet der Client den Header `If-None-Match`, prüft das Backend die Version bereits vor der Ausführung teurer Datenbankabfragen und Serialisierungen. Stimmen die Versionen überein, wird unmittelbar ein leerer Response mit Status `304 Not Modified` zurückgegeben.
-- **Cache-Control**: Für unauthentifizierte Anfragen gilt `Cache-Control: public, max-age=300, stale-while-revalidate=60`. Authentifizierte Requests (Admin-Dashboard) umgehen das Caching (`Cache-Control: no-cache, private`).
+Um Datenbank-Queries auf Neon und Rechenzeit auf Render minimal zu halten, unterstützen alle öffentlichen Lese-Endpunkte (`/api/projects/`, `/api/tracks/`, `/api/skills/`, `/api/certificates/`) standardmäßiges HTTP Conditional Caching über das `ConditionalCacheMixin` (`backend/portfolio/views.py`):
+- **ETag-Berechnung & Atomare Cache-Version:** Schwache ETags (`W/"<ressource>_v<version>"` bzw. bei Filterung `W/"<ressource>_v<version>_<query_hash>"`) basieren auf der atomaren Signal-Cache-Version `portfolio_rag_context_version_v1` (`RAG_VERSION_KEY`). Ändern sich Daten durch Mutationen (`post_save`/`post_delete`), inkrementieren die Django-Signals diese Version in $O(1)$.
+- **`304 Not Modified` Fast-Path:** Sendet der Client den Header `If-None-Match`, prüft `ConditionalCacheMixin.check_conditional_cache` die Übereinstimmung für unauthentifizierte `GET`- und `HEAD`-Anfragen noch vor Ausführung teurer ORM-Datenbankabfragen und Serialisierungen. Bei Match wird unmittelbar ein leerer Response mit Status `304 Not Modified` ausgeliefert.
+- **Cache-Control & Authentifizierungs-Bypass:**
+  - Für unauthentifizierte Anfragen gilt `Cache-Control: public, max-age=300, stale-while-revalidate=60`.
+  - Authentifizierte Requests (z. B. aus dem Admin-Dashboard) erhalten `Cache-Control: no-cache, private`, sodass Administratoren stets Live-Daten ohne Client-Caching erhalten.
 
 ---
 
@@ -210,6 +219,8 @@ Standard-CRUD (`GET` Liste/Detail, `POST`, `PUT`, `PATCH`, `DELETE`) über den `
 | `/api/certificates/<id>/extract_metadata/` | `POST` | Auth | On-Demand-OCR, liefert Vorschläge (überschreibt nichts) |
 | `/api/pending-certificates/<id>/approve/` | `POST` | Staff | Überführt Inbox-Eintrag in ein `Certificate` |
 | `/api/pending-certificates/<id>/reject/` | `POST` | Staff | Verwirft Inbox-Eintrag |
+| `/api/pending-certificates/bulk_approve/` | `POST` | Staff | Batch-Freigabe mehrerer IDs (`ids: [...]`, optionale `track_ids: [...]`) |
+| `/api/pending-certificates/bulk_reject/` | `POST` | Staff | Batch-Ablehnung mehrerer IDs (`ids: [...]`) |
 | `/api/pending-certificates/<id>/file/` | `GET` | Staff | Liefert Originaldatei inline (`FileResponse`) für Vorschau & Show-File |
 
 ### 3.2 Paginierung & Filter für `/api/certificates/`
@@ -238,7 +249,8 @@ Standard-CRUD (`GET` Liste/Detail, `POST`, `PUT`, `PATCH`, `DELETE`) über den `
 | `/api/auth/jwt/refresh/` | `POST` | Öffentlich | Neuer Access Token |
 | `/api/auth/jwt/verify/` | `POST` | Öffentlich | Token prüfen |
 | `/api/auth/users/me/` | `GET` | Auth | Eigenes Profil |
-| `/api/auth/users/reset_password/` | `POST` | Öffentlich | Passwort-Reset-Mail |
+| `/api/auth/password-reset/` | `POST` | Öffentlich | Passwort-Reset-Mail an `PORTFOLIO_OWNER_EMAIL` via `PasswordResetRequestView` |
+| `/api/auth/users/reset_password/` | `POST` | Öffentlich | Passwort-Reset-Mail (Djoser Standard) |
 | `/api/auth/users/reset_password_confirm/` | `POST` | Öffentlich | Neues Passwort bestätigen |
 
 > [!IMPORTANT]

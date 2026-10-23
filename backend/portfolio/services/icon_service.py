@@ -81,7 +81,9 @@ def _get_target_icon_dirs() -> list[Path]:
 
     # 2. Frontend public static Verzeichnis (falls im Projekt vorhanden)
     base_dir = Path(getattr(settings, "BASE_DIR", ""))
-    frontend_icons = base_dir.parent / "frontend" / "public" / "static" / "img" / "icons"
+    frontend_icons = (
+        base_dir.parent / "frontend" / "public" / "static" / "img" / "icons"
+    )
     if frontend_icons.parent.exists():
         target_dirs.append(frontend_icons)
 
@@ -138,7 +140,9 @@ def ensure_track_icon(icon_name: str) -> str | None:
                 if resp.status == 200:
                     svg_data = resp.read()
                     # Atomares Schreiben via temporäre Datei gegen unvollständige Reads
-                    temp_file = primary_file_path.with_name(f"{primary_file_path.name}.tmp")
+                    temp_file = primary_file_path.with_name(
+                        f"{primary_file_path.name}.tmp"
+                    )
                     temp_file.write_bytes(svg_data)
                     temp_file.replace(primary_file_path)
 
@@ -151,16 +155,22 @@ def ensure_track_icon(icon_name: str) -> str | None:
                         except Exception as exc:  # noqa: BLE001
                             logger.debug("Fehler beim Spiegeln nach %s: %s", dest, exc)
 
-                    logger.info("Icon '%s' erfolgreich von %s heruntergeladen.", icon_name, url)
+                    logger.info(
+                        "Icon '%s' erfolgreich von %s heruntergeladen.", icon_name, url
+                    )
                     return f"/static/img/icons/{icon_name}.svg"
         except urllib.error.HTTPError as err:
-            logger.debug("Icon '%s' nicht unter %s gefunden (HTTP %s)", icon_name, url, err.code)
+            logger.debug(
+                "Icon '%s' nicht unter %s gefunden (HTTP %s)", icon_name, url, err.code
+            )
             continue
         except Exception as exc:  # noqa: BLE001
             logger.error("Fehler beim Abruf von '%s' über %s: %s", icon_name, url, exc)
             break
 
-    logger.warning("Icon '%s' konnte aus keiner konfigurierten Quelle bezogen werden.", icon_name)
+    logger.warning(
+        "Icon '%s' konnte aus keiner konfigurierten Quelle bezogen werden.", icon_name
+    )
     return None
 
 

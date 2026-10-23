@@ -2,7 +2,7 @@
 
 ## 1. Zusammenfassung der bestehenden Architektur
 Das Portfolio-Projekt ist als Monorepo strukturiert:
-- **Backend**: Django 5.2 mit Django REST Framework (DRF) im Ordner `backend/` als reine Headless-API, bereitgestellt über Render.
+- **Backend**: Django 6.0 (Spezifikation django>=5.2) mit Django REST Framework (DRF) im Ordner `backend/` als reine Headless-API, bereitgestellt über Render.
 - **Frontend**: React 19 (TypeScript, Vite 8, Tailwind CSS v4) als SPA im Ordner `frontend/`.
 - **Datenbank**: Neon Serverless PostgreSQL für Produktion (`DATABASE_URL` gepoolt, `DIRECT_DATABASE_URL` für Migrationen), SQLite für lokale Entwicklung.
 - **Speicher**: Supabase S3-kompatibler Storage für Zertifikate und Medien (inkl. Direct-to-Storage Presigned Uploads).

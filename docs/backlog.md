@@ -42,9 +42,9 @@ Eine Story gilt als abgeschlossen ("Done"), wenn:
 | **Epic 11** | RAG Portfolio-Copilot, pgvector Hybrid Retrieval, Guardrails & UI-Skills Polish | Abgeschlossen | US 11.1, US 11.2, US 11.3, US 11.4, US 11.5 |
 | **Epic 12** | Track-Pflicht für Zertifikate & FontAwesome Icon Integration | Abgeschlossen | US 12.1, US 12.2, US 12.3, US 12.4 |
 | **Epic 13** | Robuste OCR-Extraktion, Dokumentenvorschau & Commitlint-Governance | Abgeschlossen | US 13.1, US 13.2, US 13.3, US 13.4 |
-| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | In Bearbeitung | US 14.1 abgeschlossen, US 14.2 in Umsetzung |
+| **Epic 14** | Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing | In Bearbeitung | US 14.1, US 14.2 abgeschlossen |
 | **Epic 15** | Public Performance, HTTP-Caching & Core Web Vitals | In Bearbeitung | US 15.1 abgeschlossen |
-| **Epic 16** | Internationalisierung (i18n), Accessibility & Theme Polish | Geplant (Backlog) | US 16.1, US 16.2 |
+| **Epic 16** | Internationalisierung (i18n), Accessibility & Theme Polish | In Bearbeitung | US 16.1 implementiert, US 16.2 bereit |
 
 ---
 
@@ -442,7 +442,7 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 > **damit** die Integritätsregel regressionssicher abgedeckt ist und die Testabdeckung im Backend $\ge 95\%$ bleibt.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [x] Eine neue Testdatei [`backend/portfolio/tests/test_certificate_track_validation.py`](file:///D:/dev/portfolio_project/backend/portfolio/tests/test_certificate_track_validation.py) ist angelegt.
+- [x] Eine neue Testdatei [`backend/portfolio/tests/test_certificate_track_validation.py`](../backend/portfolio/tests/test_certificate_track_validation.py) ist angelegt.
 - [x] Folgende Testszenarien sind implementiert und grün:
   - `test_publish_without_tracks_returns_400`: `POST /api/certificates/{id}/publish/` ohne Tracks liefert `400 Bad Request`.
   - `test_publish_with_tracks_returns_200`: `POST /api/certificates/{id}/publish/` mit Track liefert `200 OK` und setzt `is_published=True`.
@@ -513,7 +513,7 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
   - **Given** ein PDF oder Bildzertifikat ohne ausreichenden Textlayer
   - **When** der Fallback auf LLM-Vision ausgelöst wird
   - **Then** verwendet der Extraktor das offizielle `google-genai` SDK (`from google import genai`) mit dem Modell `gemini-3.8-flash`.
-  - **And** Anfragen an veraltete Modelle (z. B. `gemini-2.5-flash`), die für Neunutzer HTTP-404-Fehler erzeugen, sind vollständig abgelöst.
+  - **And** Anfragen an veraltete Vorgängermodelle vor Gemini 3.8 Flash, die für Neunutzer HTTP-404-Fehler erzeugen, sind vollständig abgelöst.
 - [x] **Szenario 2 (Mehrzeiliges Plattform-Parsing für Udemy & Coursera):**
   - **Given** ein Zertifikatstext mit mehrzeiligem Header wie `Zertifikat über die erfolgreiche Teilnahme\n<Kursname>\nLehrkraft...`
   - **When** die Regex- und Heuristik-Pipeline durchlaufen wird
@@ -583,7 +583,7 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
   - **And** der Scope muss in `camelCase` formatiert sein (`scope-case: [2, "always", "camel-case"]`).
 - [x] **Szenario 2 (Dokumentation in deployment.md):**
   - **Given** ein Entwickler möchte einen Commit erstellen
-  - **When** er [`docs/deployment.md`](deployment.md#32-konventionelle-commit-nachrichten--git-hooks) konsultiert
+  - **When** er [`docs/deployment.md`](deployment.md#32-automatisierte-qualitätssicherung-durch-git-hooks-und-commitlint) konsultiert
   - **Then** sind alle Regeln, Scopes, Typen und Beispiele transparent aufgeführt.
 
 ---
@@ -613,7 +613,7 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 
 ---
 
-### Epic 14: Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing (P2 - Mittel)
+### Epic 14: Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing (Abgeschlossen)
 
 #### User Story 14.1: Automatisierter Inbox-Scan mit Duplikats- & Re-Import-Erkennung (Abgeschlossen)
 > **Als** Administrator
@@ -640,7 +640,7 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 
 ---
 
-#### User Story 14.2: Bulk-Approve und Bulk-Reject im Django-Admin und React-Dashboard
+#### User Story 14.2: Bulk-Approve und Bulk-Reject im Django-Admin und React-Dashboard (Abgeschlossen)
 > *Spezifikation & Blueprint: Siehe [`docs/specs/us-14-2-bulk-approve-reject.md`](specs/us-14-2-bulk-approve-reject.md)*
 >
 > **Als** Administrator
@@ -674,30 +674,30 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
     1. *„Ausgewählte Zertifikate freigeben und übertragen“* (`promote_selected`)
     2. *„Ausgewählte Zertifikate ablehnen“* (`reject_selected`)
   - **And** die Ausführung quittiert die Anzahl erfolgreicher und fehlgeschlagener Übertragungen via Django Messages.
-- [ ] **Szenario 6 (React-Dashboard Interaktive Massenauswahl):**
+- [x] **Szenario 6 (React-Dashboard Interaktive Massenauswahl):**
   - **Given** `PendingCertificateManager.tsx` im Admin-Dashboard
   - **When** ausstehende Kandidaten gelistet werden
   - **Then** besitzt jede Zeile/Karte eine Checkbox und die Tabellen-Kopfzeile eine „Alle auswählen“-Checkbox
   - **And** bei Auswahl von mindestens einem Element blendet sich eine Floating Action Bar ein mit Track-Zuweisung, Genehmigungs- und Ablehnungs-Aktionen
   - **And** nach erfolgreicher Mutation invalidiert TanStack Query die Keys `['pending-certificates']` und `['certificates']` automatisch.
-- [ ] **Szenario 7 (Automatisierte Testabdeckung):**
+- [x] **Szenario 7 (Automatisierte Testabdeckung):**
   - **Given** die neuen API-Endpunkte und Frontend-Komponenten
   - **When** Pytest im Backend (`uv run pytest portfolio/tests/test_pending_bulk_operations.py`) und Vitest im Frontend (`npm run test:run`) ausgeführt werden
   - **Then** sind alle Szenarien abgedeckt und die Backend-Coverage bleibt $\ge 95\%$.
 
 ---
 
-#### User Story 14.3: Automatisierte Integritäts- und Bereinigungs-Checks
+#### User Story 14.3: Automatisierte Integritäts- und Bereinigungs-Checks (Abgeschlossen)
 > **Als** Systembetreuer
 > **möchte ich** einen Management-Befehl `verify_certificate_integrity`, der alle Zertifikate gegen den S3-Storage abgleicht,
 > **damit** tote Links, fehlende Storage-Objekte oder Hash-Inkonsistenzen sofort aufgedeckt werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [ ] **Szenario 1 (Storage-Sync-Audit):**
+- [x] **Szenario 1 (Storage-Sync-Audit):**
   - **Given** die in der Datenbank hinterlegten `Certificate.storage_key` und `pdf_file`-Pfade
   - **When** `python manage.py verify_certificate_integrity` ausgeführt wird
   - **Then** prüft der Befehl via S3 `head_object`, ob alle Dateien physisch existieren.
-- [ ] **Szenario 2 (Orphan-File-Erkennung):**
+- [x] **Szenario 2 (Orphan-File-Erkennung):**
   - **Given** Dateien im S3-Storage-Bucket unter `certificates/`
   - **When** der Audit-Lauf durchgeführt wird
   - **Then** identifiziert das Skript verwaiste Dateien (Orphans), die keinem Datenbankobjekt mehr zugeordnet sind, und listet sie auf.
@@ -769,7 +769,7 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 
 ### Epic 16: Internationalisierung (i18n), Accessibility & Theme Polish (P2 - Mittel)
 
-#### User Story 16.1: Zweisprachiges Portfolio (DE / EN) & Mehrsprachiger RAG-Copilot
+#### User Story 16.1: Zweisprachiges Portfolio (DE / EN) & Mehrsprachiger RAG-Copilot (Implementiert)
 > *Spezifikation & Blueprint: Siehe [`docs/specs/us-16-1-i18n-portfolio-and-copilot.md`](specs/us-16-1-i18n-portfolio-and-copilot.md)*
 >
 > **Als** internationaler Recruiter oder Besucher  
@@ -777,27 +777,27 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 > **damit** ich Qualifikationen, Projektdetails und Werdegang in meiner bevorzugten Sprache einsehen und interaktiv erfragen kann.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [ ] **Szenario 1 (Frontend Sprachumschalter in der Navigation):**
+- [x] **Szenario 1 (Frontend Sprachumschalter in der Navigation):**
   - **Given** die Navigationsleiste auf der Startseite
   - **When** der Besucher auf den Language-Toggle (`DE` / `EN`) klickt
   - **Then** schalten alle statischen Texte sofort um, `<html lang="...">` synchronisiert sich und die Auswahl wird im `localStorage` persistiert.
-- [ ] **Szenario 2 (Browser-Spracherkennung bei Erstbesuch):**
+- [x] **Szenario 2 (Browser-Spracherkennung bei Erstbesuch):**
   - **Given** ein Erstbesucher ohne gespeicherte Sprachpräferenz
   - **When** `navigator.language` ein englisches Prefix enthält
   - **Then** startet das Frontend automatisch auf Englisch (`en`), sonst auf Deutsch (`de`).
-- [ ] **Szenario 3 (Mehrsprachiger RAG-Copilot mit englischer Anfrage):**
+- [x] **Szenario 3 (Mehrsprachiger RAG-Copilot mit englischer Anfrage):**
   - **Given** eine englischsprachige Frage an `/api/ai/chat/`
   - **When** der RAG-Copilot die Antwort generiert
   - **Then** antwortet der Assistent in natürlichem, professionellem Englisch unter Wahrung aller Fakten.
-- [ ] **Szenario 4 (Copilot Guardrail-Meldungen in der Nutzersprache):**
+- [x] **Szenario 4 (Copilot Guardrail-Meldungen in der Nutzersprache):**
   - **Given** ein Besucher mit aktiver Sprache `en`
   - **When** eine Anfrage das Längenlimit überschreitet oder der Circuit-Breaker greift
   - **Then** antwortet die API mit englischen Systemmeldungen.
-- [ ] **Szenario 5 (Robuste Deep-Linking Badges in beiden Sprachen):**
+- [x] **Szenario 5 (Robuste Deep-Linking Badges in beiden Sprachen):**
   - **Given** eine englischsprachige Antwort des Copiloten mit Quell-Tags wie `[Project: 1]`
   - **When** die Nachricht gerendert wird
   - **Then** werden klickbare Badges mit unveränderter Scroll- und Glow-Funktionalität angezeigt.
-- [ ] **Szenario 6 (Automatisierte Testabdeckung):**
+- [x] **Szenario 6 (Automatisierte Testabdeckung):**
   - **Given** die neuen Lokalisierungs-Dateien und Chat-Erweiterungen
   - **When** Frontend-Tests (`npm run test:run`) und Backend-Tests (`uv run pytest`) ausgeführt werden
   - **Then** sind alle Lokalisierungs- und Chat-Szenarien abgedeckt.

@@ -143,7 +143,7 @@ graph TD
    ```
 
 4. **LanguageSwitcher-Komponente:**
-   - Schlanker Toggle-Button in `frontend/src/components/common/LanguageSwitcher.tsx` (z. B. `DE | EN` mit Pill-Highlight).
+   - Schlanker Toggle-Button in `frontend/src/components/LanguageSwitcher.tsx` (z. B. `DE | EN` mit Pill-Highlight).
 
 ---
 

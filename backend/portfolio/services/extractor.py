@@ -196,9 +196,7 @@ def parse_date_string(raw: str) -> str | None:
                 pass
 
     # Format b: "DD Month YYYY", "DD. Month YYYY" oder "DD. Month. YYYY" (z.B. "28. Nov. 2023")
-    text_b = re.search(
-        r"\b(\d{1,2})\.?\s+([A-Za-zÄäÖöÜü]{3,12})\.?,?\s+(\d{4})\b", raw
-    )
+    text_b = re.search(r"\b(\d{1,2})\.?\s+([A-Za-zÄäÖöÜü]{3,12})\.?,?\s+(\d{4})\b", raw)
     if text_b:
         d_str, m_str, y_str = (
             text_b.group(1),
@@ -577,7 +575,7 @@ def extract_via_gemini_vision(
 ) -> dict[str, Any] | None:
     """
     Stufe 3 der Metadaten-Extraktion:
-    Analysiert gescannte oder bildbasierte Zertifikate via Google Gemini 2.5 Flash Vision.
+    Analysiert gescannte oder bildbasierte Zertifikate via Google Gemini 3.8 Flash Vision.
     Fällt transparent auf None zurück, wenn kein GEMINI_API_KEY konfiguriert ist oder
     Token-Grenzen/Circuit-Breaker greifen (0-Kosten-Garantie & Graceful Degradation).
     """

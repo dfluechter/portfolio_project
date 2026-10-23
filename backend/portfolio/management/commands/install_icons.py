@@ -3,7 +3,10 @@ from typing import Any
 from django.core.management.base import BaseCommand
 
 from portfolio.models import Track
-from portfolio.services.icon_service import BEST_REPOSITORY_ICONS, ensure_track_icon, install_best_icons
+from portfolio.services.icon_service import (
+    BEST_REPOSITORY_ICONS,
+    install_best_icons,
+)
 
 
 class Command(BaseCommand):
@@ -35,7 +38,9 @@ class Command(BaseCommand):
                 if ti and ti not in targets:
                     targets.append(ti)
 
-            self.stdout.write(f"Installiere kuratierte Icon-Palette ({len(targets)} Icons)...")
+            self.stdout.write(
+                f"Installiere kuratierte Icon-Palette ({len(targets)} Icons)..."
+            )
             results = install_best_icons(targets)
 
         success = [k for k, v in results.items() if v]

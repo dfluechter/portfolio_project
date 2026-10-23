@@ -375,66 +375,203 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {filteredList.map((item) => (
-            <div
-              key={item.id}
-              className="bg-slate-900 border border-slate-800 hover:border-slate-700 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all"
+        <div className="space-y-3">
+          {/* Selection Control Bar */}
+          <div className="flex items-center justify-between px-2 py-1 text-xs text-slate-400">
+            <button
+              type="button"
+              onClick={() => handleSelectAll(filteredList)}
+              className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
             >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
-                  <span className="text-xs font-bold text-white break-all">
-                    {item.guessed_title || item.original_file_name}
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                    Ausstehend
-                  </span>
+              {filteredList.length > 0 &&
+              filteredList.every((item) => selectedIds.includes(item.id)) ? (
+                <CheckSquare className="w-4 h-4 text-indigo-400" />
+              ) : (
+                <Square className="w-4 h-4 text-slate-600" />
+              )}
+              <span>
+                {filteredList.length > 0 &&
+                filteredList.every((item) => selectedIds.includes(item.id))
+                  ? 'Auswahl für alle aufheben'
+                  : 'Alle sichtbaren auswählen'}
+              </span>
+            </button>
+            {selectedIds.length > 0 && (
+              <span className="text-indigo-400 font-medium">
+                {selectedIds.length} von {filteredList.length} ausgewählt
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            {filteredList.map((item) => (
+              <div
+                key={item.id}
+                className={`bg-slate-900 border p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${
+                  selectedIds.includes(item.id)
+                    ? 'border-indigo-500/50 bg-indigo-950/10'
+                    : 'border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(item.id)}
+                    onChange={() => toggleSelect(item.id)}
+                    aria-label={`Zertifikat ${item.guessed_title || item.original_file_name} auswählen`}
+                    className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 cursor-pointer shrink-0"
+                  />
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
+                      <span className="text-xs font-bold text-white break-all">
+                        {item.guessed_title || item.original_file_name}
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        Ausstehend
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400">
+                      <span>Datei: <code className="text-slate-300">{item.original_file_name}</code></span>
+                      {item.guessed_provider && (
+                        <span>Anbieter: <span className="text-indigo-400">{item.guessed_provider}</span></span>
+                      )}
+                      <span>
+                        Datum: {new Date(item.created_at).toLocaleDateString('de-DE')}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400">
-                  <span>Datei: <code className="text-slate-300">{item.original_file_name}</code></span>
-                  {item.guessed_provider && (
-                    <span>Anbieter: <span className="text-indigo-400">{item.guessed_provider}</span></span>
-                  )}
-                  <span>
-                    Datum: {new Date(item.created_at).toLocaleDateString('de-DE')}
-                  </span>
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={`/api/pending-certificates/${item.id}/file/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    title="Originaldatei im neuen Tab ansehen"
+                  >
+                    <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                    Show File
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => handleStartReview(item)}
+                    className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                    Prüfen & Freigeben
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleReject(item)}
+                    disabled={rejectMutation.isPending}
+                    className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  >
+                    <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                    Ablehnen
+                  </button>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href={`/api/pending-certificates/${item.id}/file/`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                  title="Originaldatei im neuen Tab ansehen"
-                >
-                  <FileText className="w-3.5 h-3.5" aria-hidden="true" />
-                  Show File
-                </a>
-                <button
-                  type="button"
-                  onClick={() => handleStartReview(item)}
-                  className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                  Prüfen & Freigeben
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleReject(item)}
-                  disabled={rejectMutation.isPending}
-                  className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
-                  Ablehnen
-                </button>
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur-md border border-indigo-500/40 px-5 py-3 rounded-2xl shadow-2xl flex flex-wrap items-center gap-4 text-xs animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="flex items-center gap-2 pr-3 border-r border-slate-800">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              {selectedIds.length}
+            </span>
+            <span className="text-white font-medium">ausgewählt</span>
+          </div>
+
+          {/* Bulk Track Selector Toggle */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowBulkTrackPicker((prev) => !prev)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold border border-slate-700 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              <Layers className="w-3.5 h-3.5 text-indigo-400" />
+              <span>
+                {bulkTrackIds.length > 0
+                  ? `${bulkTrackIds.length} Track(s) gewählt`
+                  : 'Tracks zuweisen (optional)'}
+              </span>
+            </button>
+
+            {showBulkTrackPicker && (
+              <div className="absolute bottom-full mb-2 left-0 w-64 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-xl space-y-2 z-50">
+                <div className="text-[11px] font-semibold text-slate-400">Gemeinsame Lernpfade</div>
+                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+                  {tracks.map((t) => {
+                    const isChecked = bulkTrackIds.includes(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          setBulkTrackIds((prev) =>
+                            isChecked ? prev.filter((id) => id !== t.id) : [...prev, t.id]
+                          );
+                        }}
+                        className={`cursor-pointer px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
+                          isChecked
+                            ? 'bg-indigo-600/30 border-indigo-500 text-indigo-300'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            )}
+          </div>
+
+          {/* Bulk Actions */}
+          <button
+            type="button"
+            onClick={handleBulkApprove}
+            disabled={bulkApproveMutation.isPending}
+            className="cursor-pointer flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-colors shadow-lg shadow-emerald-600/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+          >
+            <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>
+              {bulkApproveMutation.isPending ? 'Wird übertragen...' : `Genehmigen (${selectedIds.length})`}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleBulkReject}
+            disabled={bulkRejectMutation.isPending}
+            className="cursor-pointer flex items-center gap-1.5 px-4 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold border border-red-500/30 rounded-xl transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>
+              {bulkRejectMutation.isPending ? 'Wird abgelehnt...' : `Ablehnen (${selectedIds.length})`}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedIds([]);
+              setBulkTrackIds([]);
+              setShowBulkTrackPicker(false);
+            }}
+            className="cursor-pointer text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            title="Auswahl aufheben"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

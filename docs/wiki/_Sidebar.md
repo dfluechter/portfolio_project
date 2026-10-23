@@ -1,14 +1,14 @@
 ### 📖 Portfolio Wiki
 
-* **[🏠 Startseite](Home)**
-* **[🏗️ System-Architektur](System-Architecture)**
-* **[🤖 RAG Copilot & pgvector](RAG-Portfolio-Copilot)**
-* **[⚛️ Frontend-Architektur](Frontend-Architecture)**
-* **[🚀 Deployment & CI/CD](Deployment-and-Operations)**
-* **[🔒 Sicherheitskonzept](Security-Policy)**
-* **[🛠️ Developer Guide](Developer-Guide)**
-* **[📋 Backlog & Roadmap](Product-Backlog-and-Roadmap)**
-* **[📚 Glossar](Glossary)**
+* **[🏠 Startseite](Home.md)**
+* **[🏗️ System-Architektur](System-Architecture.md)**
+* **[🤖 RAG Copilot & pgvector](RAG-Portfolio-Copilot.md)**
+* **[⚛️ Frontend-Architektur](Frontend-Architecture.md)**
+* **[🚀 Deployment & CI/CD](Deployment-and-Operations.md)**
+* **[🔒 Sicherheitskonzept](Security-Policy.md)**
+* **[🛠️ Developer Guide](Developer-Guide.md)**
+* **[📋 Backlog & Roadmap](Product-Backlog-and-Roadmap.md)**
+* **[📚 Glossar](Glossary.md)**
 
 ---
 

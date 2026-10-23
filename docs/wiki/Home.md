@@ -8,14 +8,14 @@ Dieses Wiki ist das zentrale Referenz- und Architekturdokumentations-Handbuch f�
 
 | Thema | Dokument | Kurzbeschreibung |
 |---|---|---|
-| **System-Architektur** | [System-Architecture](System-Architecture) | Monorepo, Headless Django REST API, React SPA, Neon DB & Supabase S3 |
-| **RAG Copilot & KI** | [RAG-Portfolio-Copilot](RAG-Portfolio-Copilot) | Google Gemini 3.8 Flash, `text-embedding-004`, Neon `pgvector` HNSW & Guardrails |
-| **Frontend** | [Frontend-Architecture](Frontend-Architecture) | React 19, TypeScript, Tailwind v4, TanStack Query & Code-Splitting |
-| **DevOps & CI/CD** | [Deployment-and-Operations](Deployment-and-Operations) | Render Deployment, Ephemeres Neon DB-Branching & Git-Governance |
-| **Sicherheit** | [Security-Policy](Security-Policy) | Defense-in-Depth, strikter Read-Only Schutz f체r Zertifikate & Magic Bytes |
-| **Entwicklung** | [Developer-Guide](Developer-Guide) | Lokales Setup, uv, Python 3.13, Node 22 LTS & Test-Ausf체hrung |
-| **Planung & Roadmap** | [Product-Backlog-and-Roadmap](Product-Backlog-and-Roadmap) | Epics 1 bis 15, User Stories, DoR / DoD und BDD-Akzeptanzkriterien |
-| **Fachbegriffe** | [Glossary](Glossary) | Verbindliches Glossar 체ber Entit채ten, Lifecycle & Vektorsuche |
+| **System-Architektur** | [System-Architecture](System-Architecture.md) | Monorepo, Headless Django REST API, React SPA, Neon DB & Supabase S3 |
+| **RAG Copilot & KI** | [RAG-Portfolio-Copilot](RAG-Portfolio-Copilot.md) | Google Gemini 3.8 Flash, `text-embedding-004`, Neon `pgvector` HNSW & Guardrails |
+| **Frontend** | [Frontend-Architecture](Frontend-Architecture.md) | React 19, TypeScript, Tailwind v4, TanStack Query & Code-Splitting |
+| **DevOps & CI/CD** | [Deployment-and-Operations](Deployment-and-Operations.md) | Render Deployment, Ephemeres Neon DB-Branching & Git-Governance |
+| **Sicherheit** | [Security-Policy](Security-Policy.md) | Defense-in-Depth, strikter Read-Only Schutz f체r Zertifikate & Magic Bytes |
+| **Entwicklung** | [Developer-Guide](Developer-Guide.md) | Lokales Setup, uv, Python 3.13, Node 22 LTS & Test-Ausf체hrung |
+| **Planung & Roadmap** | [Product-Backlog-and-Roadmap](Product-Backlog-and-Roadmap.md) | Epics 1 bis 15, User Stories, DoR / DoD und BDD-Akzeptanzkriterien |
+| **Fachbegriffe** | [Glossary](Glossary.md) | Verbindliches Glossar 체ber Entit채ten, Lifecycle & Vektorsuche |
 
 ---
 
@@ -23,7 +23,7 @@ Dieses Wiki ist das zentrale Referenz- und Architekturdokumentations-Handbuch f�
 
 Das Projekt ist als cloud-natives Monorepo organisiert:
 - **Backend (Headless JSON API)**: Entwickelt mit **Python 3.13**, **Django 5.2+** und dem **Django REST Framework (DRF)**.
-- **Frontend (Single Page Application)**: Entwickelt mit **React 19**, **TypeScript 5.8**, **Vite 8** und **Tailwind CSS v4**.
+- **Frontend (Single Page Application)**: Entwickelt mit **React 19**, **TypeScript 7.x**, **Vite 8** und **Tailwind CSS v4**.
 - **Datenbank & Vektorspeicher**: **Neon Serverless PostgreSQL** mit nativer **`pgvector`** Extension (768-dim. HNSW-Kosinusindex) in der Produktion; lokaler SQLite-Fallback mit automatischem Keyword-Retrieval.
 - **Media-Storage**: **Supabase Storage (S3-kompatibel)** mit Presigned Direct-Uploads und serverseitiger Magic-Byte-Integrit채tspr체fung.
 - **Hosting**: Automatisches Deployment auf **Render** (Static Site f체r Frontend, Gunicorn Web Service f체r Backend).

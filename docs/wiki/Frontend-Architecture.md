@@ -1,6 +1,6 @@
 # Frontend-Architektur
 
-Die Benutzeroberfläche des Portfolio-Projekts ist eine hochperformante, moderne Single Page Application (SPA), basierend auf **React 19**, **TypeScript 5.8**, **Vite 8** und **Tailwind CSS v4**.
+Die Benutzeroberfläche des Portfolio-Projekts ist eine hochperformante, moderne Single Page Application (SPA), basierend auf **React 19**, **TypeScript 7.x**, **Vite 8** und **Tailwind CSS v4**.
 
 ---
 
@@ -8,14 +8,14 @@ Die Benutzeroberfläche des Portfolio-Projekts ist eine hochperformante, moderne
 
 | Bereich | Technologie | Beschreibung / Rolle |
 |---|---|---|
-| **Core** | React 19 / TypeScript 5.8 | Komponenten-Architektur und strenge statische Typisierung |
+| **Core** | React 19 / TypeScript 7.x | Komponenten-Architektur und strenge statische Typisierung |
 | **Bundler & Dev** | Vite 8 + `@tailwindcss/vite` | Blitzschnelle Builds mit Rollup/Rolldown-Optimierung |
 | **Styling** | Tailwind CSS v4 | CSS-first Utility-Framework mit nativem `@theme`-System |
 | **Server-State** | TanStack Query v5 | Automatisches Caching, Refetching und Mutation-Handling |
 | **Client-State** | React Context (`AuthContext`, `ThemeContext`) | Authentifizierungs- und Dark/Light-Theme-Verwaltung |
 | **HTTP-Client** | Axios (`api/client.ts`) | Concurrency-sichere 401-Token-Refresh-Queue via JWT |
 | **Animationen** | Framer Motion + Lucide React | Sanfte Übergänge, Glassmorphism-Modale & Icons |
-| **Testing** | Vitest + React Testing Library | 82 Unit- & Komponententests mit Mock-Service-Worker |
+| **Testing** | Vitest + React Testing Library | 117 Unit- & Komponententests in 22 Dateien mit Mock-Service-Worker |
 
 ---
 
@@ -33,10 +33,12 @@ Das Frontend gliedert sich in zwei Hauptbereiche:
 
 2. **Admin Dashboard (`pages/DashboardPage.tsx`)**:
    - Geschützter Bereich via `ProtectedRoute`.
-   - `CertificateManager`: Server-paginierte Tabelle mit Review-Filter, Track-Icons und Aktionen.
+   - Strukturiert in **3 Tabs**:
+     - **Zertifikate (`CertificateManager`)**: Server-paginierte Tabelle mit Review-Filter, Track-Icons und Aktionen.
+     - **Projekte (`ProjectManager`)**: Vollwertige CRUD-Verwaltung für Portfolio-Projekte.
+     - **Inbox (`PendingCertificateManager`)**: Posteingangs-Verwaltung mit "Show File"-Vorschau und Bulk-Freigabe.
    - `CertificateEditModal`: Review-Drawer mit Dokumentenvorschau (PDF/Bild), Track-Pflicht-Validierung und On-Demand-OCR-Analyse.
-   - `PendingCertificateManager`: Posteingangs-Verwaltung mit "Show File"-Vorschau und Bulk-Freigabe.
-   - `ProjectManager`, `TrackManager`, `SkillManager`: Vollwertige CRUD-Verwaltung.
+   - *Hinweis:* Es gibt keine separaten `TrackManager` / `SkillManager` Tabs im Dashboard.
 
 ---
 

@@ -79,7 +79,7 @@ npm run dev
 Unser Repository verwendet automatisierte Gates, um eine gleichbleibend hohe Code-Qualität zu sichern. Jede Pull Request wird in unserer GitHub-CI-Pipeline auf diese Standards geprüft.
 
 ### 1. Code-Formatierung (.editorconfig & Ruff)
-* Dein Editor sollte die Regeln aus der [`.editorconfig`](.editorconfig) automatisch anwenden (4 Spaces für Python, 2 Spaces für TypeScript/React).
+* Dein Editor sollte die Regeln aus der [`.editorconfig`](../.editorconfig) automatisch anwenden (4 Spaces für Python, 2 Spaces für TypeScript/React).
 * Wir nutzen **Ruff** für das Backend-Linting und -Formatting. Du kannst deinen Code jederzeit manuell prüfen:
   ```bash
   uv run ruff check .
@@ -96,7 +96,7 @@ pre-commit install --hook-type pre-commit --hook-type commit-msg
 Die Hooks formatieren deinen Code automatisch beim Ausführen von `git commit` und fangen Fehler ab.
 
 ### 3. Conventional Commits
-Deine Commit-Nachrichten müssen dem **Conventional Commits**-Standard entsprechen (siehe [`.gitmessage`](.gitmessage) für die genaue Struktur). Dies wird lokal über `commitlint` erzwungen.
+Deine Commit-Nachrichten müssen dem **Conventional Commits**-Standard entsprechen (siehe [`.gitmessage`](../.gitmessage) für die genaue Struktur). Dies wird lokal über `commitlint` erzwungen.
 * *Beispiel:* `feat(auth): implement JWT token rotation`
 * *Beispiel:* `fix(api): correct project image upload validation`
 

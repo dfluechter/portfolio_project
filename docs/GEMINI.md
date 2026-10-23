@@ -23,13 +23,13 @@
 Detaillierte Systemarchitektur, Konfigurationen und API-Spezifikationen befinden sich in [AGENTS.md](AGENTS.md) und [architecture.md](architecture.md).
 
 ### Tech Stack & Standards
-- **Backend:** Python 3.13, Django 5.2, Django REST Framework, Djoser (Headless Token Auth)
+- **Backend:** Python 3.13, Django 6.0 (django>=5.2), Django REST Framework, Djoser (Headless Token Auth)
 - **KI, Embeddings & Vektorsuche:** Google Gemini & `text-embedding-004` (`google-genai`), RAG Portfolio-Copilot (`/api/ai/chat/`), `pgvector` HNSW-Index (`KnowledgeChunk`) mit Hybrid Retrieval, Signals Caching & multimodale OCR
-- **Frontend:** React 19, TypeScript 5.8, Vite 8, Tailwind CSS v4, TanStack Query v5, Lucide React
+- **Frontend:** React 19, TypeScript 7.x, Vite 8, Tailwind CSS v4, TanStack Query v5, Lucide React
 - **Package Manager:** Backend `uv` (niemals direkt `pip`), Frontend `npm`
 - **Linter & Formatter:** Backend `ruff check .` und `ruff format --diff .`, Frontend `npm run lint`
 - **Type Checking:** Backend `mypy .`, Frontend `npm run build` (`tsc -b`)
-- **Tests:** Backend `uv run pytest --cov=core --cov=portfolio --cov-fail-under=95` (314 Tests, >95% Coverage), Frontend `npm run test` (Vitest, 82 Tests)
+- **Tests:** Backend `uv run pytest --cov=core --cov=portfolio --cov-fail-under=95` (314 Tests, >95% Coverage), Frontend `npm run test` (Vitest, 117 Tests in 22 Dateien)
 - **Media Storage:** S3-kompatibler Supabase Storage (Presigned Uploads & Downloads inkl. Magic-Byte Range-Validierung)
 - **Primary Database:** SQLite (lokal), Neon Serverless PostgreSQL + `pgvector` (Produktion)
 

@@ -15,6 +15,7 @@ from portfolio.services.extractor import (
 def reset_ai_circuit_breaker():
     """Stellt sicher, dass der AI-Circuit-Breaker Tests nicht gegenseitig beeinflusst."""
     from django.core.cache import cache
+
     from portfolio.services.ai_assistant import AI_CIRCUIT_BREAKER_KEY
 
     cache.delete(AI_CIRCUIT_BREAKER_KEY)
