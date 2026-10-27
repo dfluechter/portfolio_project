@@ -1,0 +1,229 @@
+{
+  "files_audited": 43,
+  "fences_missing_lang": [
+    [
+      "docs/frontend.md",
+      27
+    ]
+  ],
+  "unclosed_fences": [],
+  "table_issues": [],
+  "deprecated_models": [
+    [
+      "docs/backlog.md",
+      {
+        "line": 516,
+        "model": "gemini-2.5-flash",
+        "context": "- **And** Anfragen an veraltete Modelle (z. B. `gemini-2.5-flash`), die für Neunutzer HTTP-404-Fehler erzeugen, sind vollständig abgelöst."
+      }
+    ],
+    [
+      "docs/adrs/007-rag-copilot-caching-guardrails.md",
+      {
+        "line": 33,
+        "model": "gemini-2.5-flash",
+        "context": "* **Strikte System-Instruktionen:** Google Gemini (`gemini-2.5-flash`) antwortet ausschließlich auf Basis der bereitgestellten Portfolio-Chunks und verweigert Off-Topic-Anfragen höflich."
+      }
+    ]
+  ],
+  "broken_path_refs": [
+    [
+      "docs/AGENTS.md",
+      {
+        "line": 65,
+        "ref": "core/settings_test.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/AGENTS.md",
+      {
+        "line": 72,
+        "ref": "portfolio/models.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/AGENTS.md",
+      {
+        "line": 87,
+        "ref": "portfolio/signals.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/architecture.md",
+      {
+        "line": 170,
+        "ref": "portfolio/signals.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/backlog.md",
+      {
+        "line": 242,
+        "ref": "core/settings.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/backlog.md",
+      {
+        "line": 256,
+        "ref": "portfolio/services/extractor.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/backlog.md",
+      {
+        "line": 266,
+        "ref": "portfolio/models.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/backlog.md",
+      {
+        "line": 341,
+        "ref": "portfolio/signals.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/deployment.md",
+      {
+        "line": 89,
+        "ref": "core/settings.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/glossary.md",
+      {
+        "line": 111,
+        "ref": "portfolio/services/retrieval.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/adrs/007-rag-copilot-caching-guardrails.md",
+      {
+        "line": 22,
+        "ref": "portfolio/services/chunking.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/adrs/007-rag-copilot-caching-guardrails.md",
+      {
+        "line": 24,
+        "ref": "portfolio/services/embeddings.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/adrs/007-rag-copilot-caching-guardrails.md",
+      {
+        "line": 25,
+        "ref": "portfolio/services/retrieval.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/adrs/007-rag-copilot-caching-guardrails.md",
+      {
+        "line": 28,
+        "ref": "portfolio/signals.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/specs/us-14-2-bulk-approve-reject.md",
+      {
+        "line": 192,
+        "ref": "portfolio/views.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/specs/us-14-2-bulk-approve-reject.md",
+      {
+        "line": 196,
+        "ref": "portfolio/admin.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/specs/us-14-2-bulk-approve-reject.md",
+      {
+        "line": 199,
+        "ref": "portfolio/tests/test_pending_bulk_operations.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/specs/us-15-1-conditional-caching.md",
+      {
+        "line": 38,
+        "ref": "portfolio/signals.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/specs/us-16-1-i18n-portfolio-and-copilot.md",
+      {
+        "line": 146,
+        "ref": "frontend/src/components/common/LanguageSwitcher.tsx",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/specs/us-16-1-i18n-portfolio-and-copilot.md",
+      {
+        "line": 152,
+        "ref": "portfolio/views.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/specs/us-3-2-root-cleanup-and-auth-harmonization.md",
+      {
+        "line": 28,
+        "ref": "core/settings.py",
+        "exists": false,
+        "resolved": null
+      }
+    ],
+    [
+      "docs/wiki/RAG-Portfolio-Copilot.md",
+      {
+        "line": 58,
+        "ref": "portfolio/signals.py",
+        "exists": false,
+        "resolved": null
+      }
+    ]
+  ]
+}

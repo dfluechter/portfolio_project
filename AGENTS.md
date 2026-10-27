@@ -13,4 +13,4 @@
   - Quelldateien verbleiben unverändert und unberührt am Ursprungsort.
 
 ### 2. Sprache
-- Siehe [.agents/rules/language.md](file:///d:/dev/portfolio_project/.agents/rules/language.md): Alle Antworten, Erklärungen und Gedankengänge sind auf Deutsch zu verfassen.
+- Siehe [.agents/rules/language.md](.agents/rules/language.md): Alle Antworten, Erklärungen und Gedankengänge sind auf Deutsch zu verfassen.

@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-5.2%2B-092E20?style=for-the-badge&logo=django&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-7.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Postgres](https://img.shields.io/badge/Neon_Postgres-pgvector-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Render](https://img.shields.io/badge/Render-Deployed-46E3B7?style=for-the-badge&logo=render&logoColor=white)
 
@@ -16,15 +16,15 @@ Cloud-native **Headless Django REST API** (Backend) und **React 19 Single Page A
 ---
 
 ## 📑 Inhaltsverzeichnis
-- [✨ Kernfunktionen & Architektur-Highlights](#-kernfunktionen--architektur-highlights)
-- [🛠 Tech Stack](#-tech-stack)
-- [📚 Technische Dokumentation & ADRs](#-technische-dokumentation--adrs)
-- [📦 Voraussetzungen](#-voraussetzungen)
-- [🚀 Lokales Setup](#-lokales-setup)
-- [🔒 Auth- & Sicherheitskonfiguration](#-auth---sicherheitskonfiguration)
-- [💻 Wichtige Befehle](#-wichtige-befehle)
-- [🧪 Test Coverage & Qualitätssicherung](#-test-coverage--qualitätssicherung)
-- [📁 Projektstruktur](#-projektstruktur)
+- [✨ Kernfunktionen & Architektur-Highlights](#kernfunktionen-architektur-highlights)
+- [🛠 Tech Stack](#tech-stack)
+- [📚 Technische Dokumentation & ADRs](#technische-dokumentation-adrs)
+- [📦 Voraussetzungen](#voraussetzungen)
+- [🚀 Lokales Setup](#lokales-setup)
+- [🔒 Auth- & Sicherheitskonfiguration](#auth--sicherheitskonfiguration)
+- [💻 Wichtige Befehle](#wichtige-befehle)
+- [🧪 Test Coverage & Qualitätssicherung](#test-coverage-qualitätssicherung)
+- [📁 Projektstruktur](#projektstruktur)
 
 ---
 
@@ -68,7 +68,7 @@ Cloud-native **Headless Django REST API** (Backend) und **React 19 Single Page A
 
 | Komponente | Technologie |
 |---|---|
-| **Frontend Framework** | React 19 + TypeScript 5.8 + Vite 8 (Rolldown) |
+| **Frontend Framework** | React 19 + TypeScript 7.x + Vite 8 (Rolldown) |
 | **Frontend Styling** | Tailwind CSS v4 (`@tailwindcss/vite`) + Framer Motion + Lucide React |
 | **Frontend Server-State** | TanStack Query v5 + Axios (Concurrency-Safe 401 Token-Refresh-Queue) |
 | **Backend Framework** | Django 5.2+ (Headless JSON API) |
@@ -162,7 +162,7 @@ npm run dev
 
 * **Custom User Model (`portfolio.User`)**: Die Anmeldung erfolgt ausschließlich über eine eindeutige E-Mail-Adresse (`email`, kein `username`-Feld).
 * **Geschlossene Registrierung**: Öffentliche Selbstregistrierung (`POST /api/auth/users/`) ist über `IsAdminUser` deaktiviert. Administratoren werden kontrolliert via `createsuperuser` angelegt.
-* **Single-User Passwort-Reset**: Passwort-Resets sind über das Login-Modal und die dedizierte Bestätigungsseite (`/password/reset/confirm/:uid/:token`) abgesichert.
+* **Single-User Passwort-Reset**: Passwort-Resets sind über das Login-Modal und die dedizierte Bestätigungsseite (`/password-reset/confirm/:uid/:token`) abgesichert.
 * **Session-Sync & Refresh-Queue**: Das Frontend erneuert abgelaufene Access-Tokens transparent im Hintergrund und loggt den Benutzer bei ungültigem Refresh-Token über das Event `auth:unauthorized` sauber aus.
 * **Strikter Quellordner-Schutz**: Der lokale Zertifikate-Quellordner (`CERTIFICATES_PATH`) ist gemäß [`AGENTS.md`](AGENTS.md) **strikt Read-Only** und wird niemals durch Import- oder Sync-Skripte verändert oder gelöscht.
 
@@ -193,7 +193,7 @@ uv run python manage.py collectstatic --noinput        # Statische Dateien samme
 npm run dev                                # Vite Dev-Server starten
 npm run build                              # TypeScript Check + Production-Build
 npm run lint                               # Oxlint Code-Analyse
-npx vitest run                             # Vitest Unit- & Komponententests (CI-Modus)
+npm run test                               # Vitest Unit- & Komponententests (CI-Modus)
 ```
 
 ---
@@ -203,7 +203,7 @@ npx vitest run                             # Vitest Unit- & Komponententests (CI
 Sowohl Backend als auch Frontend werden bei jedem Push und Pull Request automatisiert in GitHub Actions geprüft:
 
 * **Backend Coverage:** **$\ge$ 95%** (**314 Pytest-Tests**: Djoser Auth, JWT, DRF ViewSets, Models, Permissions, RAG Hybrid Retrieval & `pgvector`, Embeddings, Chunking, Signals, Track-Validierung, Icon-Service, OCR-Extractor & Presigned S3-Uploads)
-* **Frontend Tests:** **82 Vitest-Tests** via React Testing Library (Komponenten, Routing, Passwort-Reset-Flow, Review-Drawer & Track-Pflicht, Modal-A11y, Axios Refresh-Queue, Track-Icons & RAG Chat-Widget)
+* **Frontend Tests:** **117 Tests in 22 Dateien** via React Testing Library (Komponenten, Routing, Passwort-Reset-Flow, Review-Drawer & Track-Pflicht, Modal-A11y, Axios Refresh-Queue, Track-Icons & RAG Chat-Widget)
 
 ---
 

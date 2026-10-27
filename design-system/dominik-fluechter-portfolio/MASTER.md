@@ -8,7 +8,7 @@
 
 **Project:** Dominik Flüchter — Full-Stack Engineering & Cloud Architecture Portfolio
 **Aesthetic Direction:** Minimalism & Swiss Style ("Precision Systems Architecture")
-**Stack:** React 19 · TypeScript 5 · Tailwind CSS v4 · Framer Motion · TanStack Query v5
+**Stack:** React 19 · TypeScript 7.x · Tailwind CSS v4 · Framer Motion · TanStack Query v5
 **Accessibility Target:** WCAG 2.2 AA Compliant
 
 ---
