@@ -7,9 +7,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { LayoutDashboard, LogIn, LogOut, Menu, X } from 'lucide-react';
 import { PORTFOLIO_OWNER_NAME } from '../constants';
 
-const LOGO_SRC = import.meta.env.DEV
-  ? '/static/img/icons/logo_df_1.png'
-  : `${(import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')}/static/img/icons/logo_df_1.png`;
+const LOGO_SRC = '/static/img/icons/logo_df_1.png';
 
 export const Navbar: React.FC = () => {
   const { t } = useTranslation();

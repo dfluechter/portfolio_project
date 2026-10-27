@@ -7,9 +7,7 @@ import { CertificateManager } from '../components/dashboard/CertificateManager';
 import { PendingCertificateManager } from '../components/dashboard/PendingCertificateManager';
 import { ProjectManager } from '../components/dashboard/ProjectManager';
 
-const LOGO_SRC = import.meta.env.DEV
-  ? '/static/img/icons/logo_df_1.png'
-  : `${(import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')}/static/img/icons/logo_df_1.png`;
+const LOGO_SRC = '/static/img/icons/logo_df_1.png';
 
 export const DashboardPage: React.FC = () => {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -95,8 +93,8 @@ export const DashboardPage: React.FC = () => {
             role={statusMessage.type === 'error' ? 'alert' : 'status'}
             aria-atomic="true"
             className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between animate-in fade-in duration-200 ${statusMessage.type === 'success'
-                ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-                : 'bg-red-500/10 border border-red-500/30 text-red-400'
+              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+              : 'bg-red-500/10 border border-red-500/30 text-red-400'
               }`}
           >
             <span>{statusMessage.text}</span>
@@ -189,8 +187,8 @@ export const DashboardPage: React.FC = () => {
             aria-selected={activeTab === 'certificates'}
             onClick={() => setActiveTab('certificates')}
             className={`cursor-pointer min-h-[40px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-200 shrink-0 whitespace-nowrap border ${activeTab === 'certificates'
-                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+              ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
               }`}
           >
             <Award className="w-4 h-4" aria-hidden="true" />
@@ -202,8 +200,8 @@ export const DashboardPage: React.FC = () => {
             aria-selected={activeTab === 'projects'}
             onClick={() => setActiveTab('projects')}
             className={`cursor-pointer min-h-[40px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-200 shrink-0 whitespace-nowrap border ${activeTab === 'projects'
-                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+              ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
               }`}
           >
             <FolderGit2 className="w-4 h-4" aria-hidden="true" />
@@ -215,8 +213,8 @@ export const DashboardPage: React.FC = () => {
             aria-selected={activeTab === 'inbox'}
             onClick={() => setActiveTab('inbox')}
             className={`cursor-pointer min-h-[40px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-200 shrink-0 whitespace-nowrap border ${activeTab === 'inbox'
-                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+              ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
               }`}
           >
             <Inbox className="w-4 h-4" aria-hidden="true" />

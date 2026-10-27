@@ -49,6 +49,17 @@ if ! uv run python manage.py check; then
 fi
 log_success "Django System-Check erfolgreich bestanden."
 
+# 3b. React Frontend kompilieren (für integrierte Single-Domain SPA Auslieferung)
+if [ -d "../frontend" ]; then
+    log_info "Kompiliere React Frontend (npm run build)..."
+    if command -v npm >/dev/null 2>&1; then
+        (cd ../frontend && npm ci --legacy-peer-deps && npm run build)
+        log_success "React Frontend erfolgreich kompiliert."
+    elif [ -d "../frontend/dist" ]; then
+        log_info "npm nicht im PATH, verwende vorhandenes frontend/dist-Verzeichnis."
+    fi
+fi
+
 # 4. Statische Dateien kompilieren (WhiteNoise)
 log_info "Sammle statische Dateien (WhiteNoise collectstatic)..."
 if ! uv run python manage.py collectstatic --noinput; then

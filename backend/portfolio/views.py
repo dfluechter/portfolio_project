@@ -15,7 +15,8 @@ from django.http import (
     HttpResponseNotModified,
     JsonResponse,
 )
-from django.shortcuts import redirect
+from django.conf import settings
+from django.shortcuts import redirect, render
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
@@ -93,10 +94,19 @@ def _parse_bool_param(value: object) -> bool | None:
 
 def api_root_view(request: HttpRequest) -> HttpResponse:
     """
-    Einstiegspunkt für das Headless-Backend:
-    Leitet Browser auf Swagger-UI weiter oder liefert JSON-Metadaten.
+    Einstiegspunkt für das Portfolio-Projekt:
+    Liefert das React Frontend (index.html) aus, sofern SERVE_FRONTEND aktiv und vorhanden.
+    Fallback auf Swagger-UI für Browser ohne Frontend-Build
+    oder JSON-Metadaten für API-Clients.
     """
+    serve_frontend = getattr(settings, "SERVE_FRONTEND", True)
+    index_file = settings.BASE_DIR.parent / "frontend" / "dist" / "index.html"
     accept_header = request.headers.get("Accept", "")
+
+    if serve_frontend and index_file.exists():
+        if "text/html" in accept_header or "*/*" in accept_header:
+            return render(request, "index.html")
+
     if "text/html" in accept_header:
         return redirect("/api/docs/")
 
@@ -110,6 +120,9 @@ def api_root_view(request: HttpRequest) -> HttpResponse:
             "health_url": "/health_check",
         }
     )
+
+
+spa_index_view = api_root_view
 
 
 def health_check_view(request: HttpRequest) -> JsonResponse:

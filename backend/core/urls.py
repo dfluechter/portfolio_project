@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
@@ -32,7 +32,6 @@ router.register(
 )
 
 urlpatterns = [
-    path("", api_root_view, name="backend-root"),
     path("admin/", admin.site.urls),
     path("health_check", health_check_view, name="health_check"),
     path("api/ai/chat/", AIChatView.as_view(), name="ai-chat"),
@@ -52,7 +51,18 @@ urlpatterns = [
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
     ),
+    # React Frontend SPA (Startseite)
+    path("", api_root_view, name="backend-root"),
 ]
+
+if getattr(settings, "SERVE_FRONTEND", True):
+    urlpatterns.append(
+        re_path(
+            r"^(?!api/|admin/|static/|media/|health_check).*",
+            api_root_view,
+            name="spa-catchall",
+        )
+    )
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
