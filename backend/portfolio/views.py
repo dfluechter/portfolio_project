@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db import connection
 from django.db.models import Prefetch, ProtectedError, Q, QuerySet
@@ -15,7 +16,6 @@ from django.http import (
     HttpResponseNotModified,
     JsonResponse,
 )
-from django.conf import settings
 from django.shortcuts import redirect, render
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status, viewsets
@@ -103,9 +103,12 @@ def api_root_view(request: HttpRequest) -> HttpResponse:
     index_file = settings.BASE_DIR.parent / "frontend" / "dist" / "index.html"
     accept_header = request.headers.get("Accept", "")
 
-    if serve_frontend and index_file.exists():
-        if "text/html" in accept_header or "*/*" in accept_header:
-            return render(request, "index.html")
+    if (
+        serve_frontend
+        and index_file.exists()
+        and ("text/html" in accept_header or "*/*" in accept_header)
+    ):
+        return render(request, "index.html")
 
     if "text/html" in accept_header:
         return redirect("/api/docs/")

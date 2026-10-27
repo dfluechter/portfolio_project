@@ -102,7 +102,7 @@ TEMPLATES = [
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
             BASE_DIR / "templates",
-            *( [FRONTEND_DIST_DIR] if FRONTEND_DIST_DIR.exists() else [] ),
+            *([FRONTEND_DIST_DIR] if FRONTEND_DIST_DIR.exists() else []),
         ],
         "APP_DIRS": True,
         "OPTIONS": {
@@ -201,16 +201,24 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
-    d for d in [
+    d
+    for d in [
         BASE_DIR / "static",
         BASE_DIR.parent / "static",
-        *( [FRONTEND_DIST_DIR / "assets"] if (FRONTEND_DIST_DIR / "assets").exists() else [] ),
-        *( [FRONTEND_DIST_DIR] if FRONTEND_DIST_DIR.exists() else [] ),
-    ] if d.exists()
+        *(
+            [FRONTEND_DIST_DIR / "assets"]
+            if (FRONTEND_DIST_DIR / "assets").exists()
+            else []
+        ),
+        *([FRONTEND_DIST_DIR] if FRONTEND_DIST_DIR.exists() else []),
+    ]
+    if d.exists()
 ]
 WHITENOISE_ALLOW_ALL_ORIGINS = True
 
 SERVE_FRONTEND = os.getenv("SERVE_FRONTEND", "True").lower() in ("true", "1")
+WHITENOISE_ROOT: str | None = None
+WHITENOISE_INDEX_FILE: bool = False
 if SERVE_FRONTEND and FRONTEND_DIST_DIR.exists():
     WHITENOISE_ROOT = str(FRONTEND_DIST_DIR)
     WHITENOISE_INDEX_FILE = True

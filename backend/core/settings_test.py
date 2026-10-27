@@ -1,3 +1,5 @@
+import os
+
 from .settings import *
 
 SECRET_KEY = "django-insecure-test-secret-key-at-least-32-chars-long-for-jwt"
@@ -13,7 +15,6 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
 
 USE_SUPABASE_S3 = False
-import os
 os.environ["GEMINI_VISION_ENABLED"] = "true"
 SERVE_FRONTEND = False
 WHITENOISE_ROOT = None
