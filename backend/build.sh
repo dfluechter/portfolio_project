@@ -1,32 +1,89 @@
 #!/usr/bin/env bash
-set -o errexit
-set -o nounset
-set -o pipefail
+set -euo pipefail
 
-# Sicherstellen, dass uv verfügbar und lauffähig ist
+# ==============================================================================
+# Render Production Build & Deployment Script
+# Führt Dependency-Installation, Django-Checks, Collectstatic,
+# Datenbank-Migrationen und RAG-Initialisierung mit strukturiertem Error-Handling aus.
+# ==============================================================================
+
+log_info() {
+    echo -e "\n\033[1;34m==>\033[0m \033[1m$1\033[0m"
+}
+
+log_success() {
+    echo -e "\033[1;32m✓\033[0m $1"
+}
+
+log_error() {
+    echo -e "\033[1;31m✖ FEHLER:\033[0m $1" >&2
+}
+
+# Trap für unerwartete Fehler-Abbrüche
+trap 'log_error "build.sh ist unerwartet in Zeile $LINENO mit Exit-Code $? abgebrochen."' ERR
+
+# 1. Sicherstellen, dass uv verfügbar und lauffähig ist
 if ! command -v uv >/dev/null 2>&1 || ! uv --version >/dev/null 2>&1; then
-    echo "==> uv ist nicht im PATH verfügbar. Installiere Astral uv..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    log_info "uv ist nicht im PATH verfügbar. Installiere Astral uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh || {
+        log_error "Installation von Astral uv fehlgeschlagen!"
+        exit 1
+    }
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 fi
+log_success "uv Version: $(uv --version)"
 
-echo "==> Installiere Produktionsabhängigkeiten via uv..."
-uv sync --frozen --no-dev
+# 2. Produktionsabhängigkeiten via uv installieren
+log_info "Installiere Produktionsabhängigkeiten via uv..."
+if ! uv sync --frozen --no-dev; then
+    log_error "'uv sync --frozen --no-dev' fehlgeschlagen! Bitte uv.lock und pyproject.toml prüfen."
+    exit 1
+fi
+log_success "Produktionsabhängigkeiten erfolgreich synchronisiert."
 
-echo "==> Prüfe Django-Systemkonfiguration..."
-uv run python manage.py check
+# 3. Django System-Checks durchführen
+log_info "Prüfe Django-Systemkonfiguration (manage.py check)..."
+if ! uv run python manage.py check; then
+    log_error "Django System-Check fehlgeschlagen! Bitte Settings, Apps und Umgebungsvariablen prüfen."
+    exit 1
+fi
+log_success "Django System-Check erfolgreich bestanden."
 
-echo "==> Sammle statische Dateien (WhiteNoise)..."
-uv run python manage.py collectstatic --noinput
+# 4. Statische Dateien kompilieren (WhiteNoise)
+log_info "Sammle statische Dateien (WhiteNoise collectstatic)..."
+if ! uv run python manage.py collectstatic --noinput; then
+    log_error "Kompilierung der statischen Dateien ('collectstatic') fehlgeschlagen!"
+    log_error "Mögliche Ursachen: Fehlendes STATIC_ROOT, ungültige Dateiberechtigungen oder Syntaxfehler im Manifest-Speicher."
+    exit 1
+fi
+log_success "Statische Dateien erfolgreich gesammelt."
 
-# Für Schema-Migrationen DIRECT_DATABASE_URL priorisieren (PgBouncer-Bypass)
+# 5. Datenbank-Migrationen ausführen
+# Für Schema-Migrationen DIRECT_DATABASE_URL priorisieren (PgBouncer Transaction-Bypass)
 if [ -n "${DIRECT_DATABASE_URL:-}" ]; then
-    echo "==> Führe Migrationen mit direkter Neon-Verbindung (DIRECT_DATABASE_URL) aus..."
-    RUNNING_MIGRATION=1 uv run python manage.py migrate --noinput
+    log_info "Führe Migrationen mit direkter Neon-Verbindung (DIRECT_DATABASE_URL) aus..."
+    if ! RUNNING_MIGRATION=1 uv run python manage.py migrate --noinput; then
+        log_error "Datenbank-Migration via DIRECT_DATABASE_URL fehlgeschlagen!"
+        log_error "Mögliche Ursachen: Unerreichbare Direct-PostgreSQL-Instanz, ungültige Zugangsdaten oder blockierende Sperren."
+        exit 1
+    fi
 else
-    echo "==> Führe Migrationen mit Standard-Verbindung aus..."
-    uv run python manage.py migrate --noinput
+    log_info "Führe Migrationen mit Standard-Verbindung (DATABASE_URL) aus..."
+    if ! uv run python manage.py migrate --noinput; then
+        log_error "Datenbank-Migration via Standard-Datenbankverbindung fehlgeschlagen!"
+        log_error "Mögliche Ursachen: DATABASE_URL nicht erreichbar oder blockierende PgBouncer-Transaktionssperren."
+        exit 1
+    fi
+fi
+log_success "Datenbank-Migrationen erfolgreich abgeschlossen."
+
+# 6. Synchronisiere RAG Knowledge Chunks
+log_info "Synchronisiere RAG Knowledge Chunks (Initial- & Delta-Indizierung)..."
+if ! uv run python manage.py index_rag_chunks; then
+    log_error "RAG Chunk-Indizierung ('index_rag_chunks') fehlgeschlagen!"
+    log_error "Deployment wird fortgesetzt, KI-Copilot-Chunks sollten jedoch nach dem Start manuell reindiziert werden."
+else
+    log_success "RAG Knowledge Chunks erfolgreich synchronisiert."
 fi
 
-echo "==> Synchronisiere RAG Knowledge Chunks (Initial- & Delta-Indizierung)..."
-uv run python manage.py index_rag_chunks
+log_success "Backend-Build erfolgreich abgeschlossen! Bereit für Gunicorn-Start."

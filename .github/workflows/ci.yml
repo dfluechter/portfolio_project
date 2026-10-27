@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Code auschecken (mit vollständiger Git-Historie)
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -32,7 +32,7 @@ jobs:
 
   # --- JOB 2: Backend-CI (Python 3.13 + uv + Pytest + Ruff + MyPy) ---
   backend-ci:
-    name: Backend CI (Python & Pytest)
+    name: Backend CI (Python, Lint, Types & Pytest)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,10 +40,10 @@ jobs:
 
     steps:
       - name: Code auschecken
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Python 3.13 einrichten
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
@@ -65,16 +65,49 @@ jobs:
       - name: Statische Typprüfung (MyPy)
         run: uv run mypy .
 
-      - name: Backend-Tests mit Coverage-Gate ausführen (Pytest >= 95%)
-        run: uv run pytest --cov=portfolio --cov-report=xml --cov-fail-under=95
+      - name: Backend API-Tests mit JUnit-Reporting & Coverage-Gate (>= 95%)
+        id: run-backend-tests
+        run: |
+          mkdir -p test-results
+          uv run pytest \
+            --cov=portfolio \
+            --cov-report=xml:test-results/coverage.xml \
+            --cov-report=term \
+            --junitxml=test-results/pytest-junit.xml \
+            --cov-fail-under=95 2>&1 | tee test-results/pytest-run.log
         env:
+          PORTFOLIO_OWNER_EMAIL: "test@example.com"
+          PORTFOLIO_OWNER_NAME: "Dominik Flüchter"
+          FRONTEND_DOMAIN: "http://localhost:5173"
+          SITE_NAME: "Dominik Flüchter Portfolio"
           SECRET_KEY: "django-insecure-ci-test-key-for-jwt-signing-github-actions"
           USE_SUPABASE_S3: "False"
           GEMINI_API_KEY: "mock-gemini-key-for-ci-runs"
+          GEMINI_AI_ENABLED: "False"
+          DAILY_TOKEN_LIMIT: "50000"
+          MAX_DAILY_AI_REQUESTS: "100"
+          DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+          CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000"
 
-  # --- JOB 3: Frontend-CI (Node.js 20 + Oxlint + Vitest + Vite Build) ---
+      - name: Backend Testberichte & Coverage hochladen (JUnit XML & Cobertura XML)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: backend/test-results/
+          retention-days: 14
+
+      - name: Backend Fehler-Log archivieren bei Testfehlschlag
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: backend-failure-tracebacks
+          path: backend/test-results/pytest-run.log
+          retention-days: 7
+
+  # --- JOB 3: Frontend-CI (Node.js 22 + Oxlint + Vitest + Vite Build) ---
   frontend-ci:
-    name: Frontend CI (TypeScript, Lint, Tests & Build)
+    name: Frontend CI (TypeScript, Lint, Vitest & Build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -82,10 +115,10 @@ jobs:
 
     steps:
       - name: Code auschecken
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Node.js 22 einrichten (LTS)
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
@@ -97,8 +130,27 @@ jobs:
       - name: Frontend-Linter ausführen (Oxlint)
         run: npm run lint
 
-      - name: Vitest Komponententests ausführen
-        run: npm run test
+      - name: Vitest Komponententests mit JUnit-Reporting ausführen
+        id: run-frontend-tests
+        run: |
+          mkdir -p test-results
+          npm run test:run -- --reporter=default --reporter=junit --outputFile=test-results/vitest-junit.xml 2>&1 | tee test-results/vitest-run.log
+
+      - name: Frontend Testberichte hochladen (JUnit XML)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results
+          path: frontend/test-results/
+          retention-days: 14
+
+      - name: Frontend Fehler-Log archivieren bei Testfehlschlag
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: frontend-failure-tracebacks
+          path: frontend/test-results/vitest-run.log
+          retention-days: 7
 
       - name: TypeScript-Typen & Vite-Produktions-Build prüfen
         run: npm run build
@@ -114,10 +166,10 @@ jobs:
 
     steps:
       - name: Code auschecken
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Python 3.13 einrichten
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
@@ -136,16 +188,22 @@ jobs:
           SECRET_KEY: "django-insecure-ci-production-check-secret-key"
           DEBUG: "False"
           ALLOWED_HOSTS: "localhost,127.0.0.1"
+          DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+          PORTFOLIO_OWNER_EMAIL: "test@example.com"
+          FRONTEND_DOMAIN: "localhost:3000"
+          SITE_NAME: "Dominik Flüchter Portfolio"
 
       - name: Ausstehende Schema-Migrationen prüfen (makemigrations check)
         run: uv run python manage.py makemigrations --check --dry-run
         env:
           SECRET_KEY: "django-insecure-ci-production-check-secret-key"
+          DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
 
       - name: Statische Dateien kompilieren (collectstatic)
         run: uv run python manage.py collectstatic --noinput
         env:
           SECRET_KEY: "django-insecure-ci-production-check-secret-key"
+          DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
 
   # --- JOB 5: Deploy (Zero-Downtime Server Deployment auf Render) ---
   deploy:
