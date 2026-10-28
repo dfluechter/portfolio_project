@@ -395,11 +395,11 @@ export const CertificatesSection: React.FC = () => {
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                     {singleActiveTrack
-                      ? `${t('certificates.learningPath', 'Lernpfad')}: ${singleActiveTrack.name}`
+                      ? `${t('certificates.learningPath', 'Lernpfad:')} ${singleActiveTrack.name}`
                       : `${t('certificates.selectedPaths', 'Ausgewählte Lernpfade')} (${selectedTrackIds.length}): ${activeTrackNames.join(', ')}`}
                   </h3>
                   <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 px-2.5 py-0.5 rounded-full">
-                    {filteredCertificates.length} {t('certificates.certificatesCount', 'Zertifikat(e)')}
+                    {t('certificates.certificatesCount', { count: filteredCertificates.length, defaultValue: `${filteredCertificates.length} Zertifikat(e)` })}
                   </span>
                 </div>
                 {singleActiveTrack?.description && (
