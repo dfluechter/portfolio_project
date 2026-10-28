@@ -44,7 +44,7 @@ Befolge für deinen PR diese Schritte:
 
 ## 💻 Lokales Setup für Entwickler
 
-Um die Entwicklungsumgebung lokal aufzusetzen, benötigst du **Python 3.13+**, den Paketmanager **[uv](https://docs.astral.sh/uv/)** sowie **Node.js 20+** (inklusive npm).
+Um die Entwicklungsumgebung lokal aufzusetzen, benötigst du **Python 3.13+**, den Paketmanager **[uv](https://docs.astral.sh/uv/)** sowie **Node.js 22+ (LTS)** (inklusive npm).
 
 ### 1. Repository vorbereiten
 ```bash

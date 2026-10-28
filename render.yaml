@@ -37,7 +37,7 @@ services:
       - key: UV_VERSION
         value: "0.5.29"
       - key: NODE_VERSION
-        value: "20.18.0"
+        value: "22.14.0"
       - key: DEBUG
         value: "False"
       - key: SECRET_KEY
@@ -118,7 +118,7 @@ services:
     runtime: static
     autoDeployTrigger: off
     rootDir: frontend
-    buildCommand: npm ci --legacy-peer-deps && npm run build
+    buildCommand: npm ci --include=optional --legacy-peer-deps && npm run build
     staticPublishPath: dist
     buildFilter:
       paths:
@@ -132,5 +132,7 @@ services:
         source: /*
         destination: /index.html
     envVars:
+      - key: NODE_VERSION
+        value: "22.14.0"
       - key: VITE_API_URL
         value: https://portfolio-backend.onrender.com

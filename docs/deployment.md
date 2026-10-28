@@ -55,7 +55,7 @@ services:
     runtime: static
     autoDeployTrigger: off
     rootDir: frontend
-    buildCommand: npm ci --legacy-peer-deps && npm run build
+    buildCommand: npm ci --include=optional --legacy-peer-deps && npm run build
     staticPublishPath: dist
     routes:
       - type: rewrite
