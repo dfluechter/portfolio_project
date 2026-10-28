@@ -96,11 +96,15 @@ def api_root_view(request: HttpRequest) -> HttpResponse:
     """
     Einstiegspunkt für das Portfolio-Projekt:
     Liefert das React Frontend (index.html) aus, sofern SERVE_FRONTEND aktiv und vorhanden.
-    Fallback auf Swagger-UI für Browser ohne Frontend-Build
-    oder JSON-Metadaten für API-Clients.
+    Fallback auf Swagger-UI für API-Dokumentation oder JSON-Metadaten für API-Clients.
     """
     serve_frontend = getattr(settings, "SERVE_FRONTEND", True)
     index_file = settings.BASE_DIR.parent / "frontend" / "dist" / "index.html"
+    if not index_file.exists():
+        static_index = Path(settings.STATIC_ROOT) / "index.html"
+        if static_index.exists():
+            index_file = static_index
+
     accept_header = request.headers.get("Accept", "")
 
     if (
@@ -108,7 +112,15 @@ def api_root_view(request: HttpRequest) -> HttpResponse:
         and index_file.exists()
         and ("text/html" in accept_header or "*/*" in accept_header)
     ):
-        return render(request, "index.html")
+        try:
+            response = HttpResponse(
+                index_file.read_text(encoding="utf-8"),
+                content_type="text/html; charset=utf-8",
+            )
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            return response
+        except Exception:
+            logger.exception("Fehler beim Lesen der React Frontend index.html")
 
     if "text/html" in accept_header:
         return redirect("/api/docs/")

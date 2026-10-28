@@ -13,7 +13,7 @@ export const PortfolioPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white transition-colors duration-300">
       <Navbar />
-      <main>
+      <main className="relative z-10 bg-white dark:bg-slate-950 shadow-2xl">
         <Hero />
         <SkillsSection />
         <ProjectsSection />

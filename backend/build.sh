@@ -33,6 +33,25 @@ if ! command -v uv >/dev/null 2>&1 || ! uv --version >/dev/null 2>&1; then
 fi
 log_success "uv Version: $(uv --version)"
 
+# 1b. Sicherstellen, dass Node.js und npm verfügbar sind (für integrierte React SPA Auslieferung)
+if ! command -v npm >/dev/null 2>&1 || ! command -v node >/dev/null 2>&1; then
+    log_info "Node.js / npm nicht im PATH gefunden. Installiere Node.js LTS (v20)..."
+    NODE_VERSION="20.18.0"
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64) NODE_ARCH="x64" ;;
+        aarch64|arm64) NODE_ARCH="arm64" ;;
+        *) NODE_ARCH="x64" ;;
+    esac
+    mkdir -p "$HOME/.local/node"
+    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.gz" | tar -xz --strip-components=1 -C "$HOME/.local/node" || {
+        log_error "Installation von Node.js fehlgeschlagen!"
+        exit 1
+    }
+    export PATH="$HOME/.local/node/bin:$PATH"
+fi
+log_success "Node.js Version: $(node --version), npm Version: $(npm --version)"
+
 # 2. Produktionsabhängigkeiten via uv installieren
 log_info "Installiere Produktionsabhängigkeiten via uv..."
 if ! uv sync --frozen --no-dev; then
@@ -49,15 +68,17 @@ if ! uv run python manage.py check; then
 fi
 log_success "Django System-Check erfolgreich bestanden."
 
-# 3b. React Frontend kompilieren (für integrierte Single-Domain SPA Auslieferung)
+# 3b. React Frontend kompilieren (für integrierte Single-Domain SPA Auslieferung auf https://dfluechter.ipv64.de)
 if [ -d "../frontend" ]; then
     log_info "Kompiliere React Frontend (npm run build)..."
-    if command -v npm >/dev/null 2>&1; then
-        (cd ../frontend && npm ci --legacy-peer-deps && npm run build)
-        log_success "React Frontend erfolgreich kompiliert."
-    elif [ -d "../frontend/dist" ]; then
-        log_info "npm nicht im PATH, verwende vorhandenes frontend/dist-Verzeichnis."
-    fi
+    (cd ../frontend && npm ci --legacy-peer-deps && npm run build) || {
+        log_error "React Frontend-Build fehlgeschlagen! Bitte frontend Dependencies und Build-Skript prüfen."
+        exit 1
+    }
+    log_success "React Frontend erfolgreich kompiliert (frontend/dist/index.html bereitgestellt)."
+else
+    log_error "Verzeichnis ../frontend wurde nicht gefunden!"
+    exit 1
 fi
 
 # 4. Statische Dateien kompilieren (WhiteNoise)

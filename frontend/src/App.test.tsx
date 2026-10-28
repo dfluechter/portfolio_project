@@ -1,4 +1,4 @@
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 
@@ -16,11 +16,12 @@ describe('App Component', () => {
     await act(async () => {
       render(<App />);
     });
-    expect(screen.getByRole('link', { name: 'Über mich' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Skills' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Projekte' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Zertifikate' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Werdegang' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Kontakt' })).toBeInTheDocument();
+    const nav = screen.getByRole('navigation');
+    expect(within(nav).getByRole('link', { name: 'Über mich' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Skills' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Projekte' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Zertifikate' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Werdegang' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Kontakt' })).toBeInTheDocument();
   });
 });

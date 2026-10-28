@@ -13,7 +13,7 @@ const defaultProjects: Project[] = [
     title: 'Portfolio & Certificate Management Hub',
     description:
       'Enterprise-taugliches Portfolio-System mit Django 5.2, Neon PostgreSQL, Supabase S3 Media Storage und React/Vite Frontend.',
-    github_url: 'https://github.com/DominikFluechter/portfolio_project',
+    github_url: 'https://github.com/dfluechter/portfolio_project',
     live_url: 'https://dfluechter.onrender.com',
     created_at: '2026-01-15T12:00:00Z',
   },
@@ -22,7 +22,7 @@ const defaultProjects: Project[] = [
     title: 'Automated Certificate Scanner & Importer',
     description:
       'Intelligenter PDF- & Bild-Parser für Zertifikatsaussteller mit Cloudflare Rate-Limit-Handling und automatischer Metadatenextraktion.',
-    github_url: 'https://github.com/DominikFluechter',
+    github_url: 'https://github.com/dfluechter',
     created_at: '2026-02-10T14:30:00Z',
   },
   {
@@ -30,7 +30,7 @@ const defaultProjects: Project[] = [
     title: 'JWT Auth & RBAC Security Suite',
     description:
       'Sicherheitsarchitektur mit Djoser, SimpleJWT, HttpOnly Refresh Token Rotation und granularen Rollenrechten.',
-    github_url: 'https://github.com/DominikFluechter',
+    github_url: 'https://github.com/dfluechter',
     created_at: '2026-03-01T09:15:00Z',
   },
 ];

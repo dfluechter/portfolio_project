@@ -21,7 +21,7 @@ import * as MotionFooterModule from './motion-footer';
 describe('CinematicFooter Component', () => {
   let scrollToSpy: ReturnType<typeof vi.spyOn>;
   let contextSpy: ReturnType<typeof vi.spyOn>;
-  let revertMock: ReturnType<typeof vi.fn>;
+  let revertMock: any;
   let toSpy: ReturnType<typeof vi.spyOn>;
   let fromToSpy: ReturnType<typeof vi.spyOn>;
   const originalContext = gsap.context.bind(gsap);
@@ -69,11 +69,11 @@ describe('CinematicFooter Component', () => {
     it('renders the main heading and giant brand background text', () => {
       render(<CinematicFooter />);
 
-      const heading = screen.getByRole('heading', { level: 2, name: /ready to begin\?/i });
+      const heading = screen.getByRole('heading', { level: 2, name: /ready to build something exceptional\?/i });
       expect(heading).toBeInTheDocument();
       expect(heading).toHaveClass('footer-text-glow');
 
-      const giantText = screen.getByText('SOBERS');
+      const giantText = screen.getByText('REACT 19');
       expect(giantText).toBeInTheDocument();
       expect(giantText).toHaveClass('footer-giant-bg-text');
     });
@@ -92,59 +92,59 @@ describe('CinematicFooter Component', () => {
     it('renders duplicated marquee items for infinite scrolling', () => {
       render(<CinematicFooter />);
 
-      const marqueeFirstItems = screen.getAllByText('Accountability Redefined');
+      const marqueeFirstItems = screen.getAllByText(/React 19 Engineering/i);
       expect(marqueeFirstItems.length).toBe(2);
 
-      const marqueeSecondItems = screen.getAllByText('Transparent Tracking');
+      const marqueeSecondItems = screen.getAllByText('Django 5 REST Core');
       expect(marqueeSecondItems.length).toBe(2);
 
-      const marqueeThirdItems = screen.getAllByText('12-Step Progress');
+      const marqueeThirdItems = screen.getAllByText('TypeScript & Tailwind CSS v4');
       expect(marqueeThirdItems.length).toBe(2);
 
-      const marqueeFourthItems = screen.getAllByText('Sponsor Connection');
+      const marqueeFourthItems = screen.getAllByText('Scalable Cloud Architecture');
       expect(marqueeFourthItems.length).toBe(2);
 
-      const marqueeFifthItems = screen.getAllByText('Absolute Privacy');
+      const marqueeFifthItems = screen.getAllByText('GSAP & Framer Motion');
       expect(marqueeFifthItems.length).toBe(2);
     });
 
-    it('renders primary app store call-to-actions', () => {
+    it('renders primary developer action links (GitHub & Contact)', () => {
       render(<CinematicFooter />);
 
-      const iosBtn = screen.getByRole('link', { name: /download ios/i });
-      expect(iosBtn).toBeInTheDocument();
-      expect(iosBtn).toHaveAttribute('href', '#');
-      expect(iosBtn).toHaveClass('footer-glass-pill');
+      const githubBtn = screen.getByRole('link', { name: /github profil & source/i });
+      expect(githubBtn).toBeInTheDocument();
+      expect(githubBtn).toHaveAttribute('href', 'https://github.com/dfluechter');
+      expect(githubBtn).toHaveClass('footer-glass-pill');
 
-      const androidBtn = screen.getByRole('link', { name: /download android/i });
-      expect(androidBtn).toBeInTheDocument();
-      expect(androidBtn).toHaveAttribute('href', '#');
-      expect(androidBtn).toHaveClass('footer-glass-pill');
+      const emailBtn = screen.getByRole('link', { name: /projekt anfragen \/ e-mail/i });
+      expect(emailBtn).toBeInTheDocument();
+      expect(emailBtn).toHaveAttribute('href', 'mailto:dominik.fluechter@googlemail.com');
+      expect(emailBtn).toHaveClass('footer-glass-pill');
     });
 
-    it('renders secondary policy and support navigation links', () => {
+    it('renders secondary section navigation links', () => {
       render(<CinematicFooter />);
 
-      const privacyLink = screen.getByRole('link', { name: /privacy policy/i });
-      expect(privacyLink).toBeInTheDocument();
-      expect(privacyLink).toHaveAttribute('href', '#');
+      const projectsLink = screen.getByRole('link', { name: /projekte/i });
+      expect(projectsLink).toBeInTheDocument();
+      expect(projectsLink).toHaveAttribute('href', '#projects');
 
-      const termsLink = screen.getByRole('link', { name: /terms of service/i });
-      expect(termsLink).toBeInTheDocument();
-      expect(termsLink).toHaveAttribute('href', '#');
+      const skillsLink = screen.getByRole('link', { name: /fähigkeiten & tech-stack/i });
+      expect(skillsLink).toBeInTheDocument();
+      expect(skillsLink).toHaveAttribute('href', '#skills');
 
-      const supportLink = screen.getByRole('link', { name: /support/i });
-      expect(supportLink).toBeInTheDocument();
-      expect(supportLink).toHaveAttribute('href', '#');
+      const certsLink = screen.getByRole('link', { name: /zertifikate/i });
+      expect(certsLink).toBeInTheDocument();
+      expect(certsLink).toHaveAttribute('href', '#certificates');
     });
 
     it('renders bottom credits, brand badge and copyright notice', () => {
       render(<CinematicFooter />);
 
-      expect(screen.getByText(/© 2026 Volvox\. All rights reserved\./i)).toBeInTheDocument();
+      expect(screen.getByText(/© 2026 Dominik Flüchter\. All rights reserved\./i)).toBeInTheDocument();
       expect(screen.getByText(/crafted with/i)).toBeInTheDocument();
       expect(screen.getByText('❤')).toHaveClass('animate-footer-heartbeat');
-      expect(screen.getAllByText('Volvox').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Dominik Flüchter').length).toBeGreaterThanOrEqual(1);
     });
 
     it('injects inline theme-adaptive stylesheet with keyframe animations', () => {
@@ -303,14 +303,14 @@ describe('CinematicFooter Component', () => {
       expect(screen.getByRole('contentinfo')).toBeInTheDocument();
       const heading = screen.getByRole('heading', { level: 2 });
       expect(heading).toBeInTheDocument();
-      expect(heading).toHaveTextContent('Ready to begin?');
+      expect(heading).toHaveTextContent(/Ready to build something exceptional\?/i);
     });
 
     it('provides keyboard-navigable links with discernible text content', () => {
       render(<CinematicFooter />);
 
       const allLinks = screen.getAllByRole('link');
-      expect(allLinks.length).toBe(5);
+      expect(allLinks.length).toBe(6);
 
       for (const link of allLinks) {
         expect(link).toHaveAttribute('href');

@@ -85,7 +85,7 @@ export const ContactSection: React.FC = () => {
             </div>
 
             <a
-              href="https://github.com/DominikFluechter"
+              href="https://github.com/dfluechter"
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-center justify-between gap-4 p-6 hover:bg-slate-50/80 dark:hover:bg-slate-900 transition-colors"
@@ -101,7 +101,7 @@ export const ContactSection: React.FC = () => {
                     GitHub-Profil
                   </h3>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    github.com/DominikFluechter
+                    github.com/dfluechter
                   </p>
                 </div>
               </div>
