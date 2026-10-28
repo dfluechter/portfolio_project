@@ -16,7 +16,7 @@ from django.http import (
     HttpResponseNotModified,
     JsonResponse,
 )
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
