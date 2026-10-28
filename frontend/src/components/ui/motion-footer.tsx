@@ -259,19 +259,20 @@ export function CinematicFooter({
   copyrightOwner,
   creatorName,
 }: CinematicFooterProps) {
+  const { t } = useTranslation();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const giantTextRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const linksRef = useRef<HTMLDivElement>(null);
 
   const resolvedGiantText = giantText || brandText || "PORTFOLIO";
-  const resolvedHeading = heading || headline || "Let's build something exceptional";
+  const resolvedHeading = heading || headline || t("footer.heading", "Let's build something exceptional");
   const resolvedBrandOwner = copyrightOwner || brandName || creatorName || "Dominik Flüchter";
   const resolvedMarqueeList = marqueeItems && marqueeItems.length > 0 ? marqueeItems : DEFAULT_MARQUEE;
 
   const defaultCtaButtons: CtaButton[] = [
     {
-      label: "E-Mail schreiben",
+      label: t("footer.writeEmail", "E-Mail schreiben"),
       href: "mailto:dominik.fluechter@googlemail.com",
       icon: (
         <svg className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,7 +281,7 @@ export function CinematicFooter({
       ),
     },
     {
-      label: "GitHub Profil",
+      label: t("footer.githubProfile", "GitHub Profil"),
       href: "https://github.com/dfluechter",
       external: true,
       icon: (
@@ -292,10 +293,10 @@ export function CinematicFooter({
   ];
 
   const defaultSecondaryLinks: SecondaryLink[] = [
-    { label: "Projekte", href: "#projects" },
-    { label: "Skills", href: "#skills" },
-    { label: "Zertifikate", href: "#certificates" },
-    { label: "Kontakt", href: "#contact" },
+    { label: t("footer.projects", "Projekte"), href: "#projects" },
+    { label: t("footer.skills", "Skills"), href: "#skills" },
+    { label: t("footer.certificates", "Zertifikate"), href: "#certificates" },
+    { label: t("footer.contact", "Kontakt"), href: "#contact" },
   ];
 
   const resolvedCtaButtons = ctaButtons || defaultCtaButtons;
@@ -454,14 +455,14 @@ export function CinematicFooter({
             
             {/* Copyright */}
             <div className="text-muted-foreground text-[10px] md:text-xs font-semibold tracking-widest uppercase order-2 md:order-1">
-              © {copyrightYear} {resolvedBrandOwner}. All rights reserved.
+              © {copyrightYear} {resolvedBrandOwner}. {t("footer.allRightsReserved", "All rights reserved.")}
             </div>
 
             {/* "Crafted with Love" Badge */}
             <div className="footer-glass-pill px-6 py-2.5 rounded-full flex items-center gap-2 order-1 md:order-2 cursor-default border-border/50">
-              <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">Crafted with</span>
+              <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">{t("footer.craftedWith", "Crafted with")}</span>
               <span className="animate-footer-heartbeat text-sm md:text-base text-destructive">❤</span>
-              <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">by</span>
+              <span className="text-muted-foreground text-[10px] md:text-xs font-bold uppercase tracking-widest">{t("footer.by", "by")}</span>
               <span className="text-foreground font-black text-xs md:text-sm tracking-normal ml-1">{resolvedBrandOwner}</span>
             </div>
 
@@ -469,7 +470,7 @@ export function CinematicFooter({
             <MagneticButton
               as="button"
               onClick={scrollToTop}
-              aria-label="Nach oben scrollen"
+              aria-label={t("footer.scrollToTop", "Nach oben scrollen")}
               className="w-12 h-12 rounded-full footer-glass-pill flex items-center justify-center text-muted-foreground hover:text-foreground group order-3"
             >
               <svg className="w-5 h-5 transform group-hover:-translate-y-1.5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

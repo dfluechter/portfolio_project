@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FC } from 'react';
 import {
   Award,
@@ -93,20 +93,8 @@ const buildChatHistory = (
     }));
 };
 
-const WELCOME_MESSAGE: ChatMessage = {
-  id: 'welcome',
-  role: 'model',
-  text: 'Hallo! Ich bin Dominiks Portfolio-Copilot. Frag mich gerne zu seinen Projekten, seinem Tech-Stack (Django 5, React 19, Cloud) oder verifizierten Zertifikaten.',
-  timestamp: formatChatTimestamp(),
-  sources: ["Dominik's Portfolio Knowledge Base"],
-};
-
-const SUGGESTED_PROMPTS: readonly string[] = [
-  '🎯 Welche Top-Skills hat Dominik?',
-  '🚀 Zeige mir seine Highlight-Projekte',
-  '📜 Welche Zertifikate sind verifiziert?',
-  '💼 Welchen beruflichen Werdegang hat er?',
-];
+const DEFAULT_WELCOME_DE =
+  'Hallo! Ich bin Dominiks Portfolio-Copilot. Frag mich gerne zu seinen Projekten, seinem Tech-Stack (Django 5, React 19, Cloud) oder verifizierten Zertifikaten.';
 
 interface SourceTypeConfig {
   label: string;
@@ -136,12 +124,14 @@ export const ChatSourceBadges: FC<ChatSourceBadgesProps> = ({
   sources,
   onSourceClick,
 }) => {
+  const { t } = useTranslation();
+
   if (!sources || sources.length === 0) return null;
 
   return (
     <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-1.5">
       <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-        Quellen:
+        {t('chat.sourcesLabel', 'Quellen:')}
       </span>
       {sources.map((source, idx) => {
         if (typeof source === 'string') {
@@ -166,8 +156,14 @@ export const ChatSourceBadges: FC<ChatSourceBadgesProps> = ({
             type="button"
             onClick={() => onSourceClick(source)}
             className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-50/80 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 text-[10px] font-medium transition-all hover:scale-105 active:scale-95 shadow-sm group/btn cursor-pointer"
-            title={`Zu "${source.title}" springen`}
-            aria-label={`Quelle anzeigen: ${source.title}`}
+            title={t('chat.jumpToTitle', {
+              title: source.title,
+              defaultValue: `Zu "${source.title}" springen`,
+            })}
+            aria-label={t('chat.showSourceAria', {
+              title: source.title,
+              defaultValue: `Quelle anzeigen: ${source.title}`,
+            })}
           >
             <IconComponent className={`w-2.5 h-2.5 ${iconClass} shrink-0`} />
             <span className="group-hover/btn:underline">{source.title}</span>
@@ -192,6 +188,7 @@ export const ChatMessageBubble: FC<ChatMessageBubbleProps> = ({
   onCopyText,
   onSourceClick,
 }) => {
+  const { t } = useTranslation();
   const isUser = message.role === 'user';
 
   return (
@@ -231,14 +228,14 @@ export const ChatMessageBubble: FC<ChatMessageBubbleProps> = ({
             <button
               type="button"
               onClick={() => onCopyText(message.id, message.text)}
-              title={copiedMessageId === message.id ? 'Kopiert!' : 'Antwort kopieren'}
-              aria-label="Antwort in die Zwischenablage kopieren"
+              title={copiedMessageId === message.id ? t('chat.copiedTitle', 'Kopiert!') : t('chat.copyReplyTitle', 'Antwort kopieren')}
+              aria-label={t('chat.copyAria', 'Antwort in die Zwischenablage kopieren')}
               className="opacity-0 group-hover/msg:opacity-100 focus:opacity-100 flex items-center gap-1 p-0.5 rounded hover:text-slate-700 dark:hover:text-slate-300 active:scale-95 transition-all duration-150"
             >
               {copiedMessageId === message.id ? (
                 <>
                   <Check className="w-3 h-3 text-emerald-500" />
-                  <span className="text-[9px] text-emerald-500 font-medium">Kopiert</span>
+                  <span className="text-[9px] text-emerald-500 font-medium">{t('chat.copiedFeedback', 'Kopiert')}</span>
                 </>
               ) : (
                 <Copy className="w-3 h-3" />
@@ -293,7 +290,35 @@ export const ChatThinkingIndicator: FC<ChatThinkingIndicatorProps> = ({
 export const PortfolioChatWidget: FC = () => {
   const { i18n, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
+
+  const welcomeText = t('chat.welcomeText', DEFAULT_WELCOME_DE);
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    {
+      id: 'welcome',
+      role: 'model',
+      text: DEFAULT_WELCOME_DE,
+      timestamp: formatChatTimestamp(),
+      sources: ["Dominik's Portfolio Knowledge Base"],
+    },
+  ]);
+
+  const displayedMessages = useMemo(
+    () =>
+      messages.map((m) => (m.id === 'welcome' ? { ...m, text: welcomeText } : m)),
+    [messages, welcomeText]
+  );
+
+  const suggestedPrompts = useMemo(
+    () => [
+      t('chat.prompt1', '🎯 Welche Top-Skills hat Dominik?'),
+      t('chat.prompt2', '🚀 Zeige mir seine Highlight-Projekte'),
+      t('chat.prompt3', '📜 Welche Zertifikate sind verifiziert?'),
+      t('chat.prompt4', '💼 Welchen beruflichen Werdegang hat er?'),
+    ],
+    [t]
+  );
+
   const [inputValue, setInputValue] = useState('');
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [isDisabled, setIsDisabled] = useState(false);
@@ -362,7 +387,10 @@ export const PortfolioChatWidget: FC = () => {
         {
           id: createChatMessageId('limit'),
           role: 'model',
-          text: 'Das Sitzungs-Limit für kostenfreie KI-Anfragen wurde erreicht. Zum Schutz vor Token-Überschreitungen wurde der Chat für diese Sitzung deaktiviert.',
+          text: t(
+            'chat.sessionLimitReached',
+            'Das Sitzungs-Limit für kostenfreie KI-Anfragen wurde erreicht. Zum Schutz vor Token-Überschreitungen wurde der Chat für diese Sitzung deaktiviert.'
+          ),
           timestamp: formatChatTimestamp(),
         },
       ]);
@@ -416,8 +444,14 @@ export const PortfolioChatWidget: FC = () => {
         role: 'model',
         text:
           status === 429
-            ? 'Das kostenfreie Anfrage-Limit wurde erreicht. Die KI-Komponente wurde zum Schutz vor Kosten deaktiviert.'
-            : 'Entschuldigung, der KI-Dienst ist gerade nicht erreichbar. Bitte versuche es später noch einmal.',
+            ? t(
+                'chat.rateLimitReached',
+                'Das kostenfreie Anfrage-Limit wurde erreicht. Die KI-Komponente wurde zum Schutz vor Kosten deaktiviert.'
+              )
+            : t(
+                'chat.serviceUnavailable',
+                'Entschuldigung, der KI-Dienst ist gerade nicht erreichbar. Bitte versuche es später noch einmal.'
+              ),
         timestamp: formatChatTimestamp(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -427,8 +461,11 @@ export const PortfolioChatWidget: FC = () => {
   const handleResetChat = () => {
     setMessages([
       {
-        ...WELCOME_MESSAGE,
+        id: 'welcome',
+        role: 'model',
+        text: welcomeText,
         timestamp: formatChatTimestamp(),
+        sources: ["Dominik's Portfolio Knowledge Base"],
       },
     ]);
   };
@@ -451,11 +488,11 @@ export const PortfolioChatWidget: FC = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold text-white tracking-tight">
-                    Portfolio KI-Assistent · Dominik&apos;s Copilot
+                    {t('chat.headerTitle', "Portfolio KI-Assistent · Dominik's Copilot")}
                   </h3>
                   {isDisabled ? (
                     <span className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                      Deaktiviert (Token-Schutz)
+                      {t('chat.disabledBadge', 'Deaktiviert (Token-Schutz)')}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
@@ -463,7 +500,7 @@ export const PortfolioChatWidget: FC = () => {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                       </span>
-                      Online
+                      {t('chat.onlineBadge', 'Online')}
                     </span>
                   )}
                 </div>
@@ -477,8 +514,8 @@ export const PortfolioChatWidget: FC = () => {
               <button
                 type="button"
                 onClick={handleResetChat}
-                title="Konversation zurücksetzen"
-                aria-label="Konversation zurücksetzen"
+                title={t('chat.resetAria', 'Konversation zurücksetzen')}
+                aria-label={t('chat.resetAria', 'Konversation zurücksetzen')}
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/60 active:scale-95 transition-all duration-150"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -486,8 +523,8 @@ export const PortfolioChatWidget: FC = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                title="Chat schließen"
-                aria-label="Chat schließen"
+                title={t('chat.closeAria', 'Chat schließen')}
+                aria-label={t('chat.closeAria', 'Chat schließen')}
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/60 active:scale-95 transition-all duration-150"
               >
                 <X className="w-4 h-4" />
@@ -501,7 +538,7 @@ export const PortfolioChatWidget: FC = () => {
             aria-live="polite"
             className="flex-1 overflow-y-auto p-4 space-y-4 text-xs bg-slate-50/40 dark:bg-slate-950/40 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800"
           >
-            {messages.map((msg) => (
+            {displayedMessages.map((msg) => (
               <ChatMessageBubble
                 key={msg.id}
                 message={msg}
@@ -513,7 +550,7 @@ export const PortfolioChatWidget: FC = () => {
 
             {/* Thinking Indicator */}
             {chatMutation.isPending && (
-              <ChatThinkingIndicator label="Analysiere Portfolio-Wissen..." />
+              <ChatThinkingIndicator label={t('chat.thinkingLabel', 'Analysiere Portfolio-Wissen...')} />
             )}
 
             <div ref={messagesEndRef} />
@@ -522,7 +559,7 @@ export const PortfolioChatWidget: FC = () => {
           {/* Quick Prompts */}
           {messages.length <= 2 && !isDisabled && (
             <div className="px-3.5 py-2 bg-white/95 dark:bg-slate-900/95 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
-              {SUGGESTED_PROMPTS.map((prompt) => (
+              {suggestedPrompts.map((prompt) => (
                 <button
                   key={prompt}
                   type="button"
@@ -564,7 +601,7 @@ export const PortfolioChatWidget: FC = () => {
             <button
               type="submit"
               disabled={!inputValue.trim() || chatMutation.isPending || isDisabled}
-              aria-label={t('chat.send')}
+              aria-label={t('chat.send', 'Senden')}
               className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white flex items-center justify-center active:scale-90 transition-all duration-150 shadow-md shadow-indigo-600/25 disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
             >
               <CornerDownLeft className="w-4 h-4" />
@@ -579,8 +616,8 @@ export const PortfolioChatWidget: FC = () => {
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label={
           isOpen
-            ? 'KI-Assistent schließen'
-            : 'Portfolio KI-Assistent öffnen – Frag die KI über dieses Portfolio'
+            ? t('chat.triggerCloseAria', 'KI-Assistent schließen')
+            : t('chat.triggerOpenAria', 'Portfolio KI-Assistent öffnen – Frag die KI über dieses Portfolio')
         }
         aria-expanded={isOpen}
         className="group relative flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer border border-white/10"
@@ -599,10 +636,10 @@ export const PortfolioChatWidget: FC = () => {
           )}
         </div>
         <span className="text-xs font-bold tracking-wide">
-          {isOpen ? 'Schließen' : 'Frag Dominiks KI'}
+          {isOpen ? t('chat.triggerCloseLabel', 'Schließen') : t('chat.triggerOpenLabel', 'Frag Dominiks KI')}
         </span>
         <span className="text-[10px] uppercase font-semibold bg-white/20 px-1.5 py-0.5 rounded-full tracking-wider">
-          KI-Chat
+          {t('chat.triggerBadge', 'KI-Chat')}
         </span>
       </button>
     </div>

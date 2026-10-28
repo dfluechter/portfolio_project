@@ -1,8 +1,10 @@
 import axios from 'axios';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useRequestPasswordReset } from '../hooks/usePortfolio';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -18,6 +20,7 @@ import {
 import { PORTFOLIO_OWNER_NAME } from '../constants';
 
 export const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -44,10 +47,13 @@ export const LoginPage: React.FC = () => {
       const res = await resetMutation.mutateAsync();
       setResetSuccess(
         res.detail ||
-          'Eine E-Mail mit dem Wiederherstellungslink wurde erfolgreich an die hinterlegte Inhaber-Adresse versendet!'
+          t(
+            'login.resetSuccessDefault',
+            'Eine E-Mail mit dem Wiederherstellungslink wurde erfolgreich an die hinterlegte Inhaber-Adresse versendet!'
+          )
       );
     } catch (err: unknown) {
-      let msg = 'Fehler beim Anfordern des Passwort-Resets.';
+      let msg = t('login.resetErrorDefault', 'Fehler beim Anfordern des Passwort-Resets.');
       if (axios.isAxiosError(err)) {
         msg = err.response?.data?.detail || msg;
       } else if (err instanceof Error) {
@@ -78,12 +84,12 @@ export const LoginPage: React.FC = () => {
         const detail =
           err.response?.data?.detail ||
           err.response?.data?.non_field_errors?.[0] ||
-          'Anmeldung fehlgeschlagen. Bitte prüfe E-Mail und Passwort.';
+          t('login.loginFailed', 'Anmeldung fehlgeschlagen. Bitte prüfe E-Mail und Passwort.');
         setError(detail);
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Ein unbekannter Fehler ist aufgetreten.');
+        setError(t('login.unknownError', 'Ein unbekannter Fehler ist aufgetreten.'));
       }
     } finally {
       setLoading(false);
@@ -97,17 +103,20 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 bg-architectural-grid text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white relative overflow-hidden">
       {/* Top Navigation */}
-      <header className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
+      <header className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between gap-4">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors duration-200 bg-slate-900/90 border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Zurück zum Portfolio
+          {t('login.backToPortfolio', 'Zurück zum Portfolio')}
         </Link>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300 text-xs font-mono">
-          <span className="w-2 h-2 rounded-full bg-emerald-400" aria-hidden="true" />
-          <span>SYS • ONLINE</span>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300 text-xs font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" aria-hidden="true" />
+            <span>SYS • ONLINE</span>
+          </div>
         </div>
       </header>
 
@@ -122,13 +131,13 @@ export const LoginPage: React.FC = () => {
 
             <div>
               <span className="block text-[10px] font-mono uppercase tracking-widest text-indigo-400 mb-1">
-                AUTH // SYSTEM ACCESS
+                {t('login.eyebrow', 'AUTH // SYSTEM ACCESS')}
               </span>
               <h2 className="text-2xl font-extrabold text-white tracking-tight">
-                Portfolio Admin Login
+                {t('login.heading', 'Portfolio Admin Login')}
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Authentifizierung via JWT & Django REST
+                {t('login.subheading', 'Authentifizierung via JWT & Django REST')}
               </p>
             </div>
           </div>
@@ -148,7 +157,7 @@ export const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div>
               <label htmlFor="login-email" className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                E-Mail-Adresse
+                {t('login.emailLabel', 'E-Mail-Adresse')}
               </label>
               <div className="relative flex items-center">
                 <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 pointer-events-none" aria-hidden="true" />
@@ -169,7 +178,7 @@ export const LoginPage: React.FC = () => {
 
             <div>
               <label htmlFor="login-password" className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Passwort
+                {t('login.passwordLabel', 'Passwort')}
               </label>
               <div className="relative flex items-center">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 pointer-events-none" aria-hidden="true" />
@@ -190,7 +199,7 @@ export const LoginPage: React.FC = () => {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="cursor-pointer absolute right-3 text-slate-500 hover:text-indigo-400 focus:outline-none focus:text-indigo-400 focus:ring-2 focus:ring-indigo-500/50 rounded p-1 transition-colors duration-200"
-                  aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                  aria-label={showPassword ? t('login.hidePassword', 'Passwort verbergen') : t('login.showPassword', 'Passwort anzeigen')}
                   aria-pressed={showPassword}
                 >
                   {showPassword ? (
@@ -204,7 +213,7 @@ export const LoginPage: React.FC = () => {
               {capsLockActive && (
                 <p role="status" className="text-[11px] text-amber-400 font-medium mt-1.5 flex items-center gap-1.5 animate-in fade-in">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                  <span>Feststelltaste (Caps Lock) ist aktiviert</span>
+                  <span>{t('login.capsLockWarning', 'Feststelltaste (Caps Lock) ist aktiviert')}</span>
                 </p>
               )}
             </div>
@@ -220,7 +229,7 @@ export const LoginPage: React.FC = () => {
                 }}
                 className="cursor-pointer text-xs text-indigo-400 hover:text-indigo-300 hover:underline transition-colors duration-200"
               >
-                Passwort zurücksetzen?
+                {t('login.forgotPassword', 'Passwort zurücksetzen?')}
               </button>
             </div>
 
@@ -232,10 +241,10 @@ export const LoginPage: React.FC = () => {
               {loading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Wird angemeldet...</span>
+                  <span>{t('login.loggingIn', 'Wird angemeldet...')}</span>
                 </>
               ) : (
-                <span>Sicher Einloggen</span>
+                <span>{t('login.submitBtn', 'Sicher Einloggen')}</span>
               )}
             </button>
           </form>
@@ -266,10 +275,10 @@ export const LoginPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 id="reset-modal-title" className="text-base font-bold text-white">
-                    Passwort zurücksetzen
+                    {t('login.resetModalTitle', 'Passwort zurücksetzen')}
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Sicheren Wiederherstellungs-Link anfordern
+                    {t('login.resetModalSub', 'Sicheren Wiederherstellungs-Link anfordern')}
                   </p>
                 </div>
               </div>
@@ -277,7 +286,7 @@ export const LoginPage: React.FC = () => {
                 type="button"
                 onClick={() => setShowResetModal(false)}
                 className="cursor-pointer text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors duration-200"
-                aria-label="Schließen"
+                aria-label={t('login.closeAria', 'Schließen')}
               >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -294,13 +303,14 @@ export const LoginPage: React.FC = () => {
                   onClick={() => setShowResetModal(false)}
                   className="cursor-pointer w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition-colors duration-200 shadow-sm"
                 >
-                  Verstanden & Schließen
+                  {t('login.closeSuccess', 'Verstanden & Schließen')}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleRequestReset} className="space-y-4">
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Ein Link zum Zurücksetzen deines Passworts wird direkt an die in der Server-Konfiguration hinterlegte Inhaber-Adresse (<code className="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">PORTFOLIO_OWNER_EMAIL</code>) versendet.
+                  {t('login.resetModalDesc', 'Ein Link zum Zurücksetzen deines Passworts wird direkt an die in der Server-Konfiguration hinterlegte Inhaber-Adresse')}{' '}
+                  (<code className="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">PORTFOLIO_OWNER_EMAIL</code>)
                 </p>
 
                 {resetError && (
@@ -321,10 +331,10 @@ export const LoginPage: React.FC = () => {
                     {resetMutation.isPending ? (
                       <>
                         <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Wird versendet...</span>
+                        <span>{t('login.sendingEmail', 'Wird versendet...')}</span>
                       </>
                     ) : (
-                      <span>E-Mail an Inhaber senden</span>
+                      <span>{t('login.sendEmailBtn', 'E-Mail an Inhaber senden')}</span>
                     )}
                   </button>
                   <button
@@ -332,7 +342,7 @@ export const LoginPage: React.FC = () => {
                     onClick={() => setShowResetModal(false)}
                     className="cursor-pointer py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition-colors duration-200"
                   >
-                    Abbrechen
+                    {t('login.cancelBtn', 'Abbrechen')}
                   </button>
                 </div>
               </form>
@@ -343,7 +353,7 @@ export const LoginPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center text-xs text-slate-500 font-mono">
-        &copy; {CURRENT_YEAR} {PORTFOLIO_OWNER_NAME} • All Rights Reserved
+        &copy; {CURRENT_YEAR} {PORTFOLIO_OWNER_NAME} • {t('footer.allRightsReserved', 'All Rights Reserved')}
       </footer>
     </div>
   );

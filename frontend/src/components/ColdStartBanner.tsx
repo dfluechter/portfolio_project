@@ -7,6 +7,7 @@ import {
   Server,
   X,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useColdStartTracker, type ColdStartOptions } from '../hooks/useColdStartTracker';
 
 export interface ColdStartBannerProps extends ColdStartOptions {
@@ -19,6 +20,7 @@ export const ColdStartBanner: React.FC<ColdStartBannerProps> = ({
   timeoutMs = 30000,
   onRetry,
 }) => {
+  const { t } = useTranslation();
   const { isColdStarting, isTimedOut, isSuccess, retry, dismiss } = useColdStartTracker({
     delayMs,
     timeoutMs,
@@ -78,17 +80,17 @@ export const ColdStartBanner: React.FC<ColdStartBannerProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
                   <span className="text-xs sm:text-sm font-semibold truncate">
                     {isTimedOut
-                      ? 'Verbindung dauert ungewöhnlich lange'
+                      ? t('coldStart.timeout', 'Verbindung dauert ungewöhnlich lange')
                       : isSuccess
-                      ? 'Server erfolgreich verbunden!'
-                      : 'Server wacht auf (Render Free-Tier)...'}
+                      ? t('coldStart.connected', 'Server erfolgreich verbunden!')
+                      : t('coldStart.wakingUp', 'Server wacht auf (Render Free-Tier)...')}
                   </span>
                   <span className="text-[11px] text-slate-300 dark:text-slate-400 hidden md:inline truncate">
                     {isTimedOut
-                      ? 'Der Server hat nach 30 Sekunden nicht geantwortet.'
+                      ? t('coldStart.timeoutDesc', 'Der Server hat nach 30 Sekunden nicht geantwortet.')
                       : isSuccess
-                      ? 'Alle Daten wurden erfolgreich geladen.'
-                      : 'Nach Inaktivität benötigt das Backend ca. 20–30s zum Starten.'}
+                      ? t('coldStart.connectedDesc', 'Alle Daten wurden erfolgreich geladen.')
+                      : t('coldStart.wakingUpDesc', 'Nach Inaktivität benötigt das Backend ca. 20–30s zum Starten.')}
                   </span>
                 </div>
               </div>
@@ -102,14 +104,14 @@ export const ColdStartBanner: React.FC<ColdStartBannerProps> = ({
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors shadow-sm"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    Erneut versuchen
+                    {t('coldStart.retry', 'Erneut versuchen')}
                   </button>
                 )}
 
                 <button
                   type="button"
                   onClick={dismiss}
-                  aria-label="Hinweis schließen"
+                  aria-label={t('coldStart.dismiss', 'Hinweis schließen')}
                   className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <X className="w-4 h-4" />
