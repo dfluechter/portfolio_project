@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, Award, Database, Layers, ShieldCheck } from 'lucide-react';
 import type { Variants } from 'framer-motion';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { HeroSearch } from './HeroSearch';
 import { ArchitectureTerminal } from './ArchitectureTerminal';
 import { HeroBanner } from './HeroBanner';
@@ -38,6 +39,7 @@ const techBadges = [
 ];
 
 export const Hero: React.FC = () => {
+  const { t } = useTranslation();
   const [showcaseMode, setShowcaseMode] = useState<'banner' | 'terminal'>('banner');
 
   return (
@@ -60,7 +62,7 @@ export const Hero: React.FC = () => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                <span>Full-Stack Developer & Software Engineer</span>
+                <span>{t('hero.statusBadge', 'Full-Stack Developer & Software Engineer')}</span>
               </div>
             </motion.div>
 
@@ -69,7 +71,7 @@ export const Hero: React.FC = () => {
               variants={itemVariants}
               className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.08]"
             >
-              Moderne Web-Architektur mit Django & React
+              {t('hero.title', 'Moderne Web-Architektur mit Django & React')}
             </motion.h1>
 
             {/* Subtitle: ruhig, diszipliniert, unter 80 Zeichen pro Zeile */}
@@ -77,8 +79,10 @@ export const Hero: React.FC = () => {
               variants={itemVariants}
               className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl"
             >
-              Entwicklung robuster Backend-Services und reaktiver Benutzeroberflächen.
-              Spezialisiert auf wartbare REST-APIs, strikte Typisierung und nachvollziehbare Testabdeckung.
+              {t(
+                'hero.subtitle',
+                'Entwicklung robuster Backend-Services und reaktiver Benutzeroberflächen. Spezialisiert auf wartbare REST-APIs, strikte Typisierung und nachvollziehbare Testabdeckung.'
+              )}
             </motion.p>
 
             {/* Zentrales Hero-Suchfeld als Command Center */}
@@ -92,7 +96,7 @@ export const Hero: React.FC = () => {
                 href="#projects"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition-colors shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
               >
-                <span>Projekte entdecken</span>
+                <span>{t('hero.exploreProjects', 'Projekte entdecken')}</span>
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </a>
               <a
@@ -100,7 +104,7 @@ export const Hero: React.FC = () => {
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 font-medium text-sm transition-colors shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
               >
                 <Award className="w-4 h-4 text-slate-500 dark:text-slate-400" aria-hidden="true" />
-                <span>Zertifikate einsehen</span>
+                <span>{t('hero.viewCertificates', 'Zertifikate einsehen')}</span>
               </a>
             </motion.div>
           </motion.div>
@@ -125,7 +129,7 @@ export const Hero: React.FC = () => {
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  Visualisierung
+                  {t('hero.showcaseVisual', 'Visualisierung')}
                 </button>
                 <button
                   type="button"
@@ -137,7 +141,7 @@ export const Hero: React.FC = () => {
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  Live-Terminal
+                  {t('hero.showcaseTerminal', 'Live-Terminal')}
                 </button>
               </div>
             </div>
@@ -153,7 +157,7 @@ export const Hero: React.FC = () => {
         {/* Technologien: ruhige Tag-Leiste ohne ALL-CAPS */}
         <div className="mt-14 pt-8 border-t border-slate-200 dark:border-slate-800">
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3">
-            Eingesetzte Kerntechnologien
+            {t('hero.coreTechHeading', 'Eingesetzte Kerntechnologien')}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             {techBadges.map((tech) => (
@@ -173,18 +177,21 @@ export const Hero: React.FC = () => {
           <div className="p-6 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
             <div className="flex items-center justify-between mb-2">
               <span className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                01 // Backend Core
+                {t('hero.architecture.card1.eyebrow', '01 // Backend Core')}
               </span>
               <Database className="w-4 h-4 text-slate-400 dark:text-slate-500" aria-hidden="true" />
             </div>
             <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2">
-              Cloud Native Backend
+              {t('hero.architecture.card1.title', 'Cloud Native Backend')}
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              Skalierbare REST-APIs mit Django 5.2, PostgreSQL auf Neon, Djoser JWT-Authentifizierung und Supabase S3 Storage.
+              {t(
+                'hero.architecture.card1.desc',
+                'Skalierbare REST-APIs mit Django 5.2, PostgreSQL auf Neon, Djoser JWT-Authentifizierung und Supabase S3 Storage.'
+              )}
             </p>
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-              Django 5.2, PostgreSQL, S3
+              {t('hero.architecture.card1.tag', 'Django 5.2, PostgreSQL, S3')}
             </div>
           </div>
 
@@ -192,18 +199,21 @@ export const Hero: React.FC = () => {
           <div className="p-6 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
             <div className="flex items-center justify-between mb-2">
               <span className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                02 // Reactive Client
+                {t('hero.architecture.card2.eyebrow', '02 // Reactive Client')}
               </span>
               <Layers className="w-4 h-4 text-slate-400 dark:text-slate-500" aria-hidden="true" />
             </div>
             <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2">
-              Modernes Frontend
+              {t('hero.architecture.card2.title', 'Modernes Frontend')}
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              Reaktionsschnelle Benutzeroberflächen mit React 19, Vite, TypeScript, Tailwind CSS und TanStack Query.
+              {t(
+                'hero.architecture.card2.desc',
+                'Reaktionsschnelle Benutzeroberflächen mit React 19, Vite, TypeScript, Tailwind CSS und TanStack Query.'
+              )}
             </p>
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-              React 19, TypeScript, Vite
+              {t('hero.architecture.card2.tag', 'React 19, TypeScript, Vite')}
             </div>
           </div>
 
@@ -211,18 +221,21 @@ export const Hero: React.FC = () => {
           <div className="p-6 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
             <div className="flex items-center justify-between mb-2">
               <span className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                03 // Quality & Security
+                {t('hero.architecture.card3.eyebrow', '03 // Quality & Security')}
               </span>
               <ShieldCheck className="w-4 h-4 text-slate-400 dark:text-slate-500" aria-hidden="true" />
             </div>
             <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2">
-              Qualität & Sicherheit
+              {t('hero.architecture.card3.title', 'Qualität & Sicherheit')}
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              Automatisierte Code-Reviews mit Ruff, strikte Typisierung mit Mypy, End-to-End und Unit-Testing mit Pytest und Vitest.
+              {t(
+                'hero.architecture.card3.desc',
+                'Automatisierte Code-Reviews mit Ruff, strikte Typisierung mit Mypy, End-to-End und Unit-Testing mit Pytest und Vitest.'
+              )}
             </p>
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-              Ruff, Mypy, Pytest ≥96%
+              {t('hero.architecture.card3.tag', 'Ruff, Mypy, Pytest ≥96%')}
             </div>
           </div>
         </div>

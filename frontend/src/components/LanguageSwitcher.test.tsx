@@ -8,29 +8,33 @@ describe('LanguageSwitcher', () => {
     await i18n.changeLanguage('de');
   });
 
-  it('renders DE and EN language buttons', () => {
+  it('renders select combobox element with accessible aria-label', () => {
     render(<LanguageSwitcher />);
-    expect(screen.getByRole('button', { name: 'DE' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'EN' })).toBeInTheDocument();
+    const select = screen.getByRole('combobox', { name: 'Sprachauswahl / Language Selection' });
+    expect(select).toBeInTheDocument();
   });
 
-  it('has DE marked as active initially when language is de', () => {
+  it('renders DE and EN options with country flag identifiers', () => {
     render(<LanguageSwitcher />);
-    const deBtn = screen.getByRole('button', { name: 'DE' });
-    const enBtn = screen.getByRole('button', { name: 'EN' });
-
-    expect(deBtn).toHaveAttribute('aria-pressed', 'true');
-    expect(enBtn).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('option', { name: /Deutsch \(DE\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /English \(EN\)/i })).toBeInTheDocument();
   });
 
-  it('switches to english on EN click and updates document.documentElement.lang', async () => {
+  it('has DE selected initially and displays German SVG flag', () => {
     render(<LanguageSwitcher />);
-    const enBtn = screen.getByRole('button', { name: 'EN' });
+    const select = screen.getByRole('combobox', { name: 'Sprachauswahl / Language Selection' }) as HTMLSelectElement;
+    expect(select.value).toBe('de');
+    expect(screen.getByTestId('flag-de')).toBeInTheDocument();
+  });
 
-    fireEvent.click(enBtn);
+  it('switches to english on select change and updates document.documentElement.lang and SVG flag', async () => {
+    render(<LanguageSwitcher />);
+    const select = screen.getByRole('combobox', { name: 'Sprachauswahl / Language Selection' });
+
+    fireEvent.change(select, { target: { value: 'en' } });
 
     expect(i18n.language).toBe('en');
     expect(document.documentElement.lang).toBe('en');
-    expect(enBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('flag-en')).toBeInTheDocument();
   });
 });

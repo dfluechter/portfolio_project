@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { usePublishedCertificates, useProjects, useSkills, useTimeline } from '../hooks/usePortfolio';
 import { usePortfolioSearch } from '../hooks/usePortfolioSearch';
 
@@ -22,6 +23,7 @@ interface SearchResultItem {
 }
 
 export const HeroSearch: React.FC = () => {
+  const { t } = useTranslation();
   const { searchTerm, setSearchTerm, clearSearch } = usePortfolioSearch();
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
@@ -91,15 +93,15 @@ export const HeroSearch: React.FC = () => {
     });
 
     // Timeline
-    timeline.forEach((t) => {
-      const matchTitle = t.title.toLowerCase().includes(query);
-      const matchOrg = t.organization.toLowerCase().includes(query);
+    timeline.forEach((entry) => {
+      const matchTitle = entry.title.toLowerCase().includes(query);
+      const matchOrg = entry.organization.toLowerCase().includes(query);
       if (matchTitle || matchOrg) {
         items.push({
-          id: `timeline-${t.id}`,
+          id: `timeline-${entry.id}`,
           category: 'timeline',
-          title: t.title,
-          subtitle: `${t.organization} (${t.entry_type_display || t.entry_type})`,
+          title: entry.title,
+          subtitle: `${entry.organization} (${entry.entry_type_display || entry.entry_type})`,
           targetSection: 'timeline',
         });
       }
@@ -162,13 +164,29 @@ export const HeroSearch: React.FC = () => {
   const getCategoryMeta = (category: SearchResultItem['category']) => {
     switch (category) {
       case 'project':
-        return { label: 'Projekt', icon: FolderGit2, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' };
+        return {
+          label: t('search.categories.project', 'Projekt'),
+          icon: FolderGit2,
+          color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10',
+        };
       case 'skill':
-        return { label: 'Skill', icon: Code2, color: 'text-sky-500 bg-sky-50 dark:bg-sky-500/10' };
+        return {
+          label: t('search.categories.skill', 'Skill'),
+          icon: Code2,
+          color: 'text-sky-500 bg-sky-50 dark:bg-sky-500/10',
+        };
       case 'certificate':
-        return { label: 'Zertifikat', icon: Award, color: 'text-violet-500 bg-violet-50 dark:bg-violet-500/10' };
+        return {
+          label: t('search.categories.certificate', 'Zertifikat'),
+          icon: Award,
+          color: 'text-violet-500 bg-violet-50 dark:bg-violet-500/10',
+        };
       case 'timeline':
-        return { label: 'Werdegang', icon: Briefcase, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' };
+        return {
+          label: t('search.categories.timeline', 'Werdegang'),
+          icon: Briefcase,
+          color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10',
+        };
     }
   };
 
@@ -188,8 +206,8 @@ export const HeroSearch: React.FC = () => {
               if (searchTerm.trim()) setIsOpen(true);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Portfolio durchsuchen (z.B. Django, React, S3, Docker)..."
-            aria-label="Portfolio durchsuchen"
+            placeholder={t('search.placeholder', 'Portfolio durchsuchen (z.B. Django, React, S3, Docker)...')}
+            aria-label={t('search.ariaLabel', 'Portfolio durchsuchen')}
             className="w-full bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
           />
 
@@ -200,7 +218,7 @@ export const HeroSearch: React.FC = () => {
                 clearSearch();
                 inputRef.current?.focus();
               }}
-              aria-label="Suchbegriff löschen"
+              aria-label={t('search.clearAria', 'Suchbegriff löschen')}
               className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mr-2 shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               <X className="w-4 h-4" aria-hidden="true" />
@@ -227,16 +245,18 @@ export const HeroSearch: React.FC = () => {
             {results.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-400 space-y-2">
                 <Sparkles className="w-5 h-5 mx-auto text-slate-400/80" aria-hidden="true" />
-                <p>Keine direkten Treffer für „{searchTerm}“ gefunden.</p>
+                <p>{t('search.noResults', { query: searchTerm, defaultValue: `Keine direkten Treffer für „${searchTerm}“ gefunden.` })}</p>
                 <p className="text-[11px] text-slate-500">
-                  Die Sektionen unten werden trotzdem weiterhin gefiltert.
+                  {t('search.noResultsSub', 'Die Sektionen unten werden trotzdem weiterhin gefiltert.')}
                 </p>
               </div>
             ) : (
               <div className="space-y-1">
                 <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                  <span>Suchergebnisse</span>
-                  <span className="font-mono text-indigo-500">{results.length} Treffer</span>
+                  <span>{t('search.resultsHeading', 'Suchergebnisse')}</span>
+                  <span className="font-mono text-indigo-500">
+                    {t('search.hitsCount', { count: results.length, defaultValue: `${results.length} Treffer` })}
+                  </span>
                 </div>
 
                 {results.map((item, index) => {

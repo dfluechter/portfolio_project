@@ -6,6 +6,7 @@
 * **[⚛️ Frontend-Architektur](Frontend-Architecture.md)**
 * **[🚀 Deployment & CI/CD](Deployment-and-Operations.md)**
 * **[🔒 Sicherheitskonzept](Security-Policy.md)**
+* **[🧪 Teststrategie](Testing-Strategy.md)**
 * **[🛠️ Developer Guide](Developer-Guide.md)**
 * **[📋 Backlog & Roadmap](Product-Backlog-and-Roadmap.md)**
 * **[📚 Glossar](Glossary.md)**

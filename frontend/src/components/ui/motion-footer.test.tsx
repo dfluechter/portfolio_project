@@ -69,11 +69,11 @@ describe('CinematicFooter Component', () => {
     it('renders the main heading and giant brand background text', () => {
       render(<CinematicFooter />);
 
-      const heading = screen.getByRole('heading', { level: 2, name: /ready to build something exceptional\?/i });
+      const heading = screen.getByRole('heading', { level: 2, name: /let's build something exceptional/i });
       expect(heading).toBeInTheDocument();
       expect(heading).toHaveClass('footer-text-glow');
 
-      const giantText = screen.getByText('REACT 19');
+      const giantText = screen.getByText('PORTFOLIO');
       expect(giantText).toBeInTheDocument();
       expect(giantText).toHaveClass('footer-giant-bg-text');
     });
@@ -92,7 +92,7 @@ describe('CinematicFooter Component', () => {
     it('renders duplicated marquee items for infinite scrolling', () => {
       render(<CinematicFooter />);
 
-      const marqueeFirstItems = screen.getAllByText(/React 19 Engineering/i);
+      const marqueeFirstItems = screen.getAllByText('Full-Stack Software Engineering');
       expect(marqueeFirstItems.length).toBe(2);
 
       const marqueeSecondItems = screen.getAllByText('Django 5 REST Core');
@@ -104,19 +104,19 @@ describe('CinematicFooter Component', () => {
       const marqueeFourthItems = screen.getAllByText('Scalable Cloud Architecture');
       expect(marqueeFourthItems.length).toBe(2);
 
-      const marqueeFifthItems = screen.getAllByText('GSAP & Framer Motion');
+      const marqueeFifthItems = screen.getAllByText('Modern Reactive Systems');
       expect(marqueeFifthItems.length).toBe(2);
     });
 
     it('renders primary developer action links (GitHub & Contact)', () => {
       render(<CinematicFooter />);
 
-      const githubBtn = screen.getByRole('link', { name: /github profil & source/i });
+      const githubBtn = screen.getByRole('link', { name: /github profil/i });
       expect(githubBtn).toBeInTheDocument();
       expect(githubBtn).toHaveAttribute('href', 'https://github.com/dfluechter');
       expect(githubBtn).toHaveClass('footer-glass-pill');
 
-      const emailBtn = screen.getByRole('link', { name: /projekt anfragen \/ e-mail/i });
+      const emailBtn = screen.getByRole('link', { name: /e-mail schreiben/i });
       expect(emailBtn).toBeInTheDocument();
       expect(emailBtn).toHaveAttribute('href', 'mailto:dominik.fluechter@googlemail.com');
       expect(emailBtn).toHaveClass('footer-glass-pill');
@@ -129,7 +129,7 @@ describe('CinematicFooter Component', () => {
       expect(projectsLink).toBeInTheDocument();
       expect(projectsLink).toHaveAttribute('href', '#projects');
 
-      const skillsLink = screen.getByRole('link', { name: /fähigkeiten & tech-stack/i });
+      const skillsLink = screen.getByRole('link', { name: /skills/i });
       expect(skillsLink).toBeInTheDocument();
       expect(skillsLink).toHaveAttribute('href', '#skills');
 
@@ -303,7 +303,7 @@ describe('CinematicFooter Component', () => {
       expect(screen.getByRole('contentinfo')).toBeInTheDocument();
       const heading = screen.getByRole('heading', { level: 2 });
       expect(heading).toBeInTheDocument();
-      expect(heading).toHaveTextContent(/Ready to build something exceptional\?/i);
+      expect(heading).toHaveTextContent(/Let's build something exceptional/i);
     });
 
     it('provides keyboard-navigable links with discernible text content', () => {

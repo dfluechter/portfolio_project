@@ -34,6 +34,7 @@ router.register(
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("health_check", health_check_view, name="health_check"),
+    path("health/", health_check_view, name="health"),
     path("api/ai/chat/", AIChatView.as_view(), name="ai-chat"),
     # REST-API Endpunkte
     path(
@@ -58,7 +59,7 @@ urlpatterns = [
 if getattr(settings, "SERVE_FRONTEND", True):
     urlpatterns.append(
         re_path(
-            r"^(?!api/|admin/|static/|media/|health_check).*",
+            r"^(?!api/|admin/|static/|media/|health_check|health/).*",
             api_root_view,
             name="spa-catchall",
         )

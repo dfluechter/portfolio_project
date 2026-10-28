@@ -105,7 +105,7 @@ export const Navbar: React.FC = () => {
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            aria-label={mobileMenuOpen ? 'Menü schließen' : 'Menü öffnen'}
+            aria-label={mobileMenuOpen ? t('nav.closeMenu', 'Menü schließen') : t('nav.openMenu', 'Menü öffnen')}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-menu"
           >

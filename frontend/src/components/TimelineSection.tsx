@@ -1,47 +1,63 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Briefcase, Calendar, GraduationCap, MapPin, Milestone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useTimeline } from '../hooks/usePortfolio';
 import { usePortfolioSearch } from '../hooks/usePortfolioSearch';
 import { SectionEmptyState } from './SectionEmptyState';
 import type { TimelineEntry } from '../types';
 
-const defaultTimeline: TimelineEntry[] = [
-  {
-    id: 1,
-    entry_type: 'experience',
-    entry_type_display: 'Berufserfahrung',
-    title: 'Full-Stack Software Engineer & Backend Architect',
-    organization: 'Selbstständig / Freiberuflich',
-    location: 'Deutschland (Remote)',
-    start_date: '2023-01-01',
-    end_date: null,
-    is_current: true,
-    description:
-      'Konzeption und Implementierung skalierbarer Webanwendungen mit Django 5, PostgreSQL, Microservices und React/TypeScript Frontends. CI/CD-Automatisierung und Cloud-Deployment.',
-    created_at: '',
-  },
-  {
-    id: 2,
-    entry_type: 'education',
-    entry_type_display: 'Ausbildung & Zertifizierungen',
-    title: 'Continuous Professional Development & Cloud Certification',
-    organization: 'Meta, Google Cloud, AWS, IBM',
-    location: 'Online',
-    start_date: '2022-06-01',
-    end_date: '2024-12-31',
-    is_current: false,
-    description:
-      'Absolvierung fortgeschrittener Zertifizierungsprogramme in den Bereichen Cloud Architecture, Full-Stack Software Engineering, Observability und Machine Learning.',
-    created_at: '',
-  },
-];
-
 export const TimelineSection: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const { data: timelineData, isLoading } = useTimeline();
   const { searchTerm, clearSearch } = usePortfolioSearch();
+  const dateLocale = i18n.language?.startsWith('en') ? 'en-US' : 'de-DE';
+
+  const defaultTimeline: TimelineEntry[] = useMemo(
+    () => [
+      {
+        id: 1,
+        entry_type: 'experience',
+        entry_type_display: t('timeline.experience', 'Berufserfahrung'),
+        title: 'Full-Stack Software Engineer & Backend Architect',
+        organization: t('timeline.selfEmployedOrg', 'Selbstständig / Freiberuflich'),
+        location: t('timeline.locationRemote', 'Deutschland (Remote)'),
+        start_date: '2023-01-01',
+        end_date: null,
+        is_current: true,
+        description: t(
+          'timeline.desc1',
+          'Konzeption und Implementierung skalierbarer Webanwendungen mit Django 5, PostgreSQL, Microservices und React/TypeScript Frontends. CI/CD-Automatisierung und Cloud-Deployment.'
+        ),
+        created_at: '',
+      },
+      {
+        id: 2,
+        entry_type: 'education',
+        entry_type_display: t('timeline.education', 'Ausbildung & Zertifizierungen'),
+        title: 'Continuous Professional Development & Cloud Certification',
+        organization: 'Meta, Google Cloud, AWS, IBM',
+        location: 'Online',
+        start_date: '2022-06-01',
+        end_date: '2024-12-31',
+        is_current: false,
+        description: t(
+          'timeline.desc2',
+          'Absolvierung fortgeschrittener Zertifizierungsprogramme in den Bereichen Cloud Architecture, Full-Stack Software Engineering, Observability und Machine Learning.'
+        ),
+        created_at: '',
+      },
+    ],
+    [t]
+  );
 
   const entries = timelineData && timelineData.length > 0 ? timelineData : defaultTimeline;
+
+  const getLocalizedEntryType = (entry: TimelineEntry): string => {
+    if (entry.entry_type === 'experience') return t('timeline.experience', 'Berufserfahrung');
+    if (entry.entry_type === 'education') return t('timeline.education', 'Ausbildung & Zertifizierungen');
+    return entry.entry_type_display || entry.entry_type;
+  };
 
   const filteredEntries = entries.filter((entry) => {
     if (!searchTerm.trim()) return true;
@@ -60,11 +76,11 @@ export const TimelineSection: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2 text-xs font-mono text-indigo-600 dark:text-indigo-400">
-              <span>04 // Career Chronology</span>
+              <span>{t('timeline.eyebrow', '04 // Career Chronology')}</span>
               <span className="text-slate-300 dark:text-slate-700">/</span>
               <span className="inline-flex items-center gap-1.5">
                 <Milestone className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Werdegang & Meilensteine ({entries.length})</span>
+                <span>{t('timeline.label', 'Werdegang & Meilensteine')} ({entries.length})</span>
               </span>
               {searchTerm && (
                 <span
@@ -72,16 +88,16 @@ export const TimelineSection: React.FC = () => {
                   aria-atomic="true"
                   className="text-slate-500 dark:text-slate-400 font-sans font-normal"
                 >
-                  • {filteredEntries.length} gefiltert
+                  • {filteredEntries.length} {t('timeline.filtered', 'gefiltert')}
                 </span>
               )}
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Beruflicher Werdegang
+              {t('timeline.heading', 'Beruflicher Werdegang')}
             </h2>
           </div>
           <p className="text-slate-600 dark:text-slate-400 max-w-md text-sm">
-            Stationen meiner beruflichen Laufbahn, praxisrelevante Projekte und kontinuierliche Weiterbildung.
+            {t('timeline.subheading', 'Stationen meiner beruflichen Laufbahn, praxisrelevante Projekte und kontinuierliche Weiterbildung.')}
           </p>
         </div>
 
@@ -94,7 +110,7 @@ export const TimelineSection: React.FC = () => {
           </div>
         ) : filteredEntries.length === 0 ? (
           <SectionEmptyState
-            sectionName="Werdegang"
+            sectionName={t('nav.timeline', 'Werdegang')}
             query={searchTerm}
             onReset={clearSearch}
           />
@@ -128,19 +144,19 @@ export const TimelineSection: React.FC = () => {
                       <div className="flex-1 p-6 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500/40 transition-all">
                         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                           <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md whitespace-nowrap">
-                            {entry.entry_type_display || entry.entry_type}
+                            {getLocalizedEntryType(entry)}
                           </span>
 
                           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
                             <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
                             <span>
-                              {new Date(entry.start_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })}
+                              {new Date(entry.start_date).toLocaleDateString(dateLocale, { month: 'short', year: 'numeric' })}
                               {' — '}
                               {entry.is_current
-                                ? 'Heute (Laufend)'
+                                ? t('timeline.present', 'Heute (Laufend)')
                                 : entry.end_date
-                                ? new Date(entry.end_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })
-                                : 'Abgeschlossen'}
+                                ? new Date(entry.end_date).toLocaleDateString(dateLocale, { month: 'short', year: 'numeric' })
+                                : t('timeline.completed', 'Abgeschlossen')}
                             </span>
                           </div>
                         </div>
