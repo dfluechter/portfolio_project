@@ -90,7 +90,7 @@ jobs:
           CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000"
 
       - name: Backend Testberichte & Coverage hochladen (JUnit XML & Cobertura XML)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-test-results
@@ -98,7 +98,7 @@ jobs:
           retention-days: 14
 
       - name: Backend Fehler-Log archivieren bei Testfehlschlag
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: backend-failure-tracebacks
@@ -137,7 +137,7 @@ jobs:
           npm run test:run -- --reporter=default --reporter=junit --outputFile=test-results/vitest-junit.xml 2>&1 | tee test-results/vitest-run.log
 
       - name: Frontend Testberichte hochladen (JUnit XML)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: frontend-test-results
@@ -145,7 +145,7 @@ jobs:
           retention-days: 14
 
       - name: Frontend Fehler-Log archivieren bei Testfehlschlag
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: frontend-failure-tracebacks
