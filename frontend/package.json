@@ -13,8 +13,10 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",
+    "@react-three/fiber": "^9.8.2",
     "@tanstack/react-query": "^5.104.5",
     "@tanstack/react-virtual": "^3.14.22",
+    "@types/three": "^0.187.0",
     "axios": "^1.8.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -30,12 +32,14 @@
     "react-icons": "^5.7.0",
     "react-router-dom": "^7.18.4",
     "react-use-measure": "^2.1.7",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@emnapi/core": "1.11.3",
     "@emnapi/runtime": "1.11.3",
     "@tailwindcss/vite": "^4.0.9",
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^26.6.5",

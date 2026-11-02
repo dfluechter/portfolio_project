@@ -275,6 +275,21 @@ export const portfolioService = {
     return data;
   },
 
+  // Kontaktformular / Formmailer absenden
+  async sendContactMessage(payload: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    website?: string;
+  }): Promise<{ detail: string; status: string }> {
+    const { data } = await apiClient.post<{ detail: string; status: string }>(
+      '/api/contact/',
+      payload
+    );
+    return data;
+  },
+
   // Passwort-Reset anfordern (sendet an PORTFOLIO_OWNER_EMAIL oder angegebene E-Mail)
   async requestPasswordReset(email?: string): Promise<{ detail: string }> {
     const { data } = await apiClient.post<{ detail: string }>('/api/auth/password-reset/', {

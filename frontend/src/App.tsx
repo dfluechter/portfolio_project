@@ -31,6 +31,9 @@ const DashboardPage = lazyRetry(() => import('./pages/DashboardPage').then((m) =
 const PasswordResetConfirmPage = lazyRetry(() =>
   import('./pages/PasswordResetConfirmPage').then((m) => ({ default: m.PasswordResetConfirmPage }))
 );
+const NotFoundPage = lazyRetry(() =>
+  import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
+);
 
 const RouteLoadingFallback = () => (
   <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
@@ -66,6 +69,7 @@ export function App() {
                   element={<PasswordResetConfirmPage />}
                 />
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>
           </AuthProvider>

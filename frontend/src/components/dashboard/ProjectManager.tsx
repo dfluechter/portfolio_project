@@ -135,16 +135,23 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
     try {
       if (editingProject) {
         await updateProjectMutation.mutateAsync({ id: editingProject.id, formData });
-        onNotify({ type: 'success', text: `Projekt "${projectTitle.trim()}" erfolgreich aktualisiert!` });
+        onNotify({
+          type: 'success',
+          text: `Projekt "${projectTitle.trim()}" erfolgreich aktualisiert!`,
+        });
       } else {
         await createProjectMutation.mutateAsync(formData);
         onNotify({ type: 'success', text: 'Projekt erfolgreich angelegt!' });
       }
       resetForm();
     } catch (err: unknown) {
-      let msg = editingProject ? 'Fehler beim Aktualisieren des Projekts.' : 'Fehler beim Erstellen des Projekts.';
+      let msg = editingProject
+        ? 'Fehler beim Aktualisieren des Projekts.'
+        : 'Fehler beim Erstellen des Projekts.';
       if (axios.isAxiosError(err)) {
-        msg = err.response?.data?.detail || (typeof err.response?.data === 'string' ? err.response?.data : msg);
+        msg =
+          err.response?.data?.detail ||
+          (typeof err.response?.data === 'string' ? err.response?.data : msg);
       } else if (err instanceof Error) {
         msg = err.message;
       }
@@ -175,45 +182,61 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
   const isSaving = createProjectMutation.isPending || updateProjectMutation.isPending;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Formular: Neues Projekt / Projekt bearbeiten */}
-      <div ref={formRef} className="lg:col-span-1 bg-slate-900/50 border border-slate-800 p-6 rounded-2xl h-fit space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-white font-bold text-base">
-            {editingProject ? (
-              <>
-                <Pencil className="w-5 h-5 text-amber-400" />
-                <span>Projekt bearbeiten</span>
-              </>
-            ) : (
-              <>
-                <Plus className="w-5 h-5 text-indigo-400" />
-                <span>Neues Projekt hinzufügen</span>
-              </>
-            )}
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* Left Column (5 Cols): Project Blueprint Editor */}
+      <div
+        ref={formRef}
+        className="lg:col-span-5 bg-slate-900/80 backdrop-blur-md border border-slate-800/90 p-6 rounded-2xl space-y-5 shadow-sm"
+      >
+        <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+          <div className="flex items-center gap-2.5 text-white font-bold text-base">
+            <div
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border ${
+                editingProject
+                  ? 'bg-amber-500/10 border-amber-500/25 text-amber-400'
+                  : 'bg-indigo-500/10 border-indigo-500/25 text-indigo-400'
+              }`}
+            >
+              {editingProject ? (
+                <Pencil className="w-4 h-4" aria-hidden="true" />
+              ) : (
+                <Plus className="w-4 h-4" aria-hidden="true" />
+              )}
+            </div>
+            <div>
+              <span>
+                {editingProject ? 'Projekt bearbeiten' : 'Neues Projekt hinzufügen'}
+              </span>
+              <span className="block font-mono text-[10px] font-normal text-slate-400">
+                {editingProject ? `ID // PRJ-${editingProject.id}` : 'BLUEPRINT // NEW ENTRY'}
+              </span>
+            </div>
           </div>
 
           {editingProject && (
             <button
               type="button"
               onClick={resetForm}
-              className="text-xs text-slate-400 hover:text-white flex items-center gap-1 hover:underline"
+              className="cursor-pointer text-xs text-slate-400 hover:text-white flex items-center gap-1 hover:underline"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
               Abbrechen
             </button>
           )}
         </div>
 
         {editingProject && (
-          <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg">
+          <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3.5 py-2 rounded-xl">
             Bearbeite: <strong className="font-semibold">{editingProject.title}</strong>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="project-title" className="block text-xs font-semibold text-slate-400 mb-1">
+            <label
+              htmlFor="project-title"
+              className="block text-xs font-semibold text-slate-300 mb-1.5"
+            >
               Titel <span className="text-red-400">*</span>
             </label>
             <input
@@ -223,12 +246,15 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
               value={projectTitle}
               onChange={(e) => setProjectTitle(e.target.value)}
               placeholder="z. B. Cloud Architecture Tool"
-              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors"
             />
           </div>
 
           <div>
-            <label htmlFor="project-desc" className="block text-xs font-semibold text-slate-400 mb-1">
+            <label
+              htmlFor="project-desc"
+              className="block text-xs font-semibold text-slate-300 mb-1.5"
+            >
               Beschreibung <span className="text-red-400">*</span>
             </label>
             <textarea
@@ -238,35 +264,39 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
               value={projectDesc}
               onChange={(e) => setProjectDesc(e.target.value)}
               placeholder="Details zum Projekt, Technologien, etc."
-              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors resize-y"
+              className="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors resize-y"
             />
           </div>
 
           <div>
-            <label htmlFor="project-created-at" className="block text-xs font-semibold text-slate-400 mb-1">
+            <label
+              htmlFor="project-created-at"
+              className="block text-xs font-semibold text-slate-300 mb-1.5"
+            >
               Erstell-Datum
             </label>
-            <div className="relative">
-              <input
-                id="project-created-at"
-                type="date"
-                value={projectCreatedAt}
-                onChange={(e) => setProjectCreatedAt(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors [color-scheme:dark]"
-              />
-            </div>
+            <input
+              id="project-created-at"
+              type="date"
+              value={projectCreatedAt}
+              onChange={(e) => setProjectCreatedAt(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors [color-scheme:dark]"
+            />
             <p className="text-[11px] text-slate-500 mt-1">
               Optional. Standard ist das aktuelle Datum.
             </p>
           </div>
 
           <div>
-            <label htmlFor="project-image-file" className="block text-xs font-semibold text-slate-400 mb-1">
+            <label
+              htmlFor="project-image-file"
+              className="block text-xs font-semibold text-slate-300 mb-1.5"
+            >
               Projekt-Bild (optional)
             </label>
 
             {imagePreview ? (
-              <div className="relative mb-2 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 p-2 flex items-center gap-3">
+              <div className="relative mb-2.5 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 p-2.5 flex items-center gap-3">
                 <img
                   src={imagePreview}
                   alt="Vorschau"
@@ -279,9 +309,9 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="text-[11px] text-rose-400 hover:text-rose-300 hover:underline flex items-center gap-1 mt-1"
+                    className="cursor-pointer text-[11px] text-rose-400 hover:text-rose-300 hover:underline flex items-center gap-1 mt-1"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
                     Bild entfernen
                   </button>
                 </div>
@@ -294,43 +324,51 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
               type="file"
               accept="image/*"
               onChange={handleImageChange}
-              className="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer"
+              className="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer"
             />
           </div>
 
-          <div>
-            <label htmlFor="project-github" className="block text-xs font-semibold text-slate-400 mb-1">
-              GitHub URL (optional)
-            </label>
-            <input
-              id="project-github"
-              type="url"
-              value={projectGithub}
-              onChange={(e) => setProjectGithub(e.target.value)}
-              placeholder="https://github.com/..."
-              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label
+                htmlFor="project-github"
+                className="block text-xs font-semibold text-slate-300 mb-1.5"
+              >
+                GitHub URL (optional)
+              </label>
+              <input
+                id="project-github"
+                type="url"
+                value={projectGithub}
+                onChange={(e) => setProjectGithub(e.target.value)}
+                placeholder="https://github.com/..."
+                className="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="project-live"
+                className="block text-xs font-semibold text-slate-300 mb-1.5"
+              >
+                Live URL (optional)
+              </label>
+              <input
+                id="project-live"
+                type="url"
+                value={projectLive}
+                onChange={(e) => setProjectLive(e.target.value)}
+                placeholder="https://..."
+                className="w-full px-3.5 py-2.5 bg-slate-950/90 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="project-live" className="block text-xs font-semibold text-slate-400 mb-1">
-              Live URL (optional)
-            </label>
-            <input
-              id="project-live"
-              type="url"
-              value={projectLive}
-              onChange={(e) => setProjectLive(e.target.value)}
-              placeholder="https://..."
-              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2.5 pt-2">
             <button
               type="submit"
               disabled={isSaving}
-              className="cursor-pointer flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="cursor-pointer flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               {isSaving ? (
                 <>
@@ -363,35 +401,51 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
         </form>
       </div>
 
-      {/* Existing Projects List */}
-      <div className="lg:col-span-2 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <FolderGit2 className="w-4 h-4 text-indigo-400" />
-            Vorhandene Projekte ({projects.length})
-          </h2>
+      {/* Right Column (7 Cols): Existing Projects Repository Ledger */}
+      <div className="lg:col-span-7 space-y-4">
+        <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800/90 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
+              <FolderGit2 className="w-4 h-4" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white">
+                Vorhandene Projekte ({projects.length})
+              </h2>
+              <p className="text-xs text-slate-400">
+                Verwalte Beschreibungen, Vorschaubilder und Live-/GitHub-Referenzen.
+              </p>
+            </div>
+          </div>
 
-          <div className="relative w-full sm:w-60">
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative w-full sm:w-64">
+            <Search
+              className="w-3.5 h-3.5 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2"
+              aria-hidden="true"
+            />
             <input
               type="text"
               placeholder="Suchen..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full pl-9 pr-3.5 py-2 bg-slate-950/90 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
           </div>
         </div>
 
         {isLoading ? (
-          <div className="p-8 text-center text-slate-500 text-xs">Lade Projekte...</div>
+          <div className="p-10 rounded-2xl bg-slate-900/50 border border-slate-800 text-center text-slate-400 text-xs">
+            Lade Projekte...
+          </div>
         ) : filteredProjects.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-slate-900/30 border border-slate-800 text-center text-slate-500 text-xs">
-            {searchTerm ? 'Keine Projekte für diesen Suchbegriff gefunden.' : 'Noch keine Projekte vorhanden.'}
+          <div className="p-10 rounded-2xl bg-slate-900/50 border border-slate-800 text-center text-slate-500 text-xs">
+            {searchTerm
+              ? 'Keine Projekte für diesen Suchbegriff gefunden.'
+              : 'Noch keine Projekte vorhanden.'}
           </div>
         ) : (
-          <div className="space-y-3 max-h-[650px] overflow-y-auto pr-1">
-            {filteredProjects.map((proj) => {
+          <div className="space-y-3 max-h-[680px] overflow-y-auto pr-1">
+            {filteredProjects.map((proj, index) => {
               const imageUrl = resolveProjectImageUrl(proj.image);
               const formattedDate = proj.created_at
                 ? new Date(proj.created_at).toLocaleDateString('de-DE', {
@@ -404,45 +458,50 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
               return (
                 <div
                   key={proj.id}
-                  className={`p-4 rounded-xl border flex items-start justify-between gap-4 transition-colors ${
+                  className={`p-4 sm:p-5 rounded-2xl border flex items-start justify-between gap-4 transition-all ${
                     editingProject?.id === proj.id
-                      ? 'bg-indigo-950/20 border-indigo-500/50 ring-1 ring-indigo-500/30'
-                      : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                      ? 'bg-indigo-950/25 border-indigo-500/50 ring-1 ring-indigo-500/30'
+                      : 'bg-slate-900/75 border-slate-800/90 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
                         alt={proj.title}
-                        className="w-14 h-14 object-cover rounded-lg border border-slate-800 shrink-0 mt-0.5"
+                        className="w-16 h-16 object-cover rounded-xl border border-slate-800 shrink-0 mt-0.5"
                       />
                     ) : (
-                      <div className="w-14 h-14 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-500 shrink-0 mt-0.5">
-                        <ImageIcon className="w-6 h-6" />
+                      <div className="w-16 h-16 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-500 shrink-0 mt-0.5">
+                        <ImageIcon className="w-6 h-6" aria-hidden="true" />
                       </div>
                     )}
 
-                    <div className="space-y-1 min-w-0 flex-1">
+                    <div className="space-y-1.5 min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                          PRJ-{String(index + 1).padStart(2, '0')}
+                        </span>
                         <h3 className="font-bold text-white text-sm truncate">{proj.title}</h3>
                         {formattedDate && (
-                          <span className="text-[10px] text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-md flex items-center gap-1 font-mono">
-                            <Calendar className="w-3 h-3 text-slate-400" />
+                          <span className="text-[10px] text-slate-400 bg-slate-800/90 px-2 py-0.5 rounded-md flex items-center gap-1 font-mono border border-slate-700/60">
+                            <Calendar className="w-3 h-3 text-slate-400" aria-hidden="true" />
                             {formattedDate}
                           </span>
                         )}
                       </div>
 
-                      <p className="text-xs text-slate-400 line-clamp-2">{proj.description}</p>
+                      <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                        {proj.description}
+                      </p>
 
-                      <div className="flex items-center gap-3 pt-1">
+                      <div className="flex items-center gap-4 pt-1">
                         {proj.github_url && (
                           <a
                             href={proj.github_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[11px] text-indigo-400 hover:underline flex items-center gap-1"
+                            className="text-[11px] font-semibold text-indigo-400 hover:underline flex items-center gap-1"
                           >
                             GitHub
                           </a>
@@ -452,22 +511,22 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
                             href={proj.live_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[11px] text-violet-400 hover:underline flex items-center gap-1"
+                            className="text-[11px] font-semibold text-emerald-400 hover:underline flex items-center gap-1"
                           >
-                            <ExternalLink className="w-3 h-3" /> Live Demo
+                            <ExternalLink className="w-3 h-3" aria-hidden="true" /> Live Demo
                           </a>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
                       onClick={() => handleStartEdit(proj)}
-                      className={`cursor-pointer p-2 transition-colors rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                      className={`cursor-pointer p-2 transition-colors rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                         editingProject?.id === proj.id
-                          ? 'text-indigo-400 bg-indigo-500/20'
+                          ? 'text-indigo-300 bg-indigo-500/20 border border-indigo-500/30'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800'
                       }`}
                       title="Projekt bearbeiten"
@@ -479,7 +538,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => setProjectToDelete({ id: proj.id, title: proj.title })}
-                      className="cursor-pointer p-2 text-slate-500 hover:text-red-400 transition-colors rounded-lg hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                      className="cursor-pointer p-2 text-slate-500 hover:text-red-400 transition-colors rounded-xl hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       title="Projekt löschen"
                       aria-label={`Projekt ${proj.title} löschen`}
                     >

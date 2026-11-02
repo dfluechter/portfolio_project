@@ -231,4 +231,66 @@ describe('CertificateEditModal Component', () => {
     });
     expect(mockOnClose).not.toHaveBeenCalled();
   });
+
+  it('renders extracted transcript modules table and applies module title on click', async () => {
+    const cert = getMockCertificate({
+      id: 7,
+      title: 'academic_transcript.pdf',
+      provider: 1,
+      pdf_file: 'https://example.com/transcript.pdf',
+      tracks: [1],
+    });
+
+    mockExtractMutateAsync.mockResolvedValueOnce({
+      guessed_title: 'M.Sc. Computer Science',
+      guessed_provider: 'Technical University',
+      matched_provider: null,
+      credential_id: '',
+      issued_date: '2024-03-15',
+      guessed_track_slugs: ['fullstack'],
+      matched_track_ids: [],
+      extracted_text_preview: 'Transcript of Records...',
+      ocr_pending: false,
+      source_type: 'pdf',
+      transcript_data: {
+        institution: 'Technical University',
+        degree_program: 'Master of Science',
+        total_credits: 120,
+        overall_grade: '1.3',
+        modules: [
+          { code: 'CS-501', title: 'Distributed Systems & Cloud Computing', credits: 6, grade: '1.0', passed: true },
+          { code: 'CS-502', title: 'Advanced Neural Networks & Transformers', credits: 6, grade: '1.3', passed: true },
+        ],
+      },
+    });
+
+    renderWithProviders(
+      <CertificateEditModal
+        certificate={cert}
+        onClose={mockOnClose}
+        onNotify={mockOnNotify}
+      />
+    );
+
+    const ocrButton = screen.getByRole('button', {
+      name: /Metadaten per OCR analysieren/i,
+    });
+    fireEvent.click(ocrButton);
+
+    // Transcript Tabelle wird gerendert
+    await waitFor(() => {
+      expect(screen.getByTestId('certificate-transcript-table')).toBeInTheDocument();
+      expect(screen.getByText('Distributed Systems & Cloud Computing')).toBeInTheDocument();
+      expect(screen.getByText('Advanced Neural Networks & Transformers')).toBeInTheDocument();
+      expect(screen.getByText(/120 ECTS/i)).toBeInTheDocument();
+      expect(screen.getByText(/Note: 1.3/i)).toBeInTheDocument();
+    });
+
+    // Klick auf "Als Titel" übernimmt Modul in das Titel-Inputfeld
+    const applyTitleBtns = screen.getAllByRole('button', { name: /Als Titel/i });
+    fireEvent.click(applyTitleBtns[0]);
+
+    const titleInput = screen.getByLabelText(/Titel/i) as HTMLInputElement;
+    expect(titleInput.value).toBe('Distributed Systems & Cloud Computing');
+  });
 });

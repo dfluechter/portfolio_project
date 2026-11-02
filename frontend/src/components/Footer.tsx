@@ -2,15 +2,33 @@ import React from 'react';
 import { Lock, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PORTFOLIO_OWNER_EMAIL, PORTFOLIO_OWNER_NAME } from '../constants';
+import { useSkills } from '../hooks/usePortfolio';
+import type { Skill } from '../types';
 import { CinematicFooter } from './ui/motion-footer';
+
+const DEFAULT_FOOTER_SKILLS: Skill[] = [
+  { id: 1, name: 'Python 3.13', category: 'backend', category_display: 'Backend', proficiency: 95, icon: 'python', is_featured: true, created_at: '2026-01-01' },
+  { id: 2, name: 'Django 6 & DRF', category: 'backend', category_display: 'Backend', proficiency: 92, icon: 'django', is_featured: true, created_at: '2026-01-01' },
+  { id: 3, name: 'React 19', category: 'frontend', category_display: 'Frontend', proficiency: 90, icon: 'react', is_featured: true, created_at: '2026-01-01' },
+  { id: 4, name: 'TypeScript 5.9', category: 'frontend', category_display: 'Frontend', proficiency: 88, icon: 'typescript', is_featured: true, created_at: '2026-01-01' },
+  { id: 5, name: 'PostgreSQL & Neon', category: 'backend', category_display: 'Backend', proficiency: 85, icon: 'postgresql', is_featured: true, created_at: '2026-01-01' },
+  { id: 6, name: 'Tailwind CSS 4', category: 'frontend', category_display: 'Frontend', proficiency: 90, icon: 'tailwind', is_featured: false, created_at: '2026-01-01' },
+  { id: 7, name: 'Supabase S3', category: 'other', category_display: 'Tools & DevOps', proficiency: 85, icon: 'supabase', is_featured: false, created_at: '2026-01-01' },
+  { id: 8, name: 'Docker & Render', category: 'other', category_display: 'Tools & DevOps', proficiency: 82, icon: 'docker', is_featured: false, created_at: '2026-01-01' },
+  { id: 9, name: 'Pytest & Vitest (TDD)', category: 'other', category_display: 'Tools & DevOps', proficiency: 88, icon: 'pytest', is_featured: true, created_at: '2026-01-01' },
+];
 
 export const Footer: React.FC = () => {
   const { t } = useTranslation();
+  const { data: skills } = useSkills();
+
+  const displaySkills = skills && skills.length > 0 ? skills : DEFAULT_FOOTER_SKILLS;
 
   return (
     <CinematicFooter
       brandText="PORTFOLIO"
       heading={t('footer.heading', "Let's build something exceptional")}
+      techStackItems={displaySkills}
       marqueeItems={[
         'Full-Stack Software Engineering',
         'Cloud & Infrastructure',

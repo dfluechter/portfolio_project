@@ -24,26 +24,26 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
     return (
       <div
         id={`cert-${cert.id}`}
-        className="group rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-5 hover:border-indigo-500/50 hover:shadow-lg dark:hover:bg-slate-900/70 transition-all duration-200 flex flex-col justify-between shadow-sm h-full"
+        className="group rounded-2xl bg-slate-50/70 dark:bg-slate-900/55 border border-slate-200/90 dark:border-slate-800/90 p-5 hover:border-indigo-500/50 hover:shadow-lg hover:bg-white dark:hover:bg-slate-900/90 transition-all duration-200 flex flex-col justify-between shadow-xs h-full hover:-translate-y-0.5"
       >
         <div>
           <div className="flex items-center justify-between gap-2 mb-3">
-            <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-mono font-medium">
+            <span className="px-2.5 py-1 rounded-md bg-white dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 text-[11px] font-mono font-semibold shadow-2xs">
               {issuerName}
             </span>
-            <span className="text-[11px] text-slate-500 font-medium font-mono">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium font-mono">
               {cert.issued_date
                 ? new Date(cert.issued_date).toLocaleDateString(dateLocale)
                 : new Date(cert.uploaded_at).toLocaleDateString(dateLocale)}
             </span>
           </div>
 
-          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200 line-clamp-2">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200 line-clamp-2 tracking-tight">
             {cert.title}
           </h3>
 
           {cert.credential_id && (
-            <p className="text-[11px] text-slate-500 font-mono mb-3">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mb-3">
               ID: {cert.credential_id}
             </p>
           )}
@@ -65,15 +65,15 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
                       defaultValue: `Zertifikat-Track: ${trackObj.name}`,
                     })}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors duration-200 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isSelected
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600 dark:hover:text-indigo-400'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/70 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600 dark:hover:text-indigo-400'
                       }`}
                     title={t('certificates.filterByTrackTitle', {
                       name: trackObj.name,
                       defaultValue: `Nach Track "${trackObj.name}" filtern`,
                     })}
                   >
-                    <TrackIcon track={trackObj} className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`} />
+                    <TrackIcon track={trackObj} className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`} />
                     <span>{trackObj.name}</span>
                   </button>
                 );
@@ -82,8 +82,8 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
           )}
         </div>
 
-        <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+        <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
             <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
             <span>{t('certificates.verified', 'Verifiziert')}</span>
           </div>
@@ -112,7 +112,7 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
                 <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
               </a>
             ) : (
-              <span className="text-xs text-slate-400 font-medium">
+              <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                 {t('certificates.storedInAdmin', 'Im Admin hinterlegt')}
               </span>
             )}
@@ -235,13 +235,16 @@ export const CertificatesSection: React.FC = () => {
     selectedTrackIds.length === 1 ? trackMap.get(selectedTrackIds[0]) : null;
 
   return (
-    <section id="certificates" className="py-20 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/80 transition-colors duration-200">
+    <section
+      id="certificates"
+      className="scroll-mt-20 py-20 bg-white dark:bg-slate-950 border-t border-slate-200/90 dark:border-slate-800/80 transition-colors duration-200"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header im Swiss/Architectural Style */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2 text-xs font-mono text-indigo-600 dark:text-indigo-400">
-              <span>{t('certificates.eyebrow', '03 // Credentials & Verification')}</span>
+              <span className="font-semibold">{t('certificates.eyebrow', '03 // Credentials & Verification')}</span>
               <span className="text-slate-300 dark:text-slate-700">/</span>
               <span className="inline-flex items-center gap-1.5">
                 <Award className="w-3.5 h-3.5" aria-hidden="true" />
@@ -257,7 +260,7 @@ export const CertificatesSection: React.FC = () => {
                 </span>
               )}
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {t('certificates.heading', 'Zertifikate & Qualifikationen')}
             </h2>
           </div>
@@ -267,7 +270,7 @@ export const CertificatesSection: React.FC = () => {
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="flex flex-col gap-3.5 mb-8 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex flex-col gap-3.5 mb-8 bg-slate-50/90 dark:bg-slate-900/50 p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3">
               {/* Search Input */}
@@ -278,7 +281,7 @@ export const CertificatesSection: React.FC = () => {
                   placeholder={t('certificates.searchPlaceholder', 'Titel, Aussteller suchen...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-8 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors shadow-sm"
+                  className="w-full min-h-[40px] pl-10 pr-8 py-2 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors shadow-2xs"
                 />
                 {searchTerm && (
                   <button
@@ -300,9 +303,9 @@ export const CertificatesSection: React.FC = () => {
                   key={issuer}
                   type="button"
                   onClick={() => setSelectedIssuer(issuer)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors duration-200 shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${selectedIssuer === issuer
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                  className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${selectedIssuer === issuer
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/90 dark:border-slate-800 hover:border-indigo-500/30'
                     }`}
                 >
                   {issuer === 'all' ? `${t('certificates.allIssuers', 'Alle Aussteller')} (${certificates.length})` : issuer}
@@ -313,7 +316,7 @@ export const CertificatesSection: React.FC = () => {
 
           {/* Interaktive Many-to-Many Track-Filterchips */}
           {tracks.length > 0 && (
-            <div className="flex flex-col gap-2 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+            <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-200/70 dark:border-slate-800/70">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
@@ -336,9 +339,9 @@ export const CertificatesSection: React.FC = () => {
                   type="button"
                   onClick={resetTracks}
                   aria-label={`${t('certificates.allCertificatesAria', 'Alle Zertifikate')} (${certificates.length})`}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors duration-200 shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${selectedTrackIds.length === 0
+                  className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${selectedTrackIds.length === 0
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/90 dark:border-slate-800'
                     }`}
                 >
                   {t('certificates.allTracks', 'Alle')} ({certificates.length})
@@ -357,12 +360,12 @@ export const CertificatesSection: React.FC = () => {
                         defaultValue: `Track-Filter: ${tr.name} (${count})`,
                       })}
                       aria-pressed={isSelected}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 flex items-center gap-2 shadow-sm border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isSelected
+                      className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 flex items-center gap-2 shadow-2xs border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isSelected
                         ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border-slate-200/90 dark:border-slate-800 hover:border-indigo-500/30'
                         }`}
                     >
-                      <TrackIcon track={tr} className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`} />
+                      <TrackIcon track={tr} className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`} />
                       <span>{tr.name}</span>
                       <span
                         className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${isSelected
@@ -425,7 +428,7 @@ export const CertificatesSection: React.FC = () => {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-44 rounded-xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
+              <div key={n} className="h-44 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
             ))}
           </div>
         ) : filteredCertificates.length === 0 ? (

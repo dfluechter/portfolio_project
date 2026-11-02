@@ -70,13 +70,16 @@ export const TimelineSection: React.FC = () => {
   });
 
   return (
-    <section id="timeline" className="py-20 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/80 transition-colors">
+    <section
+      id="timeline"
+      className="scroll-mt-20 py-20 bg-slate-50/70 dark:bg-slate-950 border-t border-slate-200/90 dark:border-slate-800/80 transition-colors"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2 text-xs font-mono text-indigo-600 dark:text-indigo-400">
-              <span>{t('timeline.eyebrow', '04 // Career Chronology')}</span>
+              <span className="font-semibold">{t('timeline.eyebrow', '04 // Career Chronology')}</span>
               <span className="text-slate-300 dark:text-slate-700">/</span>
               <span className="inline-flex items-center gap-1.5">
                 <Milestone className="w-3.5 h-3.5" aria-hidden="true" />
@@ -96,7 +99,7 @@ export const TimelineSection: React.FC = () => {
               {t('timeline.heading', 'Beruflicher Werdegang')}
             </h2>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 max-w-md text-sm">
+          <p className="text-slate-600 dark:text-slate-400 max-w-md text-sm leading-relaxed">
             {t('timeline.subheading', 'Stationen meiner beruflichen Laufbahn, praxisrelevante Projekte und kontinuierliche Weiterbildung.')}
           </p>
         </div>
@@ -115,15 +118,16 @@ export const TimelineSection: React.FC = () => {
             onReset={clearSearch}
           />
         ) : (
-          <div className="relative max-w-3xl mx-auto">
+          <div className="relative max-w-4xl mx-auto">
             {/* Vertical Line — Schweizer Hairline Grid Divider */}
-            <div className="absolute left-4 sm:left-6 top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-800" />
+            <div className="absolute left-4 sm:left-6 top-4 bottom-4 w-0.5 bg-gradient-to-b from-indigo-500/60 via-slate-300 dark:via-slate-800 to-transparent" />
 
             <div className="space-y-8">
               <AnimatePresence>
-                {filteredEntries.map((entry) => {
+                {filteredEntries.map((entry, idx) => {
                   const isEducation = entry.entry_type === 'education';
                   const Icon = isEducation ? GraduationCap : Briefcase;
+                  const stepCode = `CHR-${String(idx + 1).padStart(2, '0')}`;
 
                   return (
                     <motion.div
@@ -136,19 +140,27 @@ export const TimelineSection: React.FC = () => {
                       className="relative flex items-start gap-4 sm:gap-6 group"
                     >
                       {/* Node Dot */}
-                      <div className="relative z-10 flex-shrink-0 w-8 h-8 sm:w-12 sm:h-12 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 flex items-center justify-center transition-colors">
+                      <div className="relative z-10 flex-shrink-0 w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500 shadow-md shadow-indigo-500/15 flex items-center justify-center transition-transform duration-200 group-hover:border-indigo-400">
                         <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                       </div>
 
                       {/* Content Card */}
-                      <div className="flex-1 p-6 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500/40 transition-all">
-                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md whitespace-nowrap">
-                            {getLocalizedEntryType(entry)}
-                          </span>
+                      <div className="flex-1 p-6 rounded-2xl bg-white dark:bg-slate-900/65 border border-slate-200/90 dark:border-slate-800/90 shadow-xs hover:shadow-md hover:border-indigo-500/40 transition-all duration-200">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2">
+                            <span
+                              aria-hidden="true"
+                              className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500"
+                            >
+                              {stepCode}
+                            </span>
+                            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 rounded-md whitespace-nowrap">
+                              {getLocalizedEntryType(entry)}
+                            </span>
+                          </div>
 
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                            <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
+                            <Calendar className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
                             <span>
                               {new Date(entry.start_date).toLocaleDateString(dateLocale, { month: 'short', year: 'numeric' })}
                               {' — '}
@@ -161,7 +173,7 @@ export const TimelineSection: React.FC = () => {
                           </div>
                         </div>
 
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1.5 tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                           {entry.title}
                         </h3>
 
@@ -170,15 +182,15 @@ export const TimelineSection: React.FC = () => {
                             {entry.organization}
                           </span>
                           {entry.location && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3 text-slate-400" aria-hidden="true" />
-                              {entry.location}
+                            <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                              <MapPin className="w-3.5 h-3.5 text-indigo-500/70" aria-hidden="true" />
+                              <span>{entry.location}</span>
                             </span>
                           )}
                         </div>
 
                         {entry.description && (
-                          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                             {entry.description}
                           </p>
                         )}

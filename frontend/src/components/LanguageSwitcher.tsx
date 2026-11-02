@@ -69,19 +69,19 @@ export const LanguageSwitcher: React.FC = () => {
         aria-label="Sprachauswahl / Language Selection"
         value={currentLang}
         onChange={(e) => handleLanguageChange(e.target.value as 'de' | 'en')}
-        className="appearance-none bg-transparent pl-8 pr-7 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white cursor-pointer focus:outline-none rounded-xl"
+        className="appearance-none min-h-[38px] bg-transparent pl-8 pr-7 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white cursor-pointer focus:outline-none rounded-xl"
       >
         <option
           value="de"
           className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
         >
-          🇩🇪 Deutsch (DE)
+          Deutsch (DE)
         </option>
         <option
           value="en"
           className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
         >
-          🇬🇧 English (EN)
+          English (EN)
         </option>
       </select>
 

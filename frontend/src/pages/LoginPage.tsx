@@ -17,7 +17,7 @@ import {
   Shield,
   X,
 } from 'lucide-react';
-import { PORTFOLIO_OWNER_NAME } from '../constants';
+import { PORTFOLIO_OWNER_EMAIL, PORTFOLIO_OWNER_NAME } from '../constants';
 
 export const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -101,7 +101,19 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 bg-architectural-grid text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white relative overflow-hidden">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white relative overflow-hidden">
+      {/* Atmosphärisches Login Banner Hintergrundbild */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
+        <img
+          src="/static/img/background/banner_login.png"
+          alt=""
+          role="presentation"
+          className="w-full h-full object-cover object-center opacity-30 mix-blend-luminosity filter blur-[0.4px] scale-105"
+        />
+        {/* Dunkle Gradient-Overlays für exzellente Karten- & Text-Kontraste */}
+        <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/90" />
+      </div>
       {/* Top Navigation */}
       <header className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between gap-4">
         <Link
@@ -310,7 +322,7 @@ export const LoginPage: React.FC = () => {
               <form onSubmit={handleRequestReset} className="space-y-4">
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {t('login.resetModalDesc', 'Ein Link zum Zurücksetzen deines Passworts wird direkt an die in der Server-Konfiguration hinterlegte Inhaber-Adresse')}{' '}
-                  (<code className="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">PORTFOLIO_OWNER_EMAIL</code>)
+                  (<code className="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded font-mono">{PORTFOLIO_OWNER_EMAIL}</code>)
                 </p>
 
                 {resetError && (

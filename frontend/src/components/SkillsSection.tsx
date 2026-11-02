@@ -1,103 +1,64 @@
-import React, { useMemo, useState } from 'react';
-import { Check, Code, Cpu, Database, Layers, Sparkles, Wrench } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSkills } from '../hooks/usePortfolio';
-import { usePortfolioSearch } from '../hooks/usePortfolioSearch';
-import { SectionEmptyState } from './SectionEmptyState';
 import type { Skill } from '../types';
+import { StackBrandIcon } from './StackBrandIcon';
 
 export const SkillsSection: React.FC = () => {
   const { t } = useTranslation();
-  const { data: skillsData, isLoading } = useSkills();
-  const { searchTerm, clearSearch } = usePortfolioSearch();
+  const { data: skills, isLoading } = useSkills();
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  const defaultSkills: Skill[] = useMemo(
-    () => [
-      { id: 1, name: 'Python 3.13', category: 'backend', category_display: t('skills.categories.backend', 'Backend'), proficiency: 95, icon: 'python', is_featured: true, created_at: '' },
-      { id: 2, name: 'Django 5.2 / DRF', category: 'backend', category_display: t('skills.categories.backend', 'Backend'), proficiency: 92, icon: 'django', is_featured: true, created_at: '' },
-      { id: 3, name: 'React 19 & Vite', category: 'frontend', category_display: t('skills.categories.frontend', 'Frontend'), proficiency: 90, icon: 'react', is_featured: true, created_at: '' },
-      { id: 4, name: 'TypeScript', category: 'frontend', category_display: t('skills.categories.frontend', 'Frontend'), proficiency: 88, icon: 'typescript', is_featured: true, created_at: '' },
-      { id: 5, name: 'PostgreSQL / Neon', category: 'database', category_display: t('skills.categories.database', 'Datenbanken'), proficiency: 85, icon: 'database', is_featured: true, created_at: '' },
-      { id: 6, name: 'Tailwind CSS', category: 'frontend', category_display: t('skills.categories.frontend', 'Frontend'), proficiency: 92, icon: 'tailwind', is_featured: false, created_at: '' },
-      { id: 7, name: 'Supabase S3 Storage', category: 'devops', category_display: t('skills.categories.devops', 'Cloud & DevOps'), proficiency: 86, icon: 'cloud', is_featured: false, created_at: '' },
-      { id: 8, name: 'Docker & CI/CD', category: 'devops', category_display: t('skills.categories.devops', 'Cloud & DevOps'), proficiency: 84, icon: 'docker', is_featured: false, created_at: '' },
-      { id: 9, name: 'Pytest & TDD', category: 'tools', category_display: t('skills.categories.toolsFull', 'Tools & Methodik'), proficiency: 90, icon: 'check', is_featured: true, created_at: '' },
-    ],
-    [t]
-  );
-
-  const skills = skillsData && skillsData.length > 0 ? skillsData : defaultSkills;
-
-  const categories = [
-    { key: 'all', label: t('skills.categories.all', 'Alle Skills'), icon: Layers },
-    { key: 'backend', label: t('skills.categories.backend', 'Backend'), icon: Cpu },
-    { key: 'frontend', label: t('skills.categories.frontend', 'Frontend'), icon: Code },
-    { key: 'database', label: t('skills.categories.database', 'Datenbanken'), icon: Database },
-    { key: 'devops', label: t('skills.categories.devops', 'Cloud & DevOps'), icon: Sparkles },
-    { key: 'tools', label: t('skills.categories.tools', 'Tools'), icon: Wrench },
+  const defaultSkills: Skill[] = [
+    { id: 1, name: 'Python 3.13', category: 'backend', category_display: 'Backend', proficiency: 95, icon: 'python', is_featured: true, created_at: '2026-01-01' },
+    { id: 2, name: 'Django 6 & DRF', category: 'backend', category_display: 'Backend', proficiency: 92, icon: 'django', is_featured: true, created_at: '2026-01-01' },
+    { id: 3, name: 'React 19', category: 'frontend', category_display: 'Frontend', proficiency: 90, icon: 'react', is_featured: true, created_at: '2026-01-01' },
+    { id: 4, name: 'TypeScript 5.9', category: 'frontend', category_display: 'Frontend', proficiency: 88, icon: 'typescript', is_featured: true, created_at: '2026-01-01' },
+    { id: 5, name: 'PostgreSQL & Neon', category: 'backend', category_display: 'Backend', proficiency: 85, icon: 'postgresql', is_featured: true, created_at: '2026-01-01' },
+    { id: 6, name: 'Tailwind CSS 4', category: 'frontend', category_display: 'Frontend', proficiency: 90, icon: 'tailwind', is_featured: false, created_at: '2026-01-01' },
+    { id: 7, name: 'Supabase S3', category: 'other', category_display: 'Tools & DevOps', proficiency: 85, icon: 'supabase', is_featured: false, created_at: '2026-01-01' },
+    { id: 8, name: 'Docker & Render', category: 'other', category_display: 'Tools & DevOps', proficiency: 82, icon: 'docker', is_featured: false, created_at: '2026-01-01' },
+    { id: 9, name: 'Pytest & Vitest (TDD)', category: 'other', category_display: 'Tools & DevOps', proficiency: 88, icon: 'pytest', is_featured: true, created_at: '2026-01-01' },
   ];
 
-  const getLocalizedCategoryDisplay = (skill: Skill): string => {
-    switch (skill.category) {
-      case 'backend':
-        return t('skills.categories.backend', skill.category_display || 'Backend');
-      case 'frontend':
-        return t('skills.categories.frontend', skill.category_display || 'Frontend');
-      case 'database':
-        return t('skills.categories.database', skill.category_display || 'Datenbanken');
-      case 'devops':
-        return t('skills.categories.devops', skill.category_display || 'Cloud & DevOps');
-      case 'tools':
-        return t('skills.categories.toolsFull', skill.category_display || 'Tools & Methodik');
-      default:
-        return skill.category_display || skill.category;
-    }
-  };
+  const displaySkills = skills && skills.length > 0 ? skills : isLoading ? [] : defaultSkills;
 
-  const filteredSkills = skills.filter((s) => {
-    const matchesCategory = activeCategory === 'all' || s.category === activeCategory;
-    if (!matchesCategory) return false;
-    if (!searchTerm.trim()) return true;
-    const query = searchTerm.toLowerCase();
-    return (
-      s.name.toLowerCase().includes(query) ||
-      s.category.toLowerCase().includes(query) ||
-      s.category_display.toLowerCase().includes(query)
-    );
-  });
+  const categories = [
+    { id: 'all', label: t('skills.categories.all', 'Alle Skills') },
+    { id: 'backend', label: t('skills.categories.backend', 'Backend') },
+    { id: 'frontend', label: t('skills.categories.frontend', 'Frontend') },
+    { id: 'other', label: t('skills.categories.devops', 'Cloud & DevOps') },
+  ];
+
+  const filteredSkills =
+    activeCategory === 'all'
+      ? displaySkills
+      : displaySkills.filter((skill) => skill.category === activeCategory);
 
   return (
-    <section id="skills" className="py-20 bg-slate-100/50 dark:bg-slate-900/30 border-t border-slate-200 dark:border-slate-800/80 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section
+      id="skills"
+      className="py-24 bg-background relative overflow-hidden border-t border-border"
+    >
+      {/* Swiss Architectural Grid Background */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(128,128,128,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(128,128,128,0.04)_1px,transparent_1px)] bg-[size:48px_48px]"
+      />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2 text-xs font-mono text-indigo-600 dark:text-indigo-400">
-              <span>{t('skills.eyebrow', '01 // Technical Proficiency')}</span>
-              <span className="text-slate-300 dark:text-slate-700">/</span>
-              <span className="inline-flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>
-                  {t('skills.label', 'Expertise & Fähigkeiten')} ({skills.length})
-                </span>
-              </span>
-              {searchTerm && (
-                <span
-                  role="status"
-                  aria-atomic="true"
-                  className="text-slate-500 dark:text-slate-400 font-sans font-normal"
-                >
-                  • {filteredSkills.length} {t('skills.filtered', 'gefiltert')}
-                </span>
-              )}
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        <div className="mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-border pb-8">
+          <div className="max-w-2xl">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-accent-primary block mb-3">
+              {t('skills.eyebrow', '01 // Technical Proficiency')}
+            </span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-text-primary tracking-tight">
               {t('skills.heading', 'Technologie-Stack')}
             </h2>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 max-w-md text-sm">
+          <p className="text-base sm:text-lg text-text-secondary max-w-xl leading-relaxed">
             {t(
               'skills.subheading',
               'Fundiertes Wissen in moderner Web-Architektur, Backend-Services, reaktiven Benutzeroberflächen und DevOps.'
@@ -106,95 +67,94 @@ export const SkillsSection: React.FC = () => {
         </div>
 
         {/* Category Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-10">
+        <div className="flex flex-wrap gap-2 mb-10">
           {categories.map((cat) => {
-            const Icon = cat.icon;
-            const isActive = activeCategory === cat.key;
+            const isActive = activeCategory === cat.id;
             return (
               <button
-                key={cat.key}
+                key={cat.id}
                 type="button"
-                onClick={() => setActiveCategory(cat.key)}
-                aria-pressed={isActive}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wider transition-all duration-200 border cursor-pointer ${
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-indigo-600/20'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                    ? 'bg-text-primary text-background border-text-primary font-semibold shadow-sm'
+                    : 'bg-surface/60 text-text-secondary border-border hover:border-text-muted hover:text-text-primary'
                 }`}
               >
-                <Icon className="w-4 h-4" aria-hidden="true" />
                 {cat.label}
               </button>
             );
           })}
         </div>
 
-        {/* Skills Grid */}
+        {/* Loading Skeleton */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex items-center gap-6 overflow-x-auto whitespace-nowrap py-6 px-6 rounded-2xl bg-surface/50 border border-border">
             {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="h-28 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
+              <div
+                key={n}
+                className="inline-flex items-center gap-3 pr-6 border-r border-border last:border-r-0 shrink-0"
+              >
+                <div className="h-11 w-11 rounded-xl bg-surface-hover animate-pulse" />
+                <div className="h-5 w-32 rounded bg-surface-hover animate-pulse" />
+              </div>
             ))}
           </div>
-        ) : filteredSkills.length === 0 ? (
-          <SectionEmptyState
-            sectionName={t('nav.skills', 'Skills')}
-            query={searchTerm}
-            onReset={clearSearch}
-          />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence>
-              {filteredSkills.map((skill) => (
-                <motion.div
-                  key={skill.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  transition={{ duration: 0.2 }}
-                  className="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-indigo-500/40 transition-all hover:-translate-y-0.5 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 dark:text-white text-sm">
+          /* Technologie-Stack in einer Zeile als Fließtext mit großen farbigen Icons */
+          <div className="rounded-2xl bg-surface/80 backdrop-blur-md border border-border px-6 py-6 shadow-sm">
+            <motion.p
+              layout
+              className="flex flex-nowrap items-center gap-x-7 overflow-x-auto whitespace-nowrap py-2 text-base sm:text-lg text-text-primary leading-relaxed scrollbar-thin"
+            >
+              <AnimatePresence mode="popLayout">
+                {filteredSkills.map((skill, idx) => (
+                  <motion.span
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2, delay: idx * 0.02 }}
+                    key={skill.id}
+                    className="inline-flex items-center gap-3.5 shrink-0 group"
+                  >
+                    <StackBrandIcon
+                      name={skill.name}
+                      category={skill.category}
+                      className="w-11 h-11 transition-transform duration-200 group-hover:scale-110"
+                    />
+                    <span className="inline-flex items-baseline gap-2">
+                      <strong className="font-bold text-text-primary tracking-tight text-base sm:text-lg group-hover:text-accent-primary transition-colors">
                         {skill.name}
+                      </strong>
+                      <span
+                        role="progressbar"
+                        aria-valuenow={skill.proficiency}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${skill.name} ${skill.proficiency}%`}
+                        className="font-mono text-xs font-semibold text-accent-primary"
+                      >
+                        {skill.proficiency}%
                       </span>
                       {skill.is_featured && (
-                        <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-mono font-bold uppercase tracking-wider whitespace-nowrap">
+                        <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-accent-primary/10 text-accent-primary border border-accent-primary/20">
                           {t('skills.topSkill', 'Top Skill')}
                         </span>
                       )}
-                    </div>
-                    <span className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                      {skill.proficiency}%
                     </span>
-                  </div>
-
-                  {/* Segmented Proficiency Bar (MASTER.md 1.2 / 2.1) */}
-                  <div
-                    className="relative w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"
-                    role="progressbar"
-                    aria-valuenow={skill.proficiency}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={t('skills.proficiencyAria', { name: skill.name, defaultValue: `Kenntnisstand für ${skill.name}` })}
-                  >
-                    <div
-                      className="h-full rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-700 ease-out"
-                      style={{ width: `${skill.proficiency}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <span>{getLocalizedCategoryDisplay(skill)}</span>
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                      <Check className="w-3 h-3" aria-hidden="true" /> {t('skills.readyForProduction', 'Produktionsbereit')}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                    {idx < filteredSkills.length - 1 && (
+                      <span
+                        aria-hidden="true"
+                        className="text-text-muted/50 font-mono text-lg select-none pl-2"
+                      >
+                        ·
+                      </span>
+                    )}
+                  </motion.span>
+                ))}
+              </AnimatePresence>
+            </motion.p>
           </div>
         )}
       </div>

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { cn } from "@/lib/utils";
+import { StackBrandIcon } from "../StackBrandIcon";
 
 // Register ScrollTrigger safely for React
 if (typeof window !== "undefined") {
@@ -222,6 +223,14 @@ export interface SecondaryLink {
   href: string;
 }
 
+export interface FooterTechStackItem {
+  id: number | string;
+  name: string;
+  category?: string;
+  proficiency?: number;
+  is_featured?: boolean;
+}
+
 export interface CinematicFooterProps {
   brandText?: string;
   giantText?: string;
@@ -230,6 +239,7 @@ export interface CinematicFooterProps {
   headline?: string;
   subline?: string;
   marqueeItems?: string[];
+  techStackItems?: FooterTechStackItem[];
   ctaButtons?: CtaButton[];
   secondaryLinks?: SecondaryLink[];
   copyrightYear?: number;
@@ -253,6 +263,7 @@ export function CinematicFooter({
   headline,
   subline,
   marqueeItems,
+  techStackItems,
   ctaButtons,
   secondaryLinks,
   copyrightYear = new Date().getFullYear(),
@@ -292,15 +303,8 @@ export function CinematicFooter({
     },
   ];
 
-  const defaultSecondaryLinks: SecondaryLink[] = [
-    { label: t("footer.projects", "Projekte"), href: "#projects" },
-    { label: t("footer.skills", "Skills"), href: "#skills" },
-    { label: t("footer.certificates", "Zertifikate"), href: "#certificates" },
-    { label: t("footer.contact", "Kontakt"), href: "#contact" },
-  ];
-
   const resolvedCtaButtons = ctaButtons || defaultCtaButtons;
-  const resolvedSecondaryLinks = secondaryLinks || defaultSecondaryLinks;
+  void secondaryLinks;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -352,16 +356,52 @@ export function CinematicFooter({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const renderMarqueeSection = () => (
-    <div className="flex items-center space-x-12 px-6">
-      {resolvedMarqueeList.map((item, idx) => (
-        <React.Fragment key={idx}>
-          <span>{item}</span>
-          <span className={idx % 2 === 0 ? "text-primary/60" : "text-secondary/60"}>✦</span>
-        </React.Fragment>
-      ))}
-    </div>
-  );
+  const renderMarqueeSection = () => {
+    if (techStackItems && techStackItems.length > 0) {
+      return (
+        <div className="flex items-center gap-x-8 px-6 whitespace-nowrap">
+          {techStackItems.map((skill, idx) => (
+            <React.Fragment key={`${skill.id}-${idx}`}>
+              <span className="inline-flex items-center gap-3.5 shrink-0 group">
+                <StackBrandIcon
+                  name={skill.name}
+                  category={skill.category}
+                  className="w-10 h-10 transition-transform duration-200 group-hover:scale-110"
+                />
+                <span className="inline-flex items-baseline gap-2">
+                  <strong className="font-bold text-foreground tracking-tight text-sm md:text-base">
+                    {skill.name}
+                  </strong>
+                  {typeof skill.proficiency === "number" && (
+                    <span className="font-mono text-xs font-semibold text-accent-primary">
+                      {skill.proficiency}%
+                    </span>
+                  )}
+                  {skill.is_featured && (
+                    <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-accent-primary/10 text-accent-primary border border-accent-primary/20">
+                      {t("skills.topSkill", "Top Skill")}
+                    </span>
+                  )}
+                </span>
+              </span>
+              <span className={idx % 2 === 0 ? "text-primary/60" : "text-secondary/60"}>✦</span>
+            </React.Fragment>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center space-x-12 px-6">
+        {resolvedMarqueeList.map((item, idx) => (
+          <React.Fragment key={idx}>
+            <span>{item}</span>
+            <span className={idx % 2 === 0 ? "text-primary/60" : "text-secondary/60"}>✦</span>
+          </React.Fragment>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -392,9 +432,9 @@ export function CinematicFooter({
             {resolvedGiantText}
           </div>
 
-          {/* 1. Diagonal Sleek Marquee (Top of footer) */}
+          {/* 1. Diagonal Sleek Technology Stack Ribbon (Top of footer) */}
           <div className="absolute top-12 left-0 w-full overflow-hidden border-y border-border/50 bg-background/60 backdrop-blur-md py-4 z-10 -rotate-2 scale-110 shadow-2xl">
-            <div className="flex w-max animate-footer-scroll-marquee text-xs md:text-sm font-bold tracking-[0.3em] text-muted-foreground uppercase">
+            <div className="flex w-max animate-footer-scroll-marquee text-xs md:text-sm font-bold tracking-wider text-muted-foreground">
               {renderMarqueeSection()}
               {renderMarqueeSection()}
             </div>
@@ -430,20 +470,6 @@ export function CinematicFooter({
                   >
                     {btn.icon}
                     {btn.label}
-                  </MagneticButton>
-                ))}
-              </div>
-
-              {/* Secondary Navigation Section Links */}
-              <div className="flex flex-wrap justify-center gap-3 md:gap-5 w-full mt-1">
-                {resolvedSecondaryLinks.map((link, idx) => (
-                  <MagneticButton
-                    key={idx}
-                    as="a"
-                    href={link.href}
-                    className="footer-glass-pill px-5 py-2.5 rounded-full text-muted-foreground font-medium text-xs md:text-sm hover:text-foreground"
-                  >
-                    {link.label}
                   </MagneticButton>
                 ))}
               </div>

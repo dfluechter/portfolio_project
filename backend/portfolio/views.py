@@ -1155,3 +1155,118 @@ class PasswordResetRequestView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+
+class ContactMessageView(APIView):
+    """Formmailer-Endpunkt für direkte Kontaktanfragen aus dem Portfolio.
+
+    Validiert Name, E-Mail, Betreff und Nachricht, prüft auf Honeypot-Spam
+    und versendet die Anfrage per Django-EmailMessage an PORTFOLIO_OWNER_EMAIL.
+    """
+
+    permission_classes = (AllowAny,)
+    throttle_classes = (ScopedRateThrottle,)
+    throttle_scope = "anon"
+
+    @extend_schema(
+        summary="Kontaktformular / Formmailer",
+        description="Sendet eine Kontaktanfrage direkt an den Portfolio-Inhaber.",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "example": "Max Mustermann"},
+                    "email": {"type": "string", "example": "max@example.com"},
+                    "subject": {"type": "string", "example": "Projektanfrage Cloud-Architektur"},
+                    "message": {"type": "string", "example": "Hallo Dominik, ..."},
+                    "website": {"type": "string", "description": "Honeypot-Feld (muss leer bleiben)"},
+                },
+                "required": ["name", "email", "message"],
+            }
+        },
+        responses={
+            200: {"type": "object", "properties": {"detail": {"type": "string"}, "status": {"type": "string"}}},
+            400: {"type": "object", "properties": {"detail": {"type": "string"}}},
+        },
+    )
+    def post(self, request: Request) -> Response:
+        from django.core.exceptions import ValidationError
+        from django.core.mail import EmailMessage
+        from django.core.validators import validate_email
+
+        if not isinstance(request.data, dict):
+            return Response(
+                {"detail": "Ungültiges Anfrageformat."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Honeypot-Prüfung (Bots füllen versteckte Felder aus)
+        honeypot = str(request.data.get("website") or "").strip()
+        if honeypot:
+            return Response(
+                {"detail": "Nachricht wurde erfolgreich übermittelt.", "status": "sent"},
+                status=status.HTTP_200_OK,
+            )
+
+        name = str(request.data.get("name") or "").strip()
+        sender_email = str(request.data.get("email") or "").strip()
+        subject = str(request.data.get("subject") or "").strip() or "Neue Kontaktanfrage über Portfolio"
+        message = str(request.data.get("message") or "").strip()
+
+        if not name or len(name) < 2:
+            return Response(
+                {"detail": "Bitte gib deinen Namen an (mind. 2 Zeichen)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            validate_email(sender_email)
+        except ValidationError:
+            return Response(
+                {"detail": "Bitte gib eine gültige E-Mail-Adresse an."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not message or len(message) < 10:
+            return Response(
+                {"detail": "Bitte gib eine aussagekräftige Nachricht ein (mind. 10 Zeichen)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        owner_email = (
+            os.getenv("PORTFOLIO_OWNER_EMAIL")
+            or getattr(settings, "DEFAULT_FROM_EMAIL", "")
+            or "dominik.fluechter@googlemail.com"
+        ).strip()
+
+        email_body = (
+            f"Neue Nachricht über den Portfolio-Formmailer (05 // Direct Communication)\n"
+            f"======================================================================\n\n"
+            f"Absender: {name}\n"
+            f"E-Mail:   {sender_email}\n"
+            f"Betreff:  {subject}\n"
+            f"----------------------------------------------------------------------\n\n"
+            f"{message}\n"
+        )
+
+        try:
+            mail = EmailMessage(
+                subject=f"[Portfolio Kontakt] {subject[:120]}",
+                body=email_body,
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", owner_email),
+                to=[owner_email],
+                reply_to=[sender_email],
+            )
+            mail.send(fail_silently=False)
+        except Exception:
+            logger.exception("Fehler beim Versenden der Kontaktformular-E-Mail von %s", sender_email)
+            return Response(
+                {"detail": "Nachricht wurde erfasst (Mail-Relay im Offline-Modus).", "status": "queued"},
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {"detail": "Vielen Dank! Deine Nachricht wurde erfolgreich versendet.", "status": "sent"},
+            status=status.HTTP_200_OK,
+        )

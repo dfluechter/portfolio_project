@@ -102,6 +102,22 @@ export interface CreateCertificatePayload {
   sha256_hash?: string;
 }
 
+export interface TranscriptModuleEntry {
+  code?: string;
+  title: string;
+  credits?: string | number;
+  grade?: string;
+  passed?: boolean;
+}
+
+export interface ExtractedTranscriptData {
+  institution?: string;
+  degree_program?: string;
+  total_credits?: string | number;
+  overall_grade?: string;
+  modules: TranscriptModuleEntry[];
+}
+
 export interface ExtractedCertificateMetadata {
   guessed_title: string;
   guessed_provider: string;
@@ -113,6 +129,7 @@ export interface ExtractedCertificateMetadata {
   extracted_text_preview: string;
   ocr_pending: boolean;
   source_type: string;
+  transcript_data?: ExtractedTranscriptData | null;
 }
 
 export type PendingCertificateStatus = 'pending' | 'approved' | 'rejected';

@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,15 @@ import pytesseract
 from django.utils.text import slugify
 from PIL import Image
 from pypdf import PdfReader
+
+# Tesseract-Pfad & Datenverzeichnis für Windows absichern
+if os.name == "nt":
+    _tesseract_default = Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe")
+    if _tesseract_default.is_file():
+        pytesseract.pytesseract.tesseract_cmd = str(_tesseract_default)
+    _tessdata_default = Path(r"C:\Program Files\Tesseract-OCR\tessdata")
+    if _tessdata_default.is_dir() and "TESSDATA_PREFIX" not in os.environ:
+        os.environ["TESSDATA_PREFIX"] = str(_tessdata_default)
 
 logger = logging.getLogger(__name__)
 
@@ -446,69 +456,97 @@ def _extract_from_pdf(
     file_path: Path, enable_ocr: bool = True
 ) -> tuple[dict, str, bool]:
     """
-    Liest PDF-Metadaten und Textlayer. Bei leerem Textlayer wird bis zu 2 Seiten
-    per OCR über extrahierte Bilder analysiert (ohne poppler-Abhängigkeit).
+    Stufe 1 der Metadaten-Extraktion:
+    Liest PDF-Metadaten und Textlayer via pypdf mit fehlertolerantem In-Memory-Parsing (strict=False),
+    NFKC-Normalisierung und intelligenter Quality-Score-Heuristik (Short-Circuiting).
+    Bei unzureichendem Textlayer erfolgt geordneter Fallback auf Stufe 2 (Tesseract-OCR).
     """
     metadata: dict[str, str] = {}
     extracted_text = ""
     ocr_pending = False
 
     try:
+        # In-Memory Stream Processing
         with open(file_path, "rb") as f:
-            reader = PdfReader(f)
+            file_bytes = f.read()
 
-            if reader.metadata:
-                metadata = {
-                    "title": str(reader.metadata.title or ""),
-                    "author": str(reader.metadata.author or ""),
-                    "subject": str(reader.metadata.subject or ""),
-                    "creation_date": str(reader.metadata.creation_date or ""),
-                }
+        # 1. Tolerantes In-Memory-Parsing mit strict=False
+        stream = io.BytesIO(file_bytes)
+        try:
+            reader = PdfReader(stream, strict=False)
+        except TypeError:
+            reader = PdfReader(stream)
 
-            # Textlayer auslesen
-            pages_text = []
-            for page in reader.pages:
-                text = page.extract_text()
-                if text:
-                    pages_text.append(text)
-            extracted_text = "\n".join(pages_text).strip()
+        if reader.metadata:
+            metadata = {
+                "title": str(reader.metadata.title or ""),
+                "author": str(reader.metadata.author or ""),
+                "subject": str(reader.metadata.subject or ""),
+                "creation_date": str(reader.metadata.creation_date or ""),
+            }
 
-            # Wenn echter Textlayer vorhanden ist (>= 60 Zeichen und >= 8 Wörter)
-            words = extracted_text.split()
-            if len(extracted_text) >= 60 and len(words) >= 8:
-                ocr_pending = False
-            else:
-                # Bildbasierte PDF: OCR auf ersten 2 Seiten ausführen
-                if enable_ocr:
-                    ocr_texts: list[str] = []
-                    try:
-                        for page in reader.pages[:2]:
-                            for img_file in page.images:
-                                try:
-                                    img = Image.open(io.BytesIO(img_file.data))
-                                    ocr_snippet = pytesseract.image_to_string(img)
-                                    if ocr_snippet.strip():
-                                        ocr_texts.append(ocr_snippet.strip())
-                                except Exception as img_err:  # noqa: BLE001
-                                    logger.debug(
-                                        "Bild-OCR in PDF fehlgeschlagen: %s",
-                                        img_err,
-                                    )
-                                    continue
-                        if ocr_texts:
-                            extracted_text = "\n".join(ocr_texts).strip()
-                            ocr_pending = False
-                        else:
-                            ocr_pending = True
-                    except Exception as ocr_err:  # noqa: BLE001
-                        logger.warning(
-                            "OCR für PDF %s nicht möglich: %s",
-                            file_path.name,
-                            ocr_err,
-                        )
+        # 2. Textlayer auslesen & Unicode-Normalisierung (NFKC) + Ligatur-Bereinigung
+        raw_pages_text = []
+        for page in reader.pages:
+            text = page.extract_text() or ""
+            if text:
+                raw_pages_text.append(text)
+
+        full_raw_text = "\n".join(raw_pages_text)
+        normalized_text = unicodedata.normalize("NFKC", full_raw_text)
+        cleaned_text = re.sub(r"[ \t]+", " ", normalized_text)
+        cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text).strip()
+        extracted_text = cleaned_text
+
+        # 3. Intelligente Quality-Score-Heuristik (Short-Circuiting)
+        words = extracted_text.split()
+        has_certificate_keywords = bool(
+            re.search(
+                r"(zertifikat|certificate|completion|issued|datum|date|abschluss|erfolgreich|nachweis|teilnahme)",
+                extracted_text,
+                re.IGNORECASE,
+            )
+        )
+        is_sufficient = (
+            (len(extracted_text) >= 100 and len(words) >= 10 and has_certificate_keywords)
+            or (len(extracted_text) >= 160 and len(words) >= 20)
+        )
+
+        # Wenn echter Textlayer ausreichend ist (oder >= 60 Zeichen und >= 8 Wörter bei deaktiviertem OCR)
+        if is_sufficient or (len(extracted_text) >= 60 and len(words) >= 8 and not enable_ocr):
+            ocr_pending = False
+        else:
+            # Bildbasierte PDF oder unvollständiger Text: Stufe 2 OCR auf ersten 2 Seiten ausführen
+            if enable_ocr:
+                ocr_texts: list[str] = []
+                try:
+                    for page in reader.pages[:2]:
+                        for img_file in page.images:
+                            try:
+                                img = Image.open(io.BytesIO(img_file.data))
+                                ocr_snippet = pytesseract.image_to_string(img)
+                                if ocr_snippet.strip():
+                                    ocr_texts.append(ocr_snippet.strip())
+                            except Exception as img_err:  # noqa: BLE001
+                                logger.debug(
+                                    "Bild-OCR in PDF fehlgeschlagen: %s",
+                                    img_err,
+                                )
+                                continue
+                    if ocr_texts:
+                        extracted_text = "\n".join(ocr_texts).strip()
+                        ocr_pending = False
+                    else:
                         ocr_pending = True
-                else:
+                except Exception as ocr_err:  # noqa: BLE001
+                    logger.warning(
+                        "OCR für PDF %s nicht möglich: %s",
+                        file_path.name,
+                        ocr_err,
+                    )
                     ocr_pending = True
+            else:
+                ocr_pending = True
     except Exception as exc:  # noqa: BLE001
         logger.warning("PDF-Extraktion fehlgeschlagen für %s: %s", file_path.name, exc)
         ocr_pending = True

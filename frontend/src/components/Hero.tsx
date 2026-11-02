@@ -1,244 +1,282 @@
-import React, { useState } from 'react';
-import { ArrowRight, Award, Database, Layers, ShieldCheck } from 'lucide-react';
-import type { Variants } from 'framer-motion';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion, type Variants } from 'framer-motion';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { HeroSearch } from './HeroSearch';
-import { ArchitectureTerminal } from './ArchitectureTerminal';
-import { HeroBanner } from './HeroBanner';
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.05,
-    },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4 },
-  },
-};
-
-const techBadges = [
-  'Django 5.2',
-  'Python 3.13',
-  'React 19 & Vite',
-  'TypeScript',
-  'Tailwind CSS',
-  'PostgreSQL / Neon',
-  'Supabase S3',
-  'Render DevOps',
-];
+import { HeroThreeBackground } from './HeroThreeBackground';
+import { StackBrandIcon } from './StackBrandIcon';
 
 export const Hero: React.FC = () => {
   const { t } = useTranslation();
-  const [showcaseMode, setShowcaseMode] = useState<'banner' | 'terminal'>('banner');
+  const shouldReduceMotion = useReducedMotion();
+
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: shouldReduceMotion ? 0 : 0.08,
+        delayChildren: shouldReduceMotion ? 0 : 0.05,
+      },
+    },
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 14 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: shouldReduceMotion ? 0.1 : 0.5,
+        ease: [0.22, 1, 0.36, 1],
+      },
+    },
+  };
+
+  const telemetryMetrics = [
+    {
+      code: 'SYS-01',
+      label: t('hero.stat1Label', 'Test-First & Clean Architecture'),
+      value: 'TDD / CI',
+      detail: 'Pytest · Vitest · GitHub Actions',
+    },
+    {
+      code: 'SYS-02',
+      label: t('hero.stat2Label', 'Verifizierte Fachzertifikate'),
+      value: '190+ S3',
+      detail: 'SHA-256 Deduplicated · Presigned',
+    },
+    {
+      code: 'SYS-03',
+      label: t('hero.stat3Label', 'Cloud-Native Infrastruktur'),
+      value: 'Django 6',
+      detail: 'React 19 · Neon Postgres · Render',
+    },
+  ];
+
+  const techStackRibbon = [
+    'Python 3.13',
+    'Django 6 & DRF',
+    'React 19',
+    'TypeScript 5.9',
+    'PostgreSQL & Neon',
+    'Supabase S3',
+    'Tailwind CSS 4',
+    'Docker & Render',
+    'Pytest & Vitest (TDD)',
+  ];
 
   return (
-    <section id="about" className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden transition-colors duration-300">
-      {/* Subtiles architektonisches Raster im Hintergrund */}
-      <div className="absolute inset-0 bg-architectural-grid opacity-60 dark:opacity-40 pointer-events-none -z-10 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
+    <section
+      id="hero"
+      className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center overflow-hidden bg-background pt-10 pb-20 md:py-24 border-b border-border"
+    >
+      {/* Swiss Architectural Grid Background */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(128,128,128,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(128,128,128,0.05)_1px,transparent_1px)] bg-[size:48px_48px]"
+      />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-start">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="lg:col-span-7 space-y-6"
-          >
-            {/* Status-Zeile mit Live-System-Indikator */}
-            <motion.div variants={itemVariants}>
-              <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-700 dark:text-slate-300">
-                <span className="relative flex h-2 w-2" aria-hidden="true">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span>{t('hero.statusBadge', 'Full-Stack Developer & Software Engineer')}</span>
-              </div>
+      {/* Interactive React Three Fiber 3D Architectural Scene */}
+      <HeroThreeBackground />
+
+      {/* Subtle Ambient Radial Glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-32 right-1/4 w-[36rem] h-[36rem] rounded-full bg-accent-primary/8 blur-[120px]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-32 left-1/4 w-[30rem] h-[30rem] rounded-full bg-accent-secondary/8 blur-[120px]"
+      />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+        <motion.div
+          className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Left Column: Architectural Headline & Value Proposition (7 cols) */}
+          <div className="lg:col-span-7 flex flex-col items-start text-left">
+            {/* Status Telemetry Pill */}
+            <motion.div
+              variants={itemVariants}
+              className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-surface/90 border border-border mb-7 shadow-2xs backdrop-blur-md"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span className="font-mono text-xs font-medium tracking-wider uppercase text-text-secondary">
+                {t('hero.statusBadge', 'Full-Stack Developer & Software Engineer')}
+              </span>
             </motion.div>
 
-            {/* Heading: Typografische Skalierung laut MASTER.md 1.2 */}
+            {/* Primary Display Typography */}
             <motion.h1
               variants={itemVariants}
-              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.08]"
+              className="text-4xl sm:text-6xl xl:text-7xl font-bold text-text-primary tracking-tight leading-[1.06] mb-6"
             >
-              {t('hero.title', 'Moderne Web-Architektur mit Django & React')}
+              <span className="block text-text-secondary font-medium text-xl sm:text-2xl mb-2 tracking-normal">
+                Dominik Flüchter — {t('hero.badge', 'Full-Stack Software Engineer')}
+              </span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary via-orange-500 to-accent-secondary">
+                {t('hero.title', 'Moderne Web-Architektur mit Django & React')}
+              </span>
             </motion.h1>
 
-            {/* Subtitle: ruhig, diszipliniert, unter 80 Zeichen pro Zeile */}
+            {/* Concise Engineering Summary */}
             <motion.p
               variants={itemVariants}
-              className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl"
+              className="text-base sm:text-lg md:text-xl text-text-secondary mb-9 max-w-2xl leading-relaxed font-normal"
             >
               {t(
                 'hero.subtitle',
-                'Entwicklung robuster Backend-Services und reaktiver Benutzeroberflächen. Spezialisiert auf wartbare REST-APIs, strikte Typisierung und nachvollziehbare Testabdeckung.'
+                'Entwicklung robuster Backend-Services und reaktiven Benutzeroberflächen. Spezialisiert auf wartbare REST-APIs, strikte Typisierung und nachvollziehbare Testabdeckung.'
               )}
             </motion.p>
 
-            {/* Zentrales Hero-Suchfeld als Command Center */}
-            <motion.div variants={itemVariants} className="pt-2">
-              <HeroSearch />
-            </motion.div>
-
-            {/* Action Buttons: klare Verben, keine Pfeile im Text */}
-            <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-3 pt-2">
+            {/* Action Bar */}
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-wrap items-center gap-4 w-full sm:w-auto"
+            >
               <a
                 href="#projects"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition-colors shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 text-sm sm:text-base font-semibold rounded-xl text-white bg-accent-primary hover:bg-accent-primary/90 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
               >
                 <span>{t('hero.exploreProjects', 'Projekte entdecken')}</span>
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
+                </svg>
               </a>
+
               <a
                 href="#certificates"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 font-medium text-sm transition-colors shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm sm:text-base font-semibold rounded-xl text-text-primary bg-surface/90 hover:bg-surface-hover border border-border transition-all duration-200 cursor-pointer backdrop-blur-md"
               >
-                <Award className="w-4 h-4 text-slate-500 dark:text-slate-400" aria-hidden="true" />
                 <span>{t('hero.viewCertificates', 'Zertifikate einsehen')}</span>
               </a>
-            </motion.div>
-          </motion.div>
 
-          {/* Rechte Spalte: Interaktives System- & Architektur-Showcase (Banner / Terminal) */}
+              <a
+                href="#contact"
+                className="inline-flex items-center justify-center px-5 py-3.5 text-sm sm:text-base font-medium rounded-xl text-text-secondary hover:text-text-primary transition-colors duration-200 cursor-pointer"
+              >
+                {t('hero.contactMe', 'Kontakt aufnehmen')}
+              </a>
+            </motion.div>
+          </div>
+
+          {/* Right Column: Swiss Precision Architecture Blueprint Panel (5 cols) */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="lg:col-span-5 w-full pt-2 lg:pt-0 space-y-3"
+            variants={itemVariants}
+            className="lg:col-span-5 w-full"
           >
-            {/* Showcase View Toggle */}
-            <div className="flex items-center justify-end">
-              <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowcaseMode('banner')}
-                  aria-pressed={showcaseMode === 'banner'}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold font-mono transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-                    showcaseMode === 'banner'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {t('hero.showcaseVisual', 'Visualisierung')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowcaseMode('terminal')}
-                  aria-pressed={showcaseMode === 'terminal'}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold font-mono transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-                    showcaseMode === 'terminal'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {t('hero.showcaseTerminal', 'Live-Terminal')}
-                </button>
+            <div className="rounded-2xl bg-surface/85 backdrop-blur-xl border border-border shadow-lg overflow-hidden">
+              {/* Terminal / Blueprint Header */}
+              <div className="px-5 py-3.5 border-b border-border flex items-center justify-between bg-background/60">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-accent-primary/80" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                  <span className="ml-2 font-mono text-xs text-text-muted tracking-wider uppercase">
+                    ARCH // SYSTEM-SPEC v2.6
+                  </span>
+                </div>
+                <span className="font-mono text-[11px] text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  ONLINE
+                </span>
+              </div>
+
+              {/* Telemetry Metrics Grid */}
+              <div className="divide-y divide-border">
+                {telemetryMetrics.map((metric) => (
+                  <div
+                    key={metric.code}
+                    className="p-5 hover:bg-surface-hover/50 transition-colors"
+                  >
+                    <div className="flex items-baseline justify-between gap-4 mb-1">
+                      <span className="font-mono text-xs text-text-muted uppercase tracking-widest">
+                        {metric.code} // {metric.label}
+                      </span>
+                      <span className="font-mono text-lg sm:text-xl font-bold text-text-primary">
+                        {metric.value}
+                      </span>
+                    </div>
+                    <p className="font-mono text-xs text-text-secondary">
+                      {metric.detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Architecture Stack Footer inside Card */}
+              <div className="p-5 bg-background/50 border-t border-border">
+                <div className="font-mono text-[11px] uppercase tracking-wider text-text-muted mb-3">
+                  Core Stack Blueprint
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center font-mono text-xs">
+                  <div className="p-2.5 rounded-lg bg-surface border border-border text-text-primary">
+                    <span className="block text-[10px] text-text-muted mb-0.5">API LAYER</span>
+                    Django 6 REST
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-surface border border-border text-text-primary">
+                    <span className="block text-[10px] text-text-muted mb-0.5">UI ENGINE</span>
+                    React 19 + TS
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-surface border border-border text-text-primary">
+                    <span className="block text-[10px] text-text-muted mb-0.5">STORAGE</span>
+                    Neon + S3
+                  </div>
+                </div>
               </div>
             </div>
-
-            {showcaseMode === 'banner' ? (
-              <HeroBanner />
-            ) : (
-              <ArchitectureTerminal />
-            )}
           </motion.div>
-        </div>
+        </motion.div>
 
-        {/* Technologien: ruhige Tag-Leiste ohne ALL-CAPS */}
-        <div className="mt-14 pt-8 border-t border-slate-200 dark:border-slate-800">
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3">
-            {t('hero.coreTechHeading', 'Eingesetzte Kerntechnologien')}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            {techBadges.map((tech) => (
+        {/* Bottom Technology Ribbon — In einer Zeile als Fließtext mit großen farbigen Icons */}
+        <motion.div
+          id="skills"
+          initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: shouldReduceMotion ? 0 : 0.35 }}
+          className="mt-14 pt-8 border-t border-border/80 flex flex-col gap-3"
+        >
+          <p className="flex flex-nowrap items-center gap-6 overflow-x-auto whitespace-nowrap py-2 text-sm sm:text-base text-text-primary scrollbar-thin">
+            {techStackRibbon.map((tech, idx) => (
               <span
                 key={tech}
-                className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-mono border border-slate-200 dark:border-slate-800 whitespace-nowrap"
+                className="inline-flex items-center gap-3 shrink-0 group"
               >
-                {tech}
+                <StackBrandIcon
+                  name={tech}
+                  className="w-10 h-10 transition-transform duration-200 group-hover:scale-110"
+                />
+                <span className="font-semibold tracking-tight text-text-primary group-hover:text-accent-primary transition-colors">
+                  {tech}
+                </span>
+                {idx < techStackRibbon.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="text-text-muted/50 font-mono text-base select-none pl-1"
+                  >
+                    ·
+                  </span>
+                )}
               </span>
             ))}
-          </div>
-        </div>
-
-        {/* 3-Spalten Architektur-Spezifikations-Grid (MASTER.md 01/02/03 Matrix) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-800 shadow-sm mt-10">
-          {/* Backend Core */}
-          <div className="p-6 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                {t('hero.architecture.card1.eyebrow', '01 // Backend Core')}
-              </span>
-              <Database className="w-4 h-4 text-slate-400 dark:text-slate-500" aria-hidden="true" />
-            </div>
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2">
-              {t('hero.architecture.card1.title', 'Cloud Native Backend')}
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              {t(
-                'hero.architecture.card1.desc',
-                'Skalierbare REST-APIs mit Django 5.2, PostgreSQL auf Neon, Djoser JWT-Authentifizierung und Supabase S3 Storage.'
-              )}
-            </p>
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-              {t('hero.architecture.card1.tag', 'Django 5.2, PostgreSQL, S3')}
-            </div>
-          </div>
-
-          {/* Reactive Client */}
-          <div className="p-6 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                {t('hero.architecture.card2.eyebrow', '02 // Reactive Client')}
-              </span>
-              <Layers className="w-4 h-4 text-slate-400 dark:text-slate-500" aria-hidden="true" />
-            </div>
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2">
-              {t('hero.architecture.card2.title', 'Modernes Frontend')}
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              {t(
-                'hero.architecture.card2.desc',
-                'Reaktionsschnelle Benutzeroberflächen mit React 19, Vite, TypeScript, Tailwind CSS und TanStack Query.'
-              )}
-            </p>
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-              {t('hero.architecture.card2.tag', 'React 19, TypeScript, Vite')}
-            </div>
-          </div>
-
-          {/* Quality & Security */}
-          <div className="p-6 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                {t('hero.architecture.card3.eyebrow', '03 // Quality & Security')}
-              </span>
-              <ShieldCheck className="w-4 h-4 text-slate-400 dark:text-slate-500" aria-hidden="true" />
-            </div>
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2">
-              {t('hero.architecture.card3.title', 'Qualität & Sicherheit')}
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              {t(
-                'hero.architecture.card3.desc',
-                'Automatisierte Code-Reviews mit Ruff, strikte Typisierung mit Mypy, End-to-End und Unit-Testing mit Pytest und Vitest.'
-              )}
-            </p>
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-              {t('hero.architecture.card3.tag', 'Ruff, Mypy, Pytest ≥96%')}
-            </div>
-          </div>
-        </div>
+          </p>
+        </motion.div>
       </div>
     </section>
   );

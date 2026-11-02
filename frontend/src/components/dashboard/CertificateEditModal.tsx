@@ -1,16 +1,19 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
+  BookOpen,
   Check,
   CheckCircle2,
   ExternalLink,
   EyeOff,
   FileText,
   Globe,
+  GraduationCap,
   Loader2,
   Pencil,
   Save,
   Sparkles,
+  TableProperties,
   X,
 } from 'lucide-react';
 import {
@@ -20,7 +23,7 @@ import {
   useUpdateCertificate,
 } from '../../hooks/usePortfolio';
 import { TrackIcon } from '../TrackIcon';
-import type { Certificate, ExtractedCertificateMetadata, Provider } from '../../types';
+import type { Certificate, ExtractedCertificateMetadata, ExtractedTranscriptData, Provider } from '../../types';
 
 export interface CertificateEditModalProps {
   certificate: Certificate | null;
@@ -202,7 +205,158 @@ interface CertificateOcrSuggestionsBannerProps {
   onRunOcr: () => void;
   onApplyField: (field: OcrField) => void;
   onApplyAll: () => void;
+  onSelectModuleTitle?: (title: string) => void;
 }
+
+export interface CertificateTranscriptTableProps {
+  transcript: ExtractedTranscriptData;
+  className?: string;
+  onSelectModule?: (moduleTitle: string) => void;
+}
+
+export const CertificateTranscriptTable: React.FC<CertificateTranscriptTableProps> = ({
+  transcript,
+  className = '',
+  onSelectModule,
+}) => {
+  const { institution, degree_program, total_credits, overall_grade, modules } = transcript;
+
+  if (!modules || modules.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`rounded-xl border border-indigo-900/40 bg-slate-950/80 p-3 flex flex-col gap-2.5 shadow-inner ${className}`}
+      data-testid="certificate-transcript-table"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-indigo-900/30">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+              <span>{degree_program || 'Leistungsnachweis / Transcript'}</span>
+            </h4>
+            {institution && (
+              <p className="text-[10px] text-slate-400 truncate max-w-xs">{institution}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          {total_credits !== undefined && (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-300">
+              <BookOpen className="w-3 h-3 text-sky-400" aria-hidden="true" />
+              <span>{total_credits} ECTS / Credits</span>
+            </div>
+          )}
+
+          {overall_grade && (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-800/60 text-[10px] font-mono font-bold text-emerald-400">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" aria-hidden="true" />
+              <span>Note: {overall_grade}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border border-slate-800/90 bg-slate-900/40 scrollbar-thin">
+        <table
+          className="w-full text-left text-[11px] text-slate-300 border-collapse"
+          aria-label="Tabelle der erbrachten Modulleistungen und Noten"
+        >
+          <thead>
+            <tr className="border-b border-slate-800 bg-slate-900/90 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+              <th scope="col" className="py-1.5 px-3">
+                Modul / Lehrveranstaltung
+              </th>
+              <th scope="col" className="py-1.5 px-2.5 text-center w-20">
+                Credits
+              </th>
+              <th scope="col" className="py-1.5 px-2.5 text-center w-20">
+                Bewertung
+              </th>
+              {onSelectModule && (
+                <th scope="col" className="py-1.5 px-3 text-right w-24">
+                  Aktion
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/60 font-sans">
+            {modules.map((mod, idx) => {
+              const isPassed = mod.passed !== false;
+              return (
+                <tr
+                  key={`${mod.code || idx}-${mod.title}`}
+                  className="hover:bg-indigo-950/20 transition-colors group"
+                >
+                  <td className="py-1.5 px-3">
+                    <div className="flex items-center gap-2">
+                      {mod.code && (
+                        <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60 shrink-0">
+                          {mod.code}
+                        </span>
+                      )}
+                      <span className="font-medium text-slate-200 group-hover:text-white transition-colors">
+                        {mod.title}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-1.5 px-2.5 text-center font-mono text-slate-400">
+                    {mod.credits !== undefined ? `${mod.credits}` : '—'}
+                  </td>
+                  <td className="py-1.5 px-2.5 text-center font-mono font-semibold">
+                    {mod.grade ? (
+                      <span
+                        className={`inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 rounded text-[10px] ${
+                          isPassed
+                            ? 'bg-emerald-950/70 border border-emerald-800/60 text-emerald-400'
+                            : 'bg-red-950/70 border border-red-800/60 text-red-400'
+                        }`}
+                      >
+                        {mod.grade}
+                      </span>
+                    ) : isPassed ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400">
+                        <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                        <span>Bestanden</span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-500">—</span>
+                    )}
+                  </td>
+                  {onSelectModule && (
+                    <td className="py-1.5 px-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => onSelectModule(mod.title)}
+                        className="cursor-pointer text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 rounded px-1"
+                        title={`"${mod.title}" als Zertifikatstitel übernehmen`}
+                      >
+                        Als Titel
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 px-1">
+        <span className="flex items-center gap-1">
+          <TableProperties className="w-3 h-3 text-slate-400" aria-hidden="true" />
+          <span>{modules.length} Module aus Transcript extrahiert</span>
+        </span>
+        <span>pdfplumber Deep-Extraction</span>
+      </div>
+    </div>
+  );
+};
 
 export const CertificateOcrSuggestionsBanner: React.FC<CertificateOcrSuggestionsBannerProps> = ({
   hasPdfFile,
@@ -211,17 +365,54 @@ export const CertificateOcrSuggestionsBanner: React.FC<CertificateOcrSuggestions
   onRunOcr,
   onApplyField,
   onApplyAll,
+  onSelectModuleTitle,
 }) => {
+  // Bestimmt die verwendete OCR-Stufe (Stufe 1, 2 oder 3)
+  const ocrStage = (() => {
+    if (!extractedData) return null;
+    if (extractedData.source_type === 'gemini_vision') {
+      return {
+        badge: 'Stufe 3: Gemini Flash Vision',
+        info: 'Multimodale KI-Vision & strukturierte JSON-Metadatenextraktion',
+        color: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+      };
+    }
+    if (extractedData.source_type === 'image') {
+      return {
+        badge: 'Stufe 2: Tesseract OCR',
+        info: 'Lokale Bild-Texterkennung via Tesseract Engine (eng+deu)',
+        color: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      };
+    }
+    return {
+      badge: 'Stufe 1: pypdf Textlayer',
+      info: 'Natives PDF-Textlayer-Parsing mit Unicode-NFKC-Normalisierung',
+      color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    };
+  })();
+
   return (
     <div className="p-3.5 rounded-xl bg-indigo-950/30 border border-indigo-800/40 space-y-2.5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            OCR & Metadaten-Extraktion
-          </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              OCR & Metadaten-Extraktion
+            </h3>
+            {ocrStage && (
+              <span
+                data-testid="ocr-stage-badge"
+                className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${ocrStage.color}`}
+              >
+                {ocrStage.badge}
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-slate-400">
-            Liest Text layer & Fallback-Vision aus dem Dokument aus.
+            {ocrStage
+              ? ocrStage.info
+              : 'Kaskadierende 3-Stufen-OCR: Stufe 1 (pypdf Textlayer) → Stufe 2 (Tesseract OCR) → Stufe 3 (Gemini Vision)'}
           </p>
         </div>
         <button
@@ -338,6 +529,14 @@ export const CertificateOcrSuggestionsBanner: React.FC<CertificateOcrSuggestions
               </div>
             )}
           </div>
+
+          {/* Transcript Tabelle falls Leistungsdaten extrahiert wurden */}
+          {extractedData.transcript_data && (
+            <CertificateTranscriptTable
+              transcript={extractedData.transcript_data}
+              onSelectModule={onSelectModuleTitle}
+            />
+          )}
         </div>
       )}
     </div>
@@ -540,6 +739,7 @@ export const CertificateEditModal: React.FC<CertificateEditModalProps> = ({
               onRunOcr={handleRunOcr}
               onApplyField={applyOcrField}
               onApplyAll={applyAllOcrSuggestions}
+              onSelectModuleTitle={(modTitle) => setTitle(modTitle)}
             />
 
             {/* Formularfelder */}

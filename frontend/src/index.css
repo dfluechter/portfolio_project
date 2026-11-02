@@ -27,6 +27,7 @@
 @layer base {
   :root {
     color-scheme: light;
+    scroll-padding-top: 5rem;
     --background: #ffffff;
     --foreground: #020617;
     --card: #ffffff;
@@ -69,6 +70,11 @@
     --border: #1e293b;
     --input: #1e293b;
     --ring: #818cf8;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
   }
 
   body {
@@ -166,15 +172,15 @@
   }
 }
 
-/* Glassmorphism Classes */
+/* Glassmorphism & Swiss Architectural Surface Primitives */
 .glass-card {
-  @apply bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm dark:shadow-2xl transition-all duration-300;
+  @apply bg-white/85 dark:bg-slate-900/65 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm dark:shadow-2xl transition-all duration-300;
 }
 
 .glass-card-hover {
-  @apply hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1;
+  @apply hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-0.5;
 }
 
 .glass-nav {
-  @apply bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80;
+  @apply bg-white/85 dark:bg-slate-950/85 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80;
 }

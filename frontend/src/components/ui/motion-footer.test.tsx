@@ -122,20 +122,12 @@ describe('CinematicFooter Component', () => {
       expect(emailBtn).toHaveClass('footer-glass-pill');
     });
 
-    it('renders secondary section navigation links', () => {
-      render(<CinematicFooter />);
+    it('does not render removed secondary section navigation links row', () => {
+      const { container } = render(<CinematicFooter />);
 
-      const projectsLink = screen.getByRole('link', { name: /projekte/i });
-      expect(projectsLink).toBeInTheDocument();
-      expect(projectsLink).toHaveAttribute('href', '#projects');
-
-      const skillsLink = screen.getByRole('link', { name: /skills/i });
-      expect(skillsLink).toBeInTheDocument();
-      expect(skillsLink).toHaveAttribute('href', '#skills');
-
-      const certsLink = screen.getByRole('link', { name: /zertifikate/i });
-      expect(certsLink).toBeInTheDocument();
-      expect(certsLink).toHaveAttribute('href', '#certificates');
+      expect(
+        container.querySelector('.flex.flex-wrap.justify-center.gap-3.md\\:gap-5.w-full.mt-1')
+      ).not.toBeInTheDocument();
     });
 
     it('renders bottom credits, brand badge and copyright notice', () => {
@@ -310,7 +302,7 @@ describe('CinematicFooter Component', () => {
       render(<CinematicFooter />);
 
       const allLinks = screen.getAllByRole('link');
-      expect(allLinks.length).toBe(6);
+      expect(allLinks.length).toBe(2);
 
       for (const link of allLinks) {
         expect(link).toHaveAttribute('href');

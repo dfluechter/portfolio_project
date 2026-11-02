@@ -64,16 +64,22 @@ export const ProjectsSection: React.FC = () => {
   });
 
   return (
-    <section id="projects" className="py-20 bg-slate-50 dark:bg-slate-950/70 border-t border-slate-200 dark:border-slate-800/80 transition-colors">
+    <section
+      id="projects"
+      className="scroll-mt-20 py-20 bg-slate-50 dark:bg-slate-950/70 border-t border-slate-200/90 dark:border-slate-800/80 transition-colors"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2 text-xs font-mono text-indigo-600 dark:text-indigo-400">
-              <span>{t('projects.eyebrow', '02 // System Implementations')}</span>
+              <span className="font-semibold">{t('projects.eyebrow', '02 // System Implementations')}</span>
               <span className="text-slate-300 dark:text-slate-700">/</span>
-              <span>
-                {t('projects.label', 'Projekte')} ({allProjects.length})
+              <span className="inline-flex items-center gap-1.5">
+                <FolderGit2 className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>
+                  {t('projects.label', 'Projekte')} ({allProjects.length})
+                </span>
               </span>
               {searchTerm && (
                 <span
@@ -85,7 +91,7 @@ export const ProjectsSection: React.FC = () => {
                 </span>
               )}
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {t('projects.heading', 'Projekte & Entwicklungen')}
             </h2>
           </div>
@@ -101,7 +107,7 @@ export const ProjectsSection: React.FC = () => {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-72 rounded-xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
+              <div key={n} className="h-72 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
             ))}
           </div>
         ) : filteredProjects.length === 0 ? (
@@ -113,7 +119,7 @@ export const ProjectsSection: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence>
-              {filteredProjects.map((project) => {
+              {filteredProjects.map((project, idx) => {
                 const imageUrl = resolveProjectImageUrl(project.image);
                 const formattedDate = project.created_at
                   ? new Date(project.created_at).toLocaleDateString(dateLocale, {
@@ -121,6 +127,7 @@ export const ProjectsSection: React.FC = () => {
                       year: 'numeric',
                     })
                   : null;
+                const projectCode = `PRJ-${String(idx + 1).padStart(2, '0')}`;
 
                 return (
                   <motion.div
@@ -131,31 +138,48 @@ export const ProjectsSection: React.FC = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={{ duration: 0.2 }}
-                    className="group flex flex-col justify-between rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/40 dark:hover:border-indigo-500/40 shadow-sm overflow-hidden transition-all duration-200"
+                    className="group flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900/65 border border-slate-200/90 dark:border-slate-800/90 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 shadow-xs hover:shadow-lg overflow-hidden transition-all duration-200 hover:-translate-y-0.5"
                   >
-                    {/* Dedizierter Medien-Header oben */}
+                    {/* Dedizierter Medien- oder Blueprint-Header oben */}
                     {imageUrl ? (
-                      <div className="h-40 overflow-hidden border-b border-slate-200 dark:border-slate-800 relative bg-slate-100 dark:bg-slate-900">
+                      <div className="h-40 overflow-hidden border-b border-slate-200/80 dark:border-slate-800/80 relative bg-slate-100 dark:bg-slate-900">
                         <img
                           src={imageUrl}
                           alt={project.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
+                        <span
+                          aria-hidden="true"
+                          className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-xs border border-slate-700/80 text-[10px] font-mono font-semibold text-indigo-300"
+                        >
+                          {projectCode}
+                        </span>
                         {formattedDate && (
-                          <div className="absolute bottom-2.5 left-3 px-2 py-0.5 rounded bg-slate-900/80 backdrop-blur-sm text-[11px] font-mono text-slate-200 flex items-center gap-1.5">
+                          <div className="absolute bottom-2.5 left-3 px-2.5 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-xs border border-slate-800 text-[11px] font-mono text-slate-200 flex items-center gap-1.5">
                             <Calendar className="w-3 h-3 text-indigo-400" aria-hidden="true" />
                             <span>{formattedDate}</span>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="h-28 overflow-hidden border-b border-slate-200 dark:border-slate-800 relative p-4 flex items-center justify-between bg-slate-50 dark:bg-slate-900/40 bg-blueprint-grid">
-                        <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm">
-                          <FolderGit2 className="w-4 h-4" aria-hidden="true" />
+                      <div className="h-28 overflow-hidden border-b border-slate-200/80 dark:border-slate-800/80 relative p-5 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/50 bg-blueprint-grid">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200/80 dark:border-indigo-800/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-2xs group-hover:border-indigo-500/50 transition-colors">
+                            <FolderGit2 className="w-4 h-4" aria-hidden="true" />
+                          </div>
+                          <div className="flex flex-col" aria-hidden="true">
+                            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                              {projectCode}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500">
+                              SYS // MODULE
+                            </span>
+                          </div>
                         </div>
                         {formattedDate && (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-mono bg-white dark:bg-slate-900 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-800">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-mono bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200/90 dark:border-slate-800 shadow-2xs">
                             <Calendar className="w-3 h-3 text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
                             <span>{formattedDate}</span>
                           </div>
@@ -165,7 +189,7 @@ export const ProjectsSection: React.FC = () => {
 
                     <div className="p-6 flex-1 flex flex-col justify-between">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors tracking-tight">
                           {project.title}
                         </h3>
                         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3 mb-4">
@@ -176,7 +200,7 @@ export const ProjectsSection: React.FC = () => {
                             {project.skill_details.map((skill) => (
                               <span
                                 key={skill.id}
-                                className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 whitespace-nowrap"
+                                className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80 whitespace-nowrap"
                               >
                                 {skill.name}
                               </span>
@@ -191,7 +215,7 @@ export const ProjectsSection: React.FC = () => {
                             href={project.github_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200/80 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200/70 dark:border-slate-700/70 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                           >
                             <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
                               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
@@ -205,7 +229,7 @@ export const ProjectsSection: React.FC = () => {
                             href={project.live_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-xs font-semibold text-indigo-600 dark:text-indigo-300 transition-colors ml-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 border border-indigo-200/70 dark:border-indigo-500/30 text-xs font-semibold text-indigo-600 dark:text-indigo-300 transition-colors ml-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                           >
                             <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                             <span>{t('projects.liveDemo', 'Live Demo')}</span>

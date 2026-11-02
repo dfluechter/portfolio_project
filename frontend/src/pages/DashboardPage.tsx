@@ -1,238 +1,384 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useCertificates, usePendingCertificates, useProjects } from '../hooks/usePortfolio';
-import { Award, FolderGit2, Inbox, LogOut, X } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Activity,
+  AlertCircle,
+  ArrowLeft,
+  Award,
+  Building2,
+  CheckCircle,
+  Database,
+  FolderKanban,
+  HardDrive,
+  Inbox,
+  LogOut,
+  ShieldCheck,
+  Sparkles,
+  Terminal,
+  X,
+} from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { CertificateManager } from '../components/dashboard/CertificateManager';
 import { PendingCertificateManager } from '../components/dashboard/PendingCertificateManager';
 import { ProjectManager } from '../components/dashboard/ProjectManager';
+import { useAuth } from '../context/AuthContext';
+import {
+  useCertificates,
+  usePendingCertificates,
+  useProjects,
+  useProviders,
+} from '../hooks/usePortfolio';
 
-const LOGO_SRC = '/static/img/icons/logo_df_1.png';
+type ActiveTab = 'certificates' | 'projects' | 'pending';
 
 export const DashboardPage: React.FC = () => {
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<'certificates' | 'projects' | 'inbox'>('certificates');
-  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const { data: certificates = [] } = useCertificates();
+  const { data: projects = [] } = useProjects();
+  const { data: providers = [] } = useProviders();
+  const { data: pendingCerts = [] } = usePendingCertificates();
 
-  const { data: rawCertificates = [] } = useCertificates();
-  const certificates = Array.isArray(rawCertificates) ? rawCertificates : [];
-  const { data: rawProjects = [] } = useProjects();
-  const projects = Array.isArray(rawProjects) ? rawProjects : [];
-  const { data: rawPendingList = [] } = usePendingCertificates();
-  const pendingList = Array.isArray(rawPendingList) ? rawPendingList : [];
-  const pendingCount = pendingList.filter((p) => p.status === 'pending').length;
+  const [activeTab, setActiveTab] = useState<ActiveTab>('certificates');
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isLoading, isAuthenticated, navigate]);
+  const pendingCount = pendingCerts.filter((p) => p.status === 'pending').length;
+  const publishedCertsCount = certificates.filter((c) => c.is_published).length;
+  const draftCertsCount = Math.max(0, certificates.length - publishedCertsCount);
+  const publishedCertRatio =
+    certificates.length > 0
+      ? Math.round((publishedCertsCount / certificates.length) * 100)
+      : 0;
 
-  if (isLoading || !isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-950 bg-architectural-grid flex items-center justify-center text-white">
-        <div className="flex items-center gap-3">
-          <span className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-medium text-slate-400">Lade Dashboard...</span>
-        </div>
-      </div>
-    );
-  }
+  const featuredProjectsCount = projects.filter((p) => p.is_featured).length;
+  const featuredProjectRatio =
+    projects.length > 0
+      ? Math.round((featuredProjectsCount / projects.length) * 100)
+      : 0;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const showNotification = (msg: { type: 'success' | 'error'; text: string }) => {
+    setNotification(msg);
+    setTimeout(() => {
+      setNotification((prev) => (prev?.text === msg.text ? null : prev));
+    }, 5000);
+  };
 
   return (
-    <div className="min-h-screen bg-slate-950 bg-architectural-grid text-slate-100 selection:bg-indigo-500 selection:text-white">
-      {/* Dashboard Top Header */}
-      <header className="bg-slate-950/90 border-b border-slate-800/90 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src={LOGO_SRC}
-              alt="Logo"
-              className="w-9 h-9 rounded-xl object-contain border border-slate-800 bg-black shadow-sm"
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold text-white leading-tight">Portfolio Admin Dashboard</h1>
-                <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
-                  ADMIN CONSOLE // ACTIVE
-                </span>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative selection:bg-indigo-500 selection:text-white">
+      {/* Subtle Architectural Grid & Ambient Illumination */}
+      <div
+        className="pointer-events-none fixed inset-0 bg-grid-pattern opacity-35 z-0"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[320px] bg-indigo-600/10 blur-[130px] rounded-full z-0"
+        aria-hidden="true"
+      />
+
+      {/* Sticky Top Command Console Bar */}
+      <header className="bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/90 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          {/* Left: Brand Identity & Portfolio Return */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Link
+              to="/"
+              className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all text-xs font-semibold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              <ArrowLeft
+                className="w-3.5 h-3.5 text-slate-400 group-hover:-translate-x-0.5 transition-transform"
+                aria-hidden="true"
+              />
+              <span>Portfolio</span>
+            </Link>
+
+            <div className="h-5 w-px bg-slate-800 hidden sm:block" aria-hidden="true" />
+
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-inner">
+                <Terminal className="w-4 h-4" aria-hidden="true" />
               </div>
-              <p className="text-[11px] text-slate-400 font-mono">{user?.email}</p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-white text-sm tracking-tight">
+                    Admin Command Center
+                  </span>
+                  <span className="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    SYS.OPS // LIVE
+                  </span>
+                </div>
+                <p className="text-[11px] font-mono text-slate-400 hidden sm:block">
+                  Swiss Precision Operations Console · v2.4
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Right: Infrastructure Telemetry Pills & Logout */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800/90 text-[11px] font-mono text-slate-400">
+              <span className="inline-flex items-center gap-1.5 text-slate-300">
+                <Database className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
+                Neon PG
+              </span>
+              <span className="text-slate-700">•</span>
+              <span className="inline-flex items-center gap-1.5 text-slate-300">
+                <HardDrive className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" />
+                Supabase S3
+              </span>
+              <span className="text-slate-700">•</span>
+              <span className="inline-flex items-center gap-1 text-emerald-400">
+                <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                JWT Auth
+              </span>
+            </div>
+
             <button
               type="button"
-              onClick={() => navigate('/')}
-              className="cursor-pointer text-xs font-semibold text-slate-400 hover:text-white transition-colors duration-200"
-            >
-              Zum Portfolio →
-            </button>
-            <button
-              type="button"
-              onClick={logout}
-              className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs font-semibold border border-red-500/20 transition-colors duration-200"
+              onClick={handleLogout}
+              className="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-red-500/10 text-slate-300 hover:text-red-400 border border-slate-800 hover:border-red-500/30 transition-all text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
-              Abmelden
+              <span>Abmelden</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Status Message Notification */}
-        {statusMessage && (
+      {/* Main Content Container */}
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Global Status Toast / Notification Banner */}
+        {notification && (
           <div
-            role={statusMessage.type === 'error' ? 'alert' : 'status'}
-            aria-atomic="true"
-            className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between animate-in fade-in duration-200 ${statusMessage.type === 'success'
-              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-              : 'bg-red-500/10 border border-red-500/30 text-red-400'
-              }`}
+            role={notification.type === 'error' ? 'alert' : 'status'}
+            aria-live="polite"
+            className={`p-4 rounded-2xl border flex items-center justify-between gap-4 shadow-xl backdrop-blur-md transition-all ${
+              notification.type === 'success'
+                ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200 shadow-emerald-950/30'
+                : 'bg-red-950/60 border-red-500/40 text-red-200 shadow-red-950/30'
+            }`}
           >
-            <span>{statusMessage.text}</span>
+            <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold">
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                  notification.type === 'success'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                }`}
+              >
+                {notification.type === 'success' ? (
+                  <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                ) : (
+                  <AlertCircle className="w-4 h-4" aria-hidden="true" />
+                )}
+              </div>
+              <span>{notification.text}</span>
+            </div>
             <button
               type="button"
-              onClick={() => setStatusMessage(null)}
-              className="cursor-pointer text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800/60 transition-colors duration-200"
-              aria-label="Nachricht schließen"
+              onClick={() => setNotification(null)}
+              className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label="Benachrichtigung schließen"
             >
               <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         )}
 
-        {/* KPI Metrics Summary Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        {/* Telemetry Bento KPI Grid / Modul-Umschalter */}
+        <section aria-label="System-Kennzahlen" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* KPI-01: Certificates */}
           <button
             type="button"
             onClick={() => setActiveTab('certificates')}
-            className="cursor-pointer text-left p-4 rounded-xl bg-slate-900/80 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-slate-900 transition-all duration-200 group"
+            className={`group text-left p-5 rounded-2xl border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+              activeTab === 'certificates'
+                ? 'bg-slate-900/95 border-indigo-500/50 shadow-lg shadow-indigo-950/30'
+                : 'bg-slate-900/70 hover:bg-slate-900 border-slate-800/90 hover:border-slate-700'
+            }`}
           >
-            <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1.5">
-              <span>ZERTIFIKATE</span>
-              <Award className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform duration-200" aria-hidden="true" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                MOD-01 // S3 DOCS
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition-transform">
+                <Award className="w-4 h-4" aria-hidden="true" />
+              </div>
             </div>
-            <div className="text-2xl font-bold text-white tracking-tight">{certificates.length}</div>
-            <div className="text-[11px] text-slate-500 font-mono mt-1">
-              {certificates.filter((c) => c.is_published).length} online · {certificates.filter((c) => !c.is_published).length} entwurf
+            <div className="flex items-baseline justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium text-slate-400">Zertifikate (S3)</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-white tabular-nums mt-0.5">
+                  {certificates.length}
+                </p>
+              </div>
+              <div className="text-right font-mono text-[11px]">
+                <span className="text-emerald-400 font-semibold">{publishedCertsCount} Live</span>
+                <span className="text-slate-600 mx-1">/</span>
+                <span className="text-slate-400">{draftCertsCount} Entwurf</span>
+              </div>
+            </div>
+            <div className="mt-3.5 space-y-1">
+              <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-500"
+                  style={{ width: `${publishedCertRatio}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                <span>Publikationsquote</span>
+                <span className="text-slate-300">{publishedCertRatio}%</span>
+              </div>
             </div>
           </button>
 
+          {/* KPI-02: Projects */}
           <button
             type="button"
             onClick={() => setActiveTab('projects')}
-            className="cursor-pointer text-left p-4 rounded-xl bg-slate-900/80 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-slate-900 transition-all duration-200 group"
+            className={`group text-left p-5 rounded-2xl border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+              activeTab === 'projects'
+                ? 'bg-slate-900/95 border-indigo-500/50 shadow-lg shadow-indigo-950/30'
+                : 'bg-slate-900/70 hover:bg-slate-900 border-slate-800/90 hover:border-slate-700'
+            }`}
           >
-            <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1.5">
-              <span>PROJEKTE</span>
-              <FolderGit2 className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform duration-200" aria-hidden="true" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                MOD-02 // REPOS
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
+                <FolderKanban className="w-4 h-4" aria-hidden="true" />
+              </div>
             </div>
-            <div className="text-2xl font-bold text-white tracking-tight">{projects.length}</div>
-            <div className="text-[11px] text-slate-500 font-mono mt-1">
-              Portfolio-Showcases
+            <div className="flex items-baseline justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium text-slate-400">Projekte</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-white tabular-nums mt-0.5">
+                  {projects.length}
+                </p>
+              </div>
+              <div className="text-right font-mono text-[11px]">
+                <span className="text-amber-400 font-semibold">
+                  {featuredProjectsCount} Featured
+                </span>
+              </div>
+            </div>
+            <div className="mt-3.5 space-y-1">
+              <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.max(15, featuredProjectRatio)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                <span>Highlight-Abdeckung</span>
+                <span className="text-slate-300">{featuredProjectRatio}%</span>
+              </div>
             </div>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('inbox')}
-            className="cursor-pointer text-left p-4 rounded-xl bg-slate-900/80 border border-slate-800/80 hover:border-amber-500/50 hover:bg-slate-900 transition-all duration-200 group"
-          >
-            <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1.5">
-              <span>INBOX / REVIEW</span>
-              <Inbox className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform duration-200" aria-hidden="true" />
+          {/* KPI-03: Providers */}
+          <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800/90 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                  KPI-03 // ISSUERS
+                </span>
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                  <Building2 className="w-4 h-4" aria-hidden="true" />
+                </div>
+              </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <div>
+                  <p className="text-xs font-medium text-slate-400">Zertifikatsanbieter</p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-white tabular-nums mt-0.5">
+                    {providers.length}
+                  </p>
+                </div>
+                <span className="font-mono text-[11px] text-cyan-400 font-semibold">
+                  Verifiziert
+                </span>
+              </div>
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white tracking-tight">{pendingCount}</span>
-              {pendingCount > 0 && (
-                <span className="text-[11px] font-mono text-amber-400 font-semibold">neu</span>
-              )}
-            </div>
-            <div className="text-[11px] text-slate-500 font-mono mt-1">
-              Upload & Scan Pipeline
-            </div>
-          </button>
-
-          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1.5">
-              <span>SYSTEM-STACK</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
-            </div>
-            <div className="text-sm font-bold text-emerald-400 tracking-tight font-mono">
-              BEREIT // PROD
-            </div>
-            <div className="text-[11px] text-slate-500 font-mono mt-1">
-              PostgreSQL · S3 · AI RAG
+            <div className="mt-3.5 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span className="inline-flex items-center gap-1">
+                <Activity className="w-3 h-3 text-cyan-400" aria-hidden="true" />
+                Ø{' '}
+                {providers.length > 0
+                  ? (certificates.length / providers.length).toFixed(1)
+                  : '0.0'}{' '}
+                Certs / Issuer
+              </span>
+              <span className="text-slate-300">Active</span>
             </div>
           </div>
-        </div>
 
-        {/* Tab Navigation */}
-        <div
-          role="tablist"
-          aria-label="Dashboard-Bereiche"
-          className="flex items-center gap-2 border-b border-slate-800 pb-4 overflow-x-auto"
-        >
+          {/* KPI-04: Pending Review Queue */}
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'certificates'}
-            onClick={() => setActiveTab('certificates')}
-            className={`cursor-pointer min-h-[40px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-200 shrink-0 whitespace-nowrap border ${activeTab === 'certificates'
-              ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
-              }`}
+            onClick={() => setActiveTab('pending')}
+            className={`group text-left p-5 rounded-2xl border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+              activeTab === 'pending'
+                ? 'bg-slate-900/95 border-amber-500/50 shadow-lg shadow-amber-950/20'
+                : pendingCount > 0
+                  ? 'bg-slate-900/80 hover:bg-slate-900 border-amber-500/30 hover:border-amber-500/50'
+                  : 'bg-slate-900/70 hover:bg-slate-900 border-slate-800/90 hover:border-slate-700'
+            }`}
           >
-            <Award className="w-4 h-4" aria-hidden="true" />
-            Zertifikate ({certificates.length})
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'projects'}
-            onClick={() => setActiveTab('projects')}
-            className={`cursor-pointer min-h-[40px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-200 shrink-0 whitespace-nowrap border ${activeTab === 'projects'
-              ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
-              }`}
-          >
-            <FolderGit2 className="w-4 h-4" aria-hidden="true" />
-            Projekte ({projects.length})
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'inbox'}
-            onClick={() => setActiveTab('inbox')}
-            className={`cursor-pointer min-h-[40px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-200 shrink-0 whitespace-nowrap border ${activeTab === 'inbox'
-              ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
-              }`}
-          >
-            <Inbox className="w-4 h-4" aria-hidden="true" />
-            Inbox / Review
-            {pendingCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                {pendingCount}
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                MOD-03 // INBOX QUEUE
               </span>
-            )}
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
+                <Inbox className="w-4 h-4" aria-hidden="true" />
+              </div>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium text-slate-400">Ausstehende Reviews</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-white tabular-nums mt-0.5">
+                  {pendingCount}
+                </p>
+              </div>
+              <span
+                className={`font-mono text-[11px] font-semibold ${
+                  pendingCount > 0 ? 'text-amber-400' : 'text-emerald-400'
+                }`}
+              >
+                {pendingCount > 0 ? 'Prüfung offen' : 'Inbox leer'}
+              </span>
+            </div>
+            <div className="mt-3.5 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span className="inline-flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-400" aria-hidden="true" />
+                OCR & Auto-Track Pipeline
+              </span>
+              <span className="text-indigo-400 group-hover:underline">Öffnen →</span>
+            </div>
           </button>
-        </div>
+        </section>
 
-        {/* TAB CONTENT */}
-        {activeTab === 'certificates' && <CertificateManager onNotify={setStatusMessage} />}
-        {activeTab === 'projects' && <ProjectManager onNotify={setStatusMessage} />}
-        {activeTab === 'inbox' && <PendingCertificateManager onNotify={setStatusMessage} />}
+        {/* Active Module Workspace */}
+        <div className="pb-12">
+          {activeTab === 'certificates' && (
+            <CertificateManager onNotify={showNotification} />
+          )}
+          {activeTab === 'projects' && (
+            <ProjectManager onNotify={showNotification} />
+          )}
+          {activeTab === 'pending' && (
+            <PendingCertificateManager onNotify={showNotification} />
+          )}
+        </div>
       </main>
     </div>
   );
 };
-
