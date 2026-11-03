@@ -225,7 +225,6 @@ class PendingCertificateDetailSerializer(serializers.ModelSerializer):
         )
 
 
-
 class BulkApproveRequestSerializer(serializers.Serializer):
     """Request-Payload für die Batch-Freigabe von Pending-Zertifikaten (max. 100)."""
 
@@ -289,9 +288,7 @@ class BulkRejectRequestSerializer(serializers.Serializer):
 
 class BulkApproveResultItemSerializer(serializers.Serializer):
     id = serializers.IntegerField(help_text="ID des PendingCertificate")
-    certificate_id = serializers.IntegerField(
-        help_text="ID des erstellten Zertifikats"
-    )
+    certificate_id = serializers.IntegerField(help_text="ID des erstellten Zertifikats")
     status = serializers.CharField(default="approved")
     title = serializers.CharField(help_text="Titel des Zertifikats")
 

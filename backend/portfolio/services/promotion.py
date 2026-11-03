@@ -252,8 +252,8 @@ def promote_pending_certificates_bulk(
                     tracks=tracks_to_assign,
                 )
                 # Pending-Verknüpfung für Response-Zwecke im Speicher setzen
-                setattr(cert, "_pending_id", item.id)
-                setattr(cert, "source_pending", item)
+                cert._pending_id = item.id  # type: ignore[attr-defined]
+                cert.source_pending = item  # type: ignore[attr-defined]
                 if cert.pdf_file and cert.pdf_file.name:
                     uploaded_storage_files.append(
                         (cert.pdf_file.storage, cert.pdf_file.name)
