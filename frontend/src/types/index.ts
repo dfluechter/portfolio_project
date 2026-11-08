@@ -141,6 +141,7 @@ export interface PendingCertificate {
   guessed_title: string;
   guessed_provider: string;
   status: PendingCertificateStatus;
+  suggested_tracks?: number[];
   created_at: string;
 }
 

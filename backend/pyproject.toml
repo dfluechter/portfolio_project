@@ -35,7 +35,7 @@ python_version = "3.13"
 plugins = ["mypy_django_plugin.main"]
 ignore_missing_imports = true
 check_untyped_defs = true
-exclude = ["^build/", "migrations/"]
+exclude = ["^build/", "migrations/", "^\\.agents/"]
 
 [tool.django-stubs]
 django_settings_module = "core.settings"
@@ -50,6 +50,7 @@ omit = [
 
 [tool.ruff]
 line-length = 88
+extend-exclude = [".agents"]
 
 [tool.ruff.lint]
 extend-select = ["I", "BLE", "RUF"]

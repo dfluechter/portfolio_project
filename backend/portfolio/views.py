@@ -17,7 +17,7 @@ from django.http import (
     JsonResponse,
 )
 from django.shortcuts import redirect
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
@@ -35,7 +35,6 @@ from .models import (
     TRACK_RULES,
     Certificate,
     PendingCertificate,
-    PendingCertificateStatus,
     Project,
     Provider,
     Skill,
@@ -44,6 +43,10 @@ from .models import (
 )
 from .pagination import StandardResultsSetPagination
 from .serializers import (
+    BulkApproveRequestSerializer,
+    BulkApproveResponseSerializer,
+    BulkRejectRequestSerializer,
+    BulkRejectResponseSerializer,
     CertificateSerializer,
     PendingCertificateDetailSerializer,
     PendingCertificateSerializer,
@@ -59,7 +62,9 @@ from .services.icon_service import ensure_track_icon
 from .services.promotion import (
     PromotionError,
     promote_pending_certificate,
+    promote_pending_certificates_bulk,
     reject_pending_certificate,
+    reject_pending_certificates_bulk,
 )
 from .services.storage import (
     S3StorageNotConfiguredError,
@@ -777,172 +782,107 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
             )
         return Response({"detail": "Abgelehnt."}, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        request=BulkApproveRequestSerializer,
+        responses={
+            200: BulkApproveResponseSerializer,
+            400: OpenApiResponse(
+                description="Ungültige Anfrage oder Validierungsfehler"
+            ),
+            403: OpenApiResponse(description="Nicht autorisiert (nur Staff)"),
+        },
+    )
     @action(detail=False, methods=["post"])
     def bulk_approve(self, request: Request) -> Response:
-        """Ermöglicht die gleichzeitige Freigabe mehrerer Pending-Zertifikate."""
-        ids = request.data.get("ids") if isinstance(request.data, dict) else None
-        if not ids or not isinstance(ids, (list, tuple)):
+        """Ermöglicht die gleichzeitige Freigabe mehrerer Pending-Zertifikate (atomar, Alles oder nichts)."""
+        serializer = BulkApproveRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        ids: list[int] = validated_data["ids"]
+        track_ids: list[int] | None = validated_data.get("track_ids")
+
+        try:
+            certs = promote_pending_certificates_bulk(
+                pending_ids=ids,
+                track_ids=track_ids,
+            )
+        except PromotionError as exc:
             return Response(
-                {"detail": "Mindestens eine ID muss angegeben werden."},
+                {"detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        track_ids = (
-            request.data.get("track_ids") if isinstance(request.data, dict) else None
-        )
-        explicit_tracks = None
-        if track_ids is not None:
-            explicit_tracks, error_response = self._resolve_tracks(track_ids)
-            if error_response is not None:
-                return error_response
-
-        approved_count = 0
-        failed_count = 0
-        results: list[dict[str, Any]] = []
-        errors: list[dict[str, Any]] = []
-
-        pending_items = {
-            p.id: p
-            for p in PendingCertificate.objects.filter(id__in=ids).prefetch_related(
-                "suggested_tracks"
-            )
-        }
-
-        for raw_id in ids:
-            try:
-                pk_val = int(raw_id)
-            except (ValueError, TypeError):
-                errors.append({"id": raw_id, "error": "Ungültige ID."})
-                failed_count += 1
-                continue
-
-            pending = pending_items.get(pk_val)
-            if not pending:
-                errors.append({"id": pk_val, "error": "Datensatz nicht gefunden."})
-                failed_count += 1
-                continue
-
-            if pending.status != PendingCertificateStatus.PENDING:
-                errors.append(
-                    {
-                        "id": pk_val,
-                        "error": (
-                            f"Datensatz hat Status '{pending.status}', nur 'pending' "
-                            "kann genehmigt werden."
-                        ),
-                    }
-                )
-                failed_count += 1
-                continue
-
-            tracks_to_assign = (
-                explicit_tracks
-                if explicit_tracks is not None
-                else list(pending.suggested_tracks.all())
+        except Exception:
+            logger.exception("Unerwarteter Fehler bei bulk_approve.")
+            return Response(
+                {"detail": "Fehler bei der Batch-Freigabe der Zertifikate."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-            try:
-                cert = promote_pending_certificate(
-                    pending=pending,
-                    tracks=tracks_to_assign,
-                )
-                approved_count += 1
-                results.append(
-                    {
-                        "id": pk_val,
-                        "certificate_id": cert.id,
-                        "status": "approved",
-                        "title": cert.title,
-                    }
-                )
-            except PromotionError as exc:
-                errors.append({"id": pk_val, "error": str(exc)})
-                failed_count += 1
-            except Exception:
-                logger.exception(
-                    "Unerwarteter Fehler bei bulk_approve für ID %s", pk_val
-                )
-                errors.append(
-                    {"id": pk_val, "error": "Interner Serverfehler bei der Freigabe."}
-                )
-                failed_count += 1
+        results = [
+            {
+                "id": getattr(
+                    cert,
+                    "_pending_id",
+                    cert.source_pending.id
+                    if hasattr(cert, "source_pending") and cert.source_pending
+                    else None,
+                ),
+                "certificate_id": cert.id,
+                "status": "approved",
+                "title": cert.title,
+            }
+            for cert in certs
+        ]
 
         return Response(
             {
-                "approved_count": approved_count,
-                "failed_count": failed_count,
+                "approved_count": len(certs),
+                "failed_count": 0,
                 "results": results,
-                "errors": errors,
+                "errors": [],
             },
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        request=BulkRejectRequestSerializer,
+        responses={
+            200: BulkRejectResponseSerializer,
+            400: OpenApiResponse(
+                description="Ungültige Anfrage oder Validierungsfehler"
+            ),
+            403: OpenApiResponse(description="Nicht autorisiert (nur Staff)"),
+        },
+    )
     @action(detail=False, methods=["post"])
     def bulk_reject(self, request: Request) -> Response:
-        """Ermöglicht das gleichzeitige Ablehnen mehrerer Pending-Zertifikate."""
-        ids = request.data.get("ids") if isinstance(request.data, dict) else None
-        if not ids or not isinstance(ids, (list, tuple)):
+        """Ermöglicht das gleichzeitige Ablehnen mehrerer Pending-Zertifikate (atomar)."""
+        serializer = BulkRejectRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids: list[int] = serializer.validated_data["ids"]
+
+        try:
+            rejected_count = reject_pending_certificates_bulk(pending_ids=ids)
+        except PromotionError as exc:
             return Response(
-                {"detail": "Mindestens eine ID muss angegeben werden."},
+                {"detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        except Exception:
+            logger.exception("Unerwarteter Fehler bei bulk_reject.")
+            return Response(
+                {"detail": "Fehler beim Ablehnen der Zertifikate."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
-        rejected_count = 0
-        failed_count = 0
-        results: list[dict[str, Any]] = []
-        errors: list[dict[str, Any]] = []
-
-        pending_items = {p.id: p for p in PendingCertificate.objects.filter(id__in=ids)}
-
-        for raw_id in ids:
-            try:
-                pk_val = int(raw_id)
-            except (ValueError, TypeError):
-                errors.append({"id": raw_id, "error": "Ungültige ID."})
-                failed_count += 1
-                continue
-
-            pending = pending_items.get(pk_val)
-            if not pending:
-                errors.append({"id": pk_val, "error": "Datensatz nicht gefunden."})
-                failed_count += 1
-                continue
-
-            if pending.status != PendingCertificateStatus.PENDING:
-                errors.append(
-                    {
-                        "id": pk_val,
-                        "error": (
-                            f"Datensatz hat Status '{pending.status}', nur 'pending' "
-                            "kann abgelehnt werden."
-                        ),
-                    }
-                )
-                failed_count += 1
-                continue
-
-            try:
-                reject_pending_certificate(pending)
-                rejected_count += 1
-                results.append({"id": pk_val, "status": "rejected"})
-            except PromotionError as exc:
-                errors.append({"id": pk_val, "error": str(exc)})
-                failed_count += 1
-            except Exception:
-                logger.exception(
-                    "Unerwarteter Fehler bei bulk_reject für ID %s", pk_val
-                )
-                errors.append(
-                    {"id": pk_val, "error": "Interner Serverfehler beim Ablehnen."}
-                )
-                failed_count += 1
+        results = [{"id": pk_val, "status": "rejected"} for pk_val in ids]
 
         return Response(
             {
                 "rejected_count": rejected_count,
-                "failed_count": failed_count,
+                "failed_count": 0,
                 "results": results,
-                "errors": errors,
+                "errors": [],
             },
             status=status.HTTP_200_OK,
         )
@@ -1157,7 +1097,6 @@ class PasswordResetRequestView(APIView):
         )
 
 
-
 class ContactMessageView(APIView):
     """Formmailer-Endpunkt für direkte Kontaktanfragen aus dem Portfolio.
 
@@ -1178,15 +1117,27 @@ class ContactMessageView(APIView):
                 "properties": {
                     "name": {"type": "string", "example": "Max Mustermann"},
                     "email": {"type": "string", "example": "max@example.com"},
-                    "subject": {"type": "string", "example": "Projektanfrage Cloud-Architektur"},
+                    "subject": {
+                        "type": "string",
+                        "example": "Projektanfrage Cloud-Architektur",
+                    },
                     "message": {"type": "string", "example": "Hallo Dominik, ..."},
-                    "website": {"type": "string", "description": "Honeypot-Feld (muss leer bleiben)"},
+                    "website": {
+                        "type": "string",
+                        "description": "Honeypot-Feld (muss leer bleiben)",
+                    },
                 },
                 "required": ["name", "email", "message"],
             }
         },
         responses={
-            200: {"type": "object", "properties": {"detail": {"type": "string"}, "status": {"type": "string"}}},
+            200: {
+                "type": "object",
+                "properties": {
+                    "detail": {"type": "string"},
+                    "status": {"type": "string"},
+                },
+            },
             400: {"type": "object", "properties": {"detail": {"type": "string"}}},
         },
     )
@@ -1205,13 +1156,19 @@ class ContactMessageView(APIView):
         honeypot = str(request.data.get("website") or "").strip()
         if honeypot:
             return Response(
-                {"detail": "Nachricht wurde erfolgreich übermittelt.", "status": "sent"},
+                {
+                    "detail": "Nachricht wurde erfolgreich übermittelt.",
+                    "status": "sent",
+                },
                 status=status.HTTP_200_OK,
             )
 
         name = str(request.data.get("name") or "").strip()
         sender_email = str(request.data.get("email") or "").strip()
-        subject = str(request.data.get("subject") or "").strip() or "Neue Kontaktanfrage über Portfolio"
+        subject = (
+            str(request.data.get("subject") or "").strip()
+            or "Neue Kontaktanfrage über Portfolio"
+        )
         message = str(request.data.get("message") or "").strip()
 
         if not name or len(name) < 2:
@@ -1230,7 +1187,9 @@ class ContactMessageView(APIView):
 
         if not message or len(message) < 10:
             return Response(
-                {"detail": "Bitte gib eine aussagekräftige Nachricht ein (mind. 10 Zeichen)."},
+                {
+                    "detail": "Bitte gib eine aussagekräftige Nachricht ein (mind. 10 Zeichen)."
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1260,13 +1219,21 @@ class ContactMessageView(APIView):
             )
             mail.send(fail_silently=False)
         except Exception:
-            logger.exception("Fehler beim Versenden der Kontaktformular-E-Mail von %s", sender_email)
+            logger.exception(
+                "Fehler beim Versenden der Kontaktformular-E-Mail von %s", sender_email
+            )
             return Response(
-                {"detail": "Nachricht wurde erfasst (Mail-Relay im Offline-Modus).", "status": "queued"},
+                {
+                    "detail": "Nachricht wurde erfasst (Mail-Relay im Offline-Modus).",
+                    "status": "queued",
+                },
                 status=status.HTTP_200_OK,
             )
 
         return Response(
-            {"detail": "Vielen Dank! Deine Nachricht wurde erfolgreich versendet.", "status": "sent"},
+            {
+                "detail": "Vielen Dank! Deine Nachricht wurde erfolgreich versendet.",
+                "status": "sent",
+            },
             status=status.HTTP_200_OK,
         )
