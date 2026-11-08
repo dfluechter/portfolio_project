@@ -863,9 +863,13 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
 
         try:
             rejected_count = reject_pending_certificates_bulk(pending_ids=ids)
-        except PromotionError as exc:
+        except PromotionError:
+            logger.warning(
+                "Fachlicher Fehler bei bulk_reject.",
+                exc_info=True,
+            )
             return Response(
-                {"detail": str(exc)},
+                {"detail": "Ungültige Anfrage für das Ablehnen der Zertifikate."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception:
