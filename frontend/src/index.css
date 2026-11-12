@@ -172,9 +172,13 @@
   }
 }
 
-/* Glassmorphism & Swiss Architectural Surface Primitives */
+/* Glassmorphism & Swiss Architectural Surface Primitives (Liquid Glass Refraction) */
 .glass-card {
-  @apply bg-white/85 dark:bg-slate-900/65 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm dark:shadow-2xl transition-all duration-300;
+  @apply bg-white/85 dark:bg-slate-900/65 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm dark:shadow-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.65)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] transition-all duration-300;
+}
+
+.surface-refraction {
+  @apply shadow-[inset_0_1px_0_0_rgba(255,255,255,0.65)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.07)];
 }
 
 .glass-card-hover {

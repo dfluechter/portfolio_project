@@ -33,7 +33,7 @@ export const Hero: React.FC = () => {
   return (
     <section
       id="hero"
-      className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center overflow-hidden bg-background pt-10 pb-20 md:py-24 border-b border-border"
+      className="relative min-h-[calc(100dvh-4rem)] flex flex-col justify-between overflow-hidden bg-slate-50 dark:bg-slate-950 pt-24 pb-16 md:pt-28 md:pb-24 border-b border-slate-200/80 dark:border-slate-800/80"
     >
       {/* Swiss Architectural Grid Background */}
       <div
@@ -44,17 +44,17 @@ export const Hero: React.FC = () => {
       {/* Interactive React Three Fiber 3D Architectural Scene */}
       <HeroThreeBackground />
 
-      {/* Subtle Ambient Radial Glow */}
+      {/* Subtle Ambient Radial Glow (Single Calibrated Indigo Accent) */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-32 right-1/4 w-[36rem] h-[36rem] rounded-full bg-accent-primary/8 blur-[120px]"
+        className="pointer-events-none absolute -top-32 right-1/4 w-[36rem] h-[36rem] rounded-full bg-indigo-500/8 blur-[120px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-32 left-1/4 w-[30rem] h-[30rem] rounded-full bg-accent-secondary/8 blur-[120px]"
+        className="pointer-events-none absolute -bottom-32 left-1/4 w-[30rem] h-[30rem] rounded-full bg-slate-500/6 dark:bg-indigo-400/6 blur-[120px]"
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full my-auto">
         <motion.div
           className="flex flex-col items-start text-left max-w-4xl"
           variants={containerVariants}
