@@ -200,7 +200,6 @@ class PendingCertificateSerializer(serializers.ModelSerializer):
             "guessed_provider",
             "suggested_tracks",
             "status",
-            "suggested_tracks",
             "created_at",
         )
         read_only_fields = ("id", "suggested_tracks", "status", "created_at")
@@ -209,7 +208,9 @@ class PendingCertificateSerializer(serializers.ModelSerializer):
 class PendingCertificateDetailSerializer(serializers.ModelSerializer):
     """Erweiterte Felder nur für authentifizierte Staff-Nutzer (Dashboard-Prüfung)."""
 
-    suggested_tracks = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    suggested_tracks = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Track.objects.all(), required=False
+    )
 
     class Meta:
         model = PendingCertificate
@@ -221,7 +222,6 @@ class PendingCertificateDetailSerializer(serializers.ModelSerializer):
             "guessed_provider",
             "suggested_tracks",
             "status",
-            "suggested_tracks",
             "created_at",
         )
         read_only_fields = (
