@@ -1,7 +1,7 @@
-import { lazy, Suspense, useState, type ComponentType } from 'react';
+import { lazy, Suspense, useState, type ComponentType, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ColdStartBanner } from './components/ColdStartBanner';
 import { PortfolioPage } from './pages/PortfolioPage';
@@ -10,20 +10,25 @@ import { PortfolioPage } from './pages/PortfolioPage';
  * Lädt dynamische Komponenten resilient nach und fängt temporäre Netzwerkfehler
  * oder veraltete Vite-Chunk-Hashes nach Server-Neustarts via Einmal-Reload ab.
  */
-function lazyRetry<T extends ComponentType<any>>(
+function lazyRetry<T extends ComponentType<Record<string, never>>>(
   factory: () => Promise<{ default: T }>
 ) {
-  return lazy(() =>
-    factory().catch((error) => {
+  return lazy(async () => {
+    try {
+      const module = await factory();
+      sessionStorage.removeItem('chunk_reload_retry');
+      return module;
+    } catch (error) {
       const hasReloaded = sessionStorage.getItem('chunk_reload_retry');
       if (!hasReloaded) {
         sessionStorage.setItem('chunk_reload_retry', 'true');
         window.location.reload();
+        return new Promise<{ default: T }>(() => {});
       }
       sessionStorage.removeItem('chunk_reload_retry');
       throw error;
-    })
-  );
+    }
+  });
 }
 
 const LoginPage = lazyRetry(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
@@ -40,6 +45,17 @@ const RouteLoadingFallback = () => (
     <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
   </div>
 );
+
+const ProtectedRoute = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) {
+    return <RouteLoadingFallback />;
+  }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+};
 
 export function App() {
   const [queryClient] = useState(
@@ -68,7 +84,14 @@ export function App() {
                   path="/password-reset/confirm/:uid/:token"
                   element={<PasswordResetConfirmPage />}
                 />
-                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>
