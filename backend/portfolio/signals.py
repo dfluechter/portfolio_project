@@ -47,7 +47,24 @@ def handle_portfolio_save(sender: Any, instance: Any, **kwargs: Any) -> None:
     )
     invalidate_portfolio_cache()
     try:
-        sync_chunks_for_instance(instance, generate_embeddings=False)
+        if isinstance(instance, Provider):
+            certs = (
+                Certificate.objects.filter(provider=instance, is_published=True)
+                .select_related("provider", "source_pending")
+                .prefetch_related("tracks")
+            )
+            for cert in certs:
+                sync_chunks_for_instance(cert, generate_embeddings=False)
+        elif isinstance(instance, Track):
+            certs = (
+                Certificate.objects.filter(tracks=instance, is_published=True)
+                .select_related("provider", "source_pending")
+                .prefetch_related("tracks")
+            )
+            for cert in certs:
+                sync_chunks_for_instance(cert, generate_embeddings=False)
+        else:
+            sync_chunks_for_instance(instance, generate_embeddings=False)
     except Exception as exc:  # noqa: BLE001
         logger.warning(
             "Fehler beim Synchronisieren von Chunks für %s: %s",

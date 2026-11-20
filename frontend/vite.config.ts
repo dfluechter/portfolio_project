@@ -24,7 +24,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-        'next/link': path.resolve(__dirname, './src/shims/next-link.tsx'),
       },
     },
     plugins: [react(), tailwindcss()],
@@ -32,6 +31,10 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: true,
       proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
         '/static': {
           target: 'http://127.0.0.1:8000',
           changeOrigin: true,
@@ -48,22 +51,22 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id: string) {
             if (id.includes('node_modules')) {
-              if (id.includes('three') || id.includes('@react-three')) {
+              if (/[\\/]node_modules[\\/](three|@react-three)[\\/]/.test(id)) {
                 return 'vendor-three';
               }
-              if (id.includes('framer-motion') || id.includes('motion')) {
+              if (/[\\/]node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) {
                 return 'vendor-motion';
               }
-              if (id.includes('@tanstack/react-query') || id.includes('axios')) {
+              if (/[\\/]node_modules[\\/](@tanstack|axios)[\\/]/.test(id)) {
                 return 'vendor-query';
               }
-              if (id.includes('lucide-react')) {
+              if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) {
                 return 'vendor-icons';
               }
               if (
-                id.includes('react') ||
-                id.includes('react-dom') ||
-                id.includes('react-router-dom')
+                /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(
+                  id
+                )
               ) {
                 return 'vendor-react';
               }

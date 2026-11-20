@@ -38,7 +38,7 @@ Die Sicherheitsarchitektur folgt dem Prinzip der mehrschichtigen Verteidigung (*
 - **JWT-Architektur:** Implementiert via `djangorestframework-simplejwt` und `djoser`.
 - **Token-Lebenszyklen:**
   - `ACCESS_TOKEN_LIFETIME`: 60 Minuten (kurzlebig zur Begrenzung von Replay-Risiken).
-  - `REFRESH_TOKEN_LIFETIME`: 7 Tage (mit automatischem Token-Blacklisting bei Rotation und Logout).
+  - `REFRESH_TOKEN_LIFETIME`: 7 Tage (mit automatischer Client-Session-Bereinigung via `auth:unauthorized` bei Ablauf oder Logout).
 - **Passwort-Hashing:** Verwendung von PBKDF2 mit SHA-256 und mindestens 600.000 Iterationen (gemäß OWASP-Empfehlung).
 
 ### 3.2 Rollenbasierte Zugriffskontrolle (RBAC)
@@ -101,13 +101,13 @@ Eingehende Chatbot-Prompts werden vor der Weiterleitung an das LLM durch regulä
 In der Produktionsumgebung (`DEBUG=False` auf Render):
 - `SECURE_SSL_REDIRECT = True`: Automatischer Redirect aller HTTP-Anfragen auf HTTPS.
 - `SECURE_HSTS_SECONDS = 31536000`: HSTS mit einer Mindestdauer von 1 Jahr.
-- `SECURE_HSTS_INCLUDE_SUBDOMAINS = True` & `SECURE_HSTS_PRELOAD = True`.
+- `SECURE_HSTS_INCLUDE_SUBDOMAINS = True` & `SECURE_HSTS_PRELOAD = False`.
 - `SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')`: Korrekte TLS-Terminierung hinter dem Render-Reverse-Proxy.
 
 ### 6.2 Cookie-Sicherheit
 - `SESSION_COOKIE_SECURE = True` & `CSRF_COOKIE_SECURE = True`.
 - `SESSION_COOKIE_HTTPONLY = True`: Verhindert den Zugriff auf Session-Cookies über JavaScript (XSS-Schutz).
-- `SESSION_COOKIE_SAMESITE = 'Lax'` & `CSRF_COOKIE_SAMESITE = 'Lax'`.
+- Django-Standard `SameSite = 'Lax'` für Session- und CSRF-Cookies.
 
 ### 6.3 CORS & CSRF Whitelisting
 - Keine Wildcard-Freigaben (`CORS_ALLOW_ALL_ORIGINS = False`).
@@ -125,11 +125,11 @@ In der Produktionsumgebung (`DEBUG=False` auf Render):
 ## 7. Cloud- & Datenbank-Sicherheit
 
 ### 7.1 Neon Serverless PostgreSQL
-- **TLS/SSL erzwungen:** Alle Datenbankverbindungen verlangen `sslmode=require` und `channel_binding=require`.
+- **TLS/SSL erzwungen:** Alle Datenbankverbindungen verlangen `sslmode=require` (`ssl_require=True`).
 - **Verbindungstrennung:**
   - `DATABASE_URL` nutzt PgBouncer-Pooler (`-pooler`) für hochgradig skalierende Web-Workloads.
   - `DIRECT_DATABASE_URL` umgeht den Pooler für migrationskritische DDL-Operationen (`python manage.py migrate`).
-- **Ephemere CI-Isolation:** In GitHub Actions Pipelines werden bei jedem Testlauf isolierte Neon-Branches erstellt und nach Testende rückstandslos gelöscht.
+- **Deterministische CI-Isolation:** In GitHub Actions Pipelines laufen Tests isoliert mit `core.settings_test` und dedizierten Test-Umgebungsvariablen ohne Zugriff auf Produktionsdaten.
 
 ### 7.2 Supabase S3 Object Storage
 - **Dateivalidierung:** Hochgeladene Zertifikate werden streng validiert:

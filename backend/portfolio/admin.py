@@ -220,7 +220,11 @@ class PendingCertificateAdmin(admin.ModelAdmin):
             raise Http404("Ausstehendes Zertifikat oder Dateipfad nicht gefunden.")
 
         file_path = Path(pending.file_path)
-        if not file_path.exists() or not file_path.is_file():
+        if (
+            file_path.is_symlink()
+            or not file_path.exists()
+            or not file_path.is_file()
+        ):
             raise Http404(
                 f"Die Datei '{pending.original_file_name}' existiert lokal nicht mehr unter '{pending.file_path}'."
             )
@@ -232,11 +236,13 @@ class PendingCertificateAdmin(admin.ModelAdmin):
         elif ext in {".jpg", ".jpeg"}:
             content_type = "image/jpeg"
 
-        response = FileResponse(open(file_path, "rb"), content_type=content_type)  # noqa: SIM115
-        response["Content-Disposition"] = (
-            f'inline; filename="{pending.original_file_name}"'
+        safe_filename = Path(pending.original_file_name).name or file_path.name
+        return FileResponse(
+            open(file_path, "rb"),
+            content_type=content_type,
+            as_attachment=False,
+            filename=safe_filename,
         )
-        return response
 
     @admin.display(description="Show File")
     def show_file_button(self, obj):

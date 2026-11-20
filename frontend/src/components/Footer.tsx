@@ -18,6 +18,8 @@ const DEFAULT_FOOTER_SKILLS: Skill[] = [
   { id: 9, name: 'Pytest & Vitest (TDD)', category: 'other', category_display: 'Tools & DevOps', proficiency: 88, icon: 'pytest', is_featured: true, created_at: '2026-01-01' },
 ];
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export const Footer: React.FC = () => {
   const { t } = useTranslation();
   const { data: skills } = useSkills();
@@ -67,7 +69,7 @@ export const Footer: React.FC = () => {
         { label: t('footer.contact', 'Kontakt'), href: '#contact' },
         { label: t('footer.admin', 'Admin'), href: '/login' },
       ]}
-      copyrightYear={new Date().getFullYear()}
+      copyrightYear={CURRENT_YEAR}
       copyrightOwner={PORTFOLIO_OWNER_NAME}
       creatorName={PORTFOLIO_OWNER_NAME}
     />

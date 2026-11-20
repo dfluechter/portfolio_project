@@ -58,13 +58,16 @@ export const Navbar: React.FC = () => {
         </Link>
 
         {/* Desktop Navigation — Tactile Pill Bar */}
-        <nav className="hidden md:flex items-center gap-1 p-1 rounded-xl bg-slate-100/80 dark:bg-slate-900/70 border border-slate-200/70 dark:border-slate-800/80">
+        <nav
+          aria-label="Hauptnavigation"
+          className="hidden md:flex items-center gap-1 p-1 rounded-xl bg-slate-100/80 dark:bg-slate-900/70 border border-slate-200/70 dark:border-slate-800/80 surface-refraction"
+        >
           {isHome ? (
             navItems.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="group/nav px-3 py-1.5 rounded-lg text-xs lg:text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/90 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 flex items-center gap-1.5 whitespace-nowrap"
+                className="group/nav px-3 py-1.5 rounded-lg text-xs lg:text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/90 active:scale-[0.98] active:translate-y-[1px] transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 flex items-center gap-1.5 whitespace-nowrap"
               >
                 <span
                   aria-hidden="true"
@@ -78,7 +81,7 @@ export const Navbar: React.FC = () => {
           ) : (
             <Link
               to="/"
-              className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/90 transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/90 active:scale-[0.98] active:translate-y-[1px] transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               {t('nav.backToPortfolio')}
             </Link>

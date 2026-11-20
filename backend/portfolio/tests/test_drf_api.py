@@ -49,8 +49,8 @@ class TestProjectAPI:
             status.HTTP_403_FORBIDDEN,
         ]
 
-    def test_authenticated_can_create_project_with_skills(self, auth_client):
-        """Authentifizierte Nutzer können Projekte mit Skills erstellen."""
+    def test_authenticated_can_create_project_with_skills(self, staff_client):
+        """Authentifizierte Staff-Nutzer können Projekte mit Skills erstellen."""
         skill = Skill.objects.create(name="Django", category="backend")
         url = reverse("project-list")
         payload = {
@@ -59,7 +59,7 @@ class TestProjectAPI:
             "github_url": "https://github.com/example/awesome",
             "skills": [skill.id],
         }
-        response = auth_client.post(url, payload, format="json")
+        response = staff_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         assert Project.objects.filter(title="New Awesome Project").exists()
@@ -79,7 +79,7 @@ class TestSkillAPI:
         assert response.data[0]["name"] == "Python"
         assert response.data[0]["category_display"] == "Backend"
 
-    def test_authenticated_can_create_skill(self, auth_client):
+    def test_authenticated_can_create_skill(self, staff_client):
         url = reverse("skill-list")
         payload = {
             "name": "Docker",
@@ -88,7 +88,7 @@ class TestSkillAPI:
             "icon": "fa-brands fa-docker",
             "is_featured": True,
         }
-        response = auth_client.post(url, payload, format="json")
+        response = staff_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
         assert Skill.objects.filter(name="Docker").exists()
 
@@ -107,7 +107,7 @@ class TestTimelineAPI:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1
 
-    def test_authenticated_can_create_timeline_entry(self, auth_client):
+    def test_authenticated_can_create_timeline_entry(self, staff_client):
         skill = Skill.objects.create(name="PostgreSQL", category="database")
         url = reverse("timeline-list")
         payload = {
@@ -118,13 +118,13 @@ class TestTimelineAPI:
             "is_current": True,
             "skills": [skill.id],
         }
-        response = auth_client.post(url, payload, format="json")
+        response = staff_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
         assert TimelineEntry.objects.filter(title="Backend Lead").exists()
         assert response.data["entry_type_display"] == "Berufserfahrung"
         assert len(response.data["skill_details"]) == 1
 
-    def test_invalid_date_range_rejected(self, auth_client):
+    def test_invalid_date_range_rejected(self, staff_client):
         url = reverse("timeline-list")
         payload = {
             "entry_type": "experience",
@@ -133,11 +133,11 @@ class TestTimelineAPI:
             "start_date": "2024-05-01",
             "end_date": "2023-01-01",
         }
-        response = auth_client.post(url, payload, format="json")
+        response = staff_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "end_date" in response.data
 
-    def test_current_with_end_date_rejected(self, auth_client):
+    def test_current_with_end_date_rejected(self, staff_client):
         url = reverse("timeline-list")
         payload = {
             "entry_type": "experience",
@@ -147,7 +147,7 @@ class TestTimelineAPI:
             "end_date": "2024-01-01",
             "is_current": True,
         }
-        response = auth_client.post(url, payload, format="json")
+        response = staff_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "end_date" in response.data
 
@@ -162,17 +162,17 @@ class TestProviderAPI:
         assert len(response.data) >= 1
         assert any(p["provider"] == "Coursera" for p in response.data)
 
-    def test_authenticated_can_create_and_read_provider(self, auth_client):
+    def test_authenticated_can_create_and_read_provider(self, staff_client):
         url = reverse("provider-list")
         payload = {
             "provider": "edX",
             "aktiv": True,
             "url": "https://edx.org",
         }
-        response = auth_client.post(url, payload, format="json")
+        response = staff_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
 
-        get_res = auth_client.get(url)
+        get_res = staff_client.get(url)
         assert get_res.status_code == status.HTTP_200_OK
         assert any(p["provider"] == "edX" for p in get_res.data)
 
@@ -221,7 +221,7 @@ class TestCertificateAPI:
         assert response.data["count"] == 0
         assert len(response.data["results"]) == 0
 
-    def test_authenticated_can_create_certificate_with_file(self, auth_client):
+    def test_authenticated_can_create_certificate_with_file(self, staff_client):
         provider = Provider.objects.create(provider="Amazon Web Services")
         url = reverse("certificate-list")
         dummy_file = SimpleUploadedFile(
@@ -234,11 +234,36 @@ class TestCertificateAPI:
             "provider": provider.id,
             "pdf_file": dummy_file,
         }
-        response = auth_client.post(url, payload, format="multipart")
+        response = staff_client.post(url, payload, format="multipart")
 
         assert response.status_code == status.HTTP_201_CREATED
         assert Certificate.objects.filter(title="AWS Solutions Architect").exists()
         assert response.data["provider_details"]["provider"] == "Amazon Web Services"
+
+    def test_duplicate_certificate_sha256_returns_400(self, staff_client):
+        provider = Provider.objects.create(provider="Amazon Web Services")
+        url = reverse("certificate-list")
+        content = b"%PDF-1.4 Identical Duplicate Binary"
+        f1 = SimpleUploadedFile(
+            name="cert1.pdf", content=content, content_type="application/pdf"
+        )
+        f2 = SimpleUploadedFile(
+            name="cert2.pdf", content=content, content_type="application/pdf"
+        )
+        res1 = staff_client.post(
+            url,
+            {"title": "Cert 1", "provider": provider.id, "pdf_file": f1},
+            format="multipart",
+        )
+        assert res1.status_code == status.HTTP_201_CREATED
+
+        res2 = staff_client.post(
+            url,
+            {"title": "Cert 2", "provider": provider.id, "pdf_file": f2},
+            format="multipart",
+        )
+        assert res2.status_code == status.HTTP_400_BAD_REQUEST
+        assert "pdf_file" in res2.data
 
     def test_unpaginated_results_with_no_page_or_all(self, api_client):
         provider = Provider.objects.create(provider="Linux Foundation")
@@ -460,7 +485,7 @@ class TestCertificateAPI:
         assert resp_search_cred.data["count"] == 1
         assert resp_search_cred.data["results"][0]["title"] == "Cloud Architect"
 
-    def test_authenticated_can_patch_certificate_review_and_publish(self, auth_client):
+    def test_authenticated_can_patch_certificate_review_and_publish(self, staff_client):
         provider = Provider.objects.create(provider="Coursera")
         track = Track.objects.create(name="Data Science", slug="data-science")
         dummy_file = SimpleUploadedFile(
@@ -481,7 +506,7 @@ class TestCertificateAPI:
             "is_published": True,
             "tracks": [track.id],
         }
-        resp = auth_client.patch(url, patch_payload, format="json")
+        resp = staff_client.patch(url, patch_payload, format="json")
         assert resp.status_code == status.HTTP_200_OK
         cert.refresh_from_db()
         assert cert.title == "Machine Learning Specialization"
@@ -561,7 +586,7 @@ class TestCertificateAPI:
             status.HTTP_403_FORBIDDEN,
         ]
 
-    def test_authenticated_can_publish_and_unpublish(self, auth_client):
+    def test_authenticated_can_publish_and_unpublish(self, staff_client):
         provider = Provider.objects.create(provider="MIT")
         track = Track.objects.create(name="MIT Track", slug="mit-track")
         f = SimpleUploadedFile("cert.pdf", b"data", content_type="application/pdf")
@@ -576,13 +601,13 @@ class TestCertificateAPI:
         publish_url = reverse("certificate-publish", kwargs={"pk": cert.pk})
         unpublish_url = reverse("certificate-unpublish", kwargs={"pk": cert.pk})
 
-        auth_resp = auth_client.post(publish_url)
+        auth_resp = staff_client.post(publish_url)
         assert auth_resp.status_code == status.HTTP_200_OK
         assert auth_resp.data["is_published"] is True
         cert.refresh_from_db()
         assert cert.is_published is True
 
-        unpub_resp = auth_client.post(unpublish_url)
+        unpub_resp = staff_client.post(unpublish_url)
         assert unpub_resp.status_code == status.HTTP_200_OK
         assert unpub_resp.data["is_published"] is False
         cert.refresh_from_db()
@@ -606,7 +631,7 @@ class TestCertificateAPI:
             status.HTTP_403_FORBIDDEN,
         ]
 
-    def test_authenticated_can_extract_metadata(self, auth_client, monkeypatch):
+    def test_authenticated_can_extract_metadata(self, staff_client, monkeypatch):
         provider = Provider.objects.create(provider="Coursera")
         track = Track.objects.create(name="Python & Django", slug="python-django")
         f = SimpleUploadedFile(
@@ -638,7 +663,7 @@ class TestCertificateAPI:
         monkeypatch.setattr(extractor_module, "PdfReader", lambda _f: DummyReader())
 
         url = reverse("certificate-extract-metadata", kwargs={"pk": cert.pk})
-        resp = auth_client.post(url)
+        resp = staff_client.post(url)
         assert resp.status_code == status.HTTP_200_OK
         data = resp.data
         assert data["guessed_provider"] == "Coursera"

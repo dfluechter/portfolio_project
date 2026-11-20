@@ -47,6 +47,14 @@ export const useColdStartTracker = ({
   }, [isColdStarting]);
 
   useEffect(() => {
+    return () => {
+      if (timeoutTimerRef.current) {
+        clearTimeout(timeoutTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (isQuerying) {
       if (isDismissed) return;
 

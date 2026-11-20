@@ -16,7 +16,7 @@ from portfolio.models import (
 from portfolio.services.extractor import (
     compute_file_hash,
     extract_metadata,
-    guess_track,
+    guess_tracks,
     safe_storage_key,
     validate_source_path,
 )
@@ -60,11 +60,18 @@ class Command(BaseCommand):
             default=False,
             help="Tatsächlich importieren (DB-Einträge + Storage-Upload).",
         )
+        parser.add_argument(
+            "--no-ocr",
+            action="store_true",
+            default=False,
+            help="Deaktiviert lokales Tesseract-OCR und Gemini-Vision-Fallback.",
+        )
 
     def handle(self, *args, **options):
         source_str = options["source"]
         source_type = options["source_type"]
         apply_mode = options["apply"]
+        enable_ocr = not options.get("no_ocr", False)
         dry_run = not apply_mode
 
         source_path = Path(source_str).resolve()
@@ -90,6 +97,7 @@ class Command(BaseCommand):
 
         # ── Dateien sammeln ──
         files = self._collect_files(source_path, source_type)
+        known_db_providers = list(Provider.objects.values_list("provider", flat=True))
         self.stdout.write(f"Dateien gefunden: {len(files)}")
 
         for file_path, provider_hint in files:
@@ -124,7 +132,8 @@ class Command(BaseCommand):
                     file_path=file_path,
                     source_root=source_path,
                     track_rules=TRACK_RULES,
-                    enable_ocr=False,
+                    enable_ocr=enable_ocr,
+                    known_providers=known_db_providers,
                 )
             except Exception as exc:  # noqa: BLE001
                 run.files_errored += 1
@@ -141,7 +150,10 @@ class Command(BaseCommand):
 
             # Track-Vorschlag
             title_for_track = result.guessed_title or file_path.stem
-            track_slug = guess_track(title_for_track, TRACK_RULES)
+            guessed_slugs = list(result.guessed_track_slugs) or guess_tracks(
+                title_for_track, TRACK_RULES, result.extracted_text
+            )
+            track_slug = guessed_slugs[0] if guessed_slugs else None
 
             # Provider bestimmen
             provider_name = result.guessed_provider or provider_hint or "Unbekannt"
@@ -157,12 +169,14 @@ class Command(BaseCommand):
             # Log-Ausgabe (ohne absolute Pfade!)
             self.stdout.write(
                 f"  {'WOULD' if dry_run else 'IMPORT'}: "
-                f"{file_path.name} -> {provider_name}"
+                f"{file_path.name} -> Titel='{result.guessed_title or '-'}' ({result.title_confidence:.0%}) "
+                f"| Provider={provider_name}"
                 f"{f' [Track: {track_slug}]' if track_slug else ''}"
             )
             run.append_log(
                 f"{'PLAN' if dry_run else 'OK'}  "
                 f"{file_path.name} hash={file_hash[:12]} "
+                f"title={result.guessed_title or '-'} conf={result.title_confidence:.0%} "
                 f"provider={provider_name} track={track_slug or '-'}"
             )
 

@@ -22,6 +22,12 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent-primary: var(--accent-primary);
 }
 
 @layer base {
@@ -47,6 +53,12 @@
     --border: #e2e8f0;
     --input: #e2e8f0;
     --ring: #6366f1;
+    --surface: #ffffff;
+    --surface-hover: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --accent-primary: #4f46e5;
   }
 
   .dark {
@@ -70,6 +82,12 @@
     --border: #1e293b;
     --input: #1e293b;
     --ring: #818cf8;
+    --surface: #0f172a;
+    --surface-hover: #1e293b;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --accent-primary: #818cf8;
   }
 
   html {

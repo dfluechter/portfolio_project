@@ -256,24 +256,28 @@ def sync_chunks_for_instance(instance: Any, generate_embeddings: bool = True) ->
     # Alte Chunks für diese Instanz entfernen
     KnowledgeChunk.objects.filter(source_type=source_type, source_id=source_id).delete()
 
-    created_count = 0
+    chunks_to_create: list[KnowledgeChunk] = []
     for data in chunk_data_list:
         embedding_val = None
         if generate_embeddings:
             embedding_val = generate_embedding(data["content"])
 
-        KnowledgeChunk.objects.create(
-            source_type=data["source_type"],
-            source_id=data["source_id"],
-            chunk_index=data["chunk_index"],
-            title=data["title"],
-            content=data["content"],
-            metadata=data.get("metadata", {}),
-            embedding=embedding_val,
+        chunks_to_create.append(
+            KnowledgeChunk(
+                source_type=data["source_type"],
+                source_id=data["source_id"],
+                chunk_index=data["chunk_index"],
+                title=data["title"],
+                content=data["content"],
+                metadata=data.get("metadata", {}),
+                embedding=embedding_val,
+            )
         )
-        created_count += 1
 
-    return created_count
+    if chunks_to_create:
+        KnowledgeChunk.objects.bulk_create(chunks_to_create)
+
+    return len(chunks_to_create)
 
 
 def delete_chunks_for_instance(source_type: str, source_id: int) -> int:
@@ -287,9 +291,13 @@ def delete_chunks_for_instance(source_type: str, source_id: int) -> int:
 def reindex_all_portfolio_chunks(generate_embeddings: bool = False) -> int:
     """Reindiziert alle publizierten Portfolio-Daten in KnowledgeChunk-Datensätze."""
     total = 0
-    for p in Project.objects.filter(is_published=True):
+    for p in Project.objects.filter(is_published=True).prefetch_related("skills"):
         total += sync_chunks_for_instance(p, generate_embeddings=generate_embeddings)
-    for c in Certificate.objects.filter(is_published=True):
+    for c in (
+        Certificate.objects.filter(is_published=True)
+        .select_related("provider", "source_pending")
+        .prefetch_related("tracks")
+    ):
         total += sync_chunks_for_instance(c, generate_embeddings=generate_embeddings)
     for s in Skill.objects.all():
         total += sync_chunks_for_instance(s, generate_embeddings=generate_embeddings)

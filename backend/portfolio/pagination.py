@@ -13,12 +13,15 @@ class StandardResultsSetPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = "page_size"
     max_page_size = 100
+    max_unpaginated_size = 500
 
     def paginate_queryset(self, queryset, request, view=None):
         params = request.query_params
         if params.get("no_page", "").lower() in ("true", "1", "all") or params.get(
             "all", ""
         ).lower() in ("true", "1"):
+            if hasattr(queryset, "_result_cache") and queryset._result_cache is None:
+                queryset._result_cache = list(queryset[: self.max_unpaginated_size])
             return None
         return super().paginate_queryset(queryset, request, view)
 

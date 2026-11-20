@@ -83,6 +83,42 @@ def validate_file_size(value: Any) -> None:
         raise ValidationError("Die Datei ist zu groß! Maximal erlaubt sind 5 MB.")
 
 
+IMAGE_MAGIC_BYTE_SIGNATURES: dict[str, tuple[bytes, ...]] = {
+    ".png": (b"\x89PNG",),
+    ".jpg": (b"\xff\xd8\xff",),
+    ".jpeg": (b"\xff\xd8\xff",),
+    ".webp": (b"RIFF",),
+}
+
+
+def validate_image_extension(value: Any) -> None:
+    """
+    Prüft Dateiendung und Header-Magic-Bytes für Bilddateien
+    (Provider-Logos und Projekt-Vorschaubilder) gegen MIME-Type-Spoofing.
+    """
+    name = getattr(value, "name", "") or str(value)
+    ext = os.path.splitext(name)[1].lower()
+    valid_extensions = list(IMAGE_MAGIC_BYTE_SIGNATURES.keys())
+
+    if ext not in valid_extensions:
+        raise ValidationError(
+            f"Ungültiges Bildformat! Erlaubt sind nur: {', '.join(valid_extensions)}"
+        )
+
+    if hasattr(value, "read") and hasattr(value, "seek"):
+        header = value.read(16)
+        value.seek(0)
+
+        if not header:
+            raise ValidationError("Die hochgeladene Bilddatei ist leer.")
+
+        expected_signatures = IMAGE_MAGIC_BYTE_SIGNATURES[ext]
+        if not any(header.startswith(sig) for sig in expected_signatures):
+            raise ValidationError(
+                f"MIME-Type-Spoofing erkannt! Der Dateiinhalt passt nicht zur Dateiendung '{ext}'."
+            )
+
+
 # ==============================================================================
 # KONFIGURATION
 # ==============================================================================
@@ -261,7 +297,11 @@ class TimelineEntry(models.Model):
 class Provider(models.Model):
     provider = models.CharField(max_length=255, unique=True, verbose_name="Anbieter")
     logo = models.ImageField(
-        upload_to="provider_logos/", blank=True, null=True, verbose_name="Logo"
+        upload_to="provider_logos/",
+        blank=True,
+        null=True,
+        verbose_name="Logo",
+        validators=[validate_image_extension, validate_file_size],
     )
     aktiv = models.BooleanField(default=True, verbose_name="Aktiv")
     url = models.URLField(blank=True, null=True, verbose_name="URL")
@@ -510,6 +550,7 @@ class Project(models.Model):
         blank=True,
         null=True,
         verbose_name="Projekt-Vorschaubild",
+        validators=[validate_image_extension, validate_file_size],
     )
     skills = models.ManyToManyField(
         Skill,

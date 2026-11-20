@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Calendar, ExternalLink, FolderGit2 } from 'lucide-react';
+import { AlertTriangle, Calendar, ExternalLink, FolderGit2, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useProjects } from '../hooks/usePortfolio';
@@ -10,7 +10,7 @@ import type { Project } from '../types';
 
 export const ProjectsSection: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { data: projectsData, isLoading } = useProjects();
+  const { data: projectsData, isLoading, isError, refetch } = useProjects();
   const { searchTerm, clearSearch } = usePortfolioSearch();
 
   const dateLocale = i18n.language && i18n.language.startsWith('en') ? 'en-US' : 'de-DE';
@@ -103,12 +103,79 @@ export const ProjectsSection: React.FC = () => {
           </p>
         </div>
 
-        {/* Projects Grid */}
+        {/* Inline Error Telemetry Bar (when live API fails and fallback is active) */}
+        {isError && (
+          <div
+            role="alert"
+            className="mb-6 p-3.5 rounded-xl bg-rose-500/5 dark:bg-rose-950/25 border border-rose-500/25 flex flex-wrap items-center justify-between gap-3 text-xs text-rose-700 dark:text-rose-300 surface-refraction"
+          >
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" aria-hidden="true" />
+              <span className="font-mono text-[11px] uppercase tracking-wider font-semibold">
+                ERR // LIVE_SYNC_FALLBACK
+              </span>
+              <span className="text-slate-600 dark:text-slate-300">
+                {t(
+                  'projects.syncErrorNotice',
+                  'Live-Projektdaten konnten nicht aktualisiert werden. Es wird der verifizierte Referenzbestand angezeigt.'
+                )}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="inline-flex items-center gap-1.5 min-h-[34px] px-3 py-1 rounded-lg font-semibold bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/80 hover:border-rose-500 active:scale-[0.98] active:translate-y-[1px] transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+            >
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>{t('common.retry', 'Erneut versuchen')}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Projects Asymmetric Bento Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((n) => (
-              <div key={n} className="h-72 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
-            ))}
+          <div
+            data-testid="projects-skeleton"
+            aria-busy="true"
+            aria-label={t('common.loading', 'Wird geladen...')}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6"
+          >
+            {[0, 1, 2].map((idx) => {
+              const spanClass =
+                idx === 0
+                  ? 'lg:col-span-7'
+                  : idx === 1
+                  ? 'lg:col-span-5'
+                  : 'md:col-span-2 lg:col-span-12';
+              return (
+                <div
+                  key={idx}
+                  className={`${spanClass} rounded-2xl bg-white dark:bg-slate-900/65 border border-slate-200/90 dark:border-slate-800/90 overflow-hidden flex flex-col justify-between surface-refraction`}
+                >
+                  <div className="h-28 p-5 border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-100/70 dark:bg-slate-900/50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                      <div className="space-y-2">
+                        <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                        <div className="h-2.5 w-24 rounded bg-slate-200/80 dark:bg-slate-800/70 animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="h-6 w-20 rounded-lg bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="h-5 w-2/3 rounded bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                    <div className="space-y-2">
+                      <div className="h-3.5 w-full rounded bg-slate-200/80 dark:bg-slate-800/70 animate-pulse" />
+                      <div className="h-3.5 w-4/5 rounded bg-slate-200/80 dark:bg-slate-800/70 animate-pulse" />
+                    </div>
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-3">
+                      <div className="h-9 w-24 rounded-xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                      <div className="h-9 w-28 rounded-xl bg-slate-200/70 dark:bg-slate-800/60 animate-pulse ml-auto" />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : filteredProjects.length === 0 ? (
           <SectionEmptyState
@@ -117,7 +184,7 @@ export const ProjectsSection: React.FC = () => {
             onReset={clearSearch}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
             <AnimatePresence>
               {filteredProjects.map((project, idx) => {
                 const imageUrl = resolveProjectImageUrl(project.image);
@@ -129,6 +196,16 @@ export const ProjectsSection: React.FC = () => {
                   : null;
                 const projectCode = `PRJ-${String(idx + 1).padStart(2, '0')}`;
 
+                // Asymmetric Bento Span Logic (7 / 5 / 12 pattern instead of 3 equal columns)
+                const mod = idx % 3;
+                const bentoSpanClass =
+                  mod === 0
+                    ? 'lg:col-span-7'
+                    : mod === 1
+                    ? 'lg:col-span-5'
+                    : 'md:col-span-2 lg:col-span-12';
+                const isWideBento = mod === 2;
+
                 return (
                   <motion.div
                     key={project.id}
@@ -138,11 +215,19 @@ export const ProjectsSection: React.FC = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={{ duration: 0.2 }}
-                    className="group flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900/65 border border-slate-200/90 dark:border-slate-800/90 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 shadow-xs hover:shadow-lg overflow-hidden transition-all duration-200 hover:-translate-y-0.5"
+                    className={`${bentoSpanClass} group flex flex-col ${
+                      isWideBento ? 'lg:flex-row' : ''
+                    } justify-between rounded-2xl bg-white dark:bg-slate-900/65 border border-slate-200/90 dark:border-slate-800/90 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 shadow-xs hover:shadow-lg overflow-hidden transition-all duration-200 hover:-translate-y-0.5 surface-refraction`}
                   >
-                    {/* Dedizierter Medien- oder Blueprint-Header oben */}
+                    {/* Dedizierter Medien- oder Blueprint-Header */}
                     {imageUrl ? (
-                      <div className="h-40 overflow-hidden border-b border-slate-200/80 dark:border-slate-800/80 relative bg-slate-100 dark:bg-slate-900">
+                      <div
+                        className={`${
+                          isWideBento
+                            ? 'h-44 lg:h-auto lg:w-2/5 lg:border-b-0 lg:border-r'
+                            : 'h-40 border-b'
+                        } overflow-hidden border-slate-200/80 dark:border-slate-800/80 relative bg-slate-100 dark:bg-slate-900 shrink-0`}
+                      >
                         <img
                           src={imageUrl}
                           alt={project.title}
@@ -164,7 +249,13 @@ export const ProjectsSection: React.FC = () => {
                         )}
                       </div>
                     ) : (
-                      <div className="h-28 overflow-hidden border-b border-slate-200/80 dark:border-slate-800/80 relative p-5 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/50 bg-blueprint-grid">
+                      <div
+                        className={`${
+                          isWideBento
+                            ? 'h-28 lg:h-auto lg:w-64 lg:border-b-0 lg:border-r lg:flex-col lg:items-start lg:justify-between'
+                            : 'h-28 border-b items-center justify-between'
+                        } overflow-hidden border-slate-200/80 dark:border-slate-800/80 relative p-5 flex bg-slate-50/90 dark:bg-slate-900/50 bg-blueprint-grid shrink-0`}
+                      >
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200/80 dark:border-indigo-800/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-2xs group-hover:border-indigo-500/50 transition-colors">
                             <FolderGit2 className="w-4 h-4" aria-hidden="true" />
@@ -174,7 +265,7 @@ export const ProjectsSection: React.FC = () => {
                               {projectCode}
                             </span>
                             <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500">
-                              SYS // MODULE
+                              {mod === 0 ? 'FEATURED // ARCH' : 'SYS // MODULE'}
                             </span>
                           </div>
                         </div>
@@ -192,7 +283,7 @@ export const ProjectsSection: React.FC = () => {
                         <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors tracking-tight">
                           {project.title}
                         </h3>
-                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3 mb-4">
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3 mb-4 max-w-[65ch]">
                           {project.description}
                         </p>
                         {project.skill_details && project.skill_details.length > 0 && (
@@ -215,7 +306,7 @@ export const ProjectsSection: React.FC = () => {
                             href={project.github_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200/80 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200/70 dark:border-slate-700/70 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200/80 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200/70 dark:border-slate-700/70 active:scale-[0.98] active:translate-y-[1px] transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                           >
                             <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
                               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
@@ -229,7 +320,7 @@ export const ProjectsSection: React.FC = () => {
                             href={project.live_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 border border-indigo-200/70 dark:border-indigo-500/30 text-xs font-semibold text-indigo-600 dark:text-indigo-300 transition-colors ml-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 border border-indigo-200/70 dark:border-indigo-500/30 text-xs font-semibold text-indigo-600 dark:text-indigo-300 active:scale-[0.98] active:translate-y-[1px] transition-all ml-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                           >
                             <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                             <span>{t('projects.liveDemo', 'Live Demo')}</span>

@@ -17,10 +17,8 @@ if (typeof window !== "undefined") {
 // 1. THEME-ADAPTIVE INLINE STYLES
 // -------------------------------------------------------------------------
 const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
-
 .cinematic-footer-wrapper {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   
   /* Dynamic Variables using standard shadcn/tailwind v4 tokens */
@@ -141,15 +139,22 @@ export type MagneticButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> 
 
 export const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>(
   ({ className, children, as: Component = "button", ...props }, forwardedRef) => {
-    const localRef = useRef<HTMLElement>(null);
+    const localRef = useRef<HTMLElement | null>(null);
 
     useEffect(() => {
       if (typeof window === "undefined") return;
+      if (
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        return;
+      }
       const element = localRef.current;
       if (!element) return;
 
       const ctx = gsap.context(() => {
-        const handleMouseMove = (e: MouseEvent) => {
+        const handleMouseMove: EventListener = (evt) => {
+          const e = evt as MouseEvent;
           const rect = element.getBoundingClientRect();
           const h = rect.width / 2;
           const w = rect.height / 2;
@@ -167,7 +172,7 @@ export const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>
           });
         };
 
-        const handleMouseLeave = () => {
+        const handleMouseLeave: EventListener = () => {
           gsap.to(element, {
             x: 0,
             y: 0,
@@ -179,11 +184,11 @@ export const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>
           });
         };
 
-        element.addEventListener("mousemove", handleMouseMove as any);
+        element.addEventListener("mousemove", handleMouseMove);
         element.addEventListener("mouseleave", handleMouseLeave);
 
         return () => {
-          element.removeEventListener("mousemove", handleMouseMove as any);
+          element.removeEventListener("mousemove", handleMouseMove);
           element.removeEventListener("mouseleave", handleMouseLeave);
         };
       }, element);
@@ -193,10 +198,13 @@ export const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>
 
     return (
       <Component
-        ref={(node: HTMLElement) => {
-          (localRef as any).current = node;
-          if (typeof forwardedRef === "function") forwardedRef(node);
-          else if (forwardedRef) (forwardedRef as any).current = node;
+        ref={(node: HTMLElement | null) => {
+          localRef.current = node;
+          if (typeof forwardedRef === "function") {
+            forwardedRef(node);
+          } else if (forwardedRef) {
+            (forwardedRef as React.MutableRefObject<HTMLElement | null>).current = node;
+          }
         }}
         className={cn("cursor-pointer", className)}
         {...props}
@@ -255,6 +263,8 @@ const DEFAULT_MARQUEE = [
   "Modern Reactive Systems",
 ];
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export function CinematicFooter({
   brandText,
   giantText,
@@ -266,7 +276,7 @@ export function CinematicFooter({
   techStackItems,
   ctaButtons,
   secondaryLinks,
-  copyrightYear = new Date().getFullYear(),
+  copyrightYear = CURRENT_YEAR,
   copyrightOwner,
   creatorName,
 }: CinematicFooterProps) {
@@ -304,10 +314,15 @@ export function CinematicFooter({
   ];
 
   const resolvedCtaButtons = ctaButtons || defaultCtaButtons;
-  void secondaryLinks;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
     if (!wrapperRef.current) return;
 
     // React strict mode compatible GSAP context cleanup
@@ -473,6 +488,23 @@ export function CinematicFooter({
                   </MagneticButton>
                 ))}
               </div>
+
+              {secondaryLinks && secondaryLinks.length > 0 && (
+                <nav
+                  aria-label={t("footer.quickLinks", "Footer-Navigation")}
+                  className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-mono text-muted-foreground pt-2"
+                >
+                  {secondaryLinks.map((link) => (
+                    <a
+                      key={link.href + link.label}
+                      href={link.href}
+                      className="hover:text-foreground transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </nav>
+              )}
             </div>
           </div>
 

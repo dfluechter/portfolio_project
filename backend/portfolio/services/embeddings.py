@@ -3,6 +3,7 @@ import logging
 import os
 
 from django.core.cache import cache
+from google.genai import types
 
 from .ai_assistant import (
     check_and_reserve_ai_budget,
@@ -14,14 +15,14 @@ from .ai_assistant import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_EMBEDDING_MODEL = "text-embedding-004"
+DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001"
 EMBEDDING_DIMENSIONS = 768
 
 
 def generate_embedding(text: str, model_name: str | None = None) -> list[float] | None:
     """Erzeugt eine 768-dimensionale Vektoreinbettung für den übergebenen Text.
 
-    Nutzt das Google GenAI SDK (text-embedding-004) unter Einhaltung des
+    Nutzt das Google GenAI SDK (gemini-embedding-001) unter Einhaltung des
     Zero-Cost-Circuit-Breakers und des Token-Budgets.
     """
     clean_text = (text or "").strip()
@@ -64,6 +65,7 @@ def generate_embedding(text: str, model_name: str | None = None) -> list[float] 
         response = client.models.embed_content(
             model=active_model,
             contents=clean_text,
+            config=types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIMENSIONS),
         )
 
         vector: list[float] | None = None

@@ -576,11 +576,11 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 - [x] **Szenario 1 (.commitlintrc.json Konfiguration):**
   - **Given** ein lokaler Git-Commit
   - **When** der Husky `commit-msg` Hook ausgeführt wird
-  - **Then** werden folgende Commit-Typen akzeptiert: `build`, `chore`, `enh`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
+  - **Then** werden folgende Commit-Typen akzeptiert: `build`, `chore`, `ci`, `docs`, `enh`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
   - **And** die Header-Länge ist auf maximal 72 Zeichen begrenzt (`header-max-length: [2, "always", 72]`).
   - **And** Schlusspunkte im Header sind verboten (`header-full-stop: [2, "never"]`).
   - **And** das Subject muss in Kleinschreibung vorliegen (`subject-case: [2, "always", "lower-case"]`).
-  - **And** der Scope muss in `camelCase` formatiert sein (`scope-case: [2, "always", "camel-case"]`).
+  - **And** der Scope unterstützt `camelCase`, `kebab-case` und `lower-case` (`scope-case: [2, "always", ["camel-case", "kebab-case", "lower-case"]]`).
 - [x] **Szenario 2 (Dokumentation in deployment.md):**
   - **Given** ein Entwickler möchte einen Commit erstellen
   - **When** er [`docs/deployment.md`](deployment.md#32-automatisierte-qualitätssicherung-durch-git-hooks-und-commitlint) konsultiert
@@ -613,7 +613,7 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 
 ---
 
-### Epic 14: Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing (Abgeschlossen)
+### Epic 14: Inbox-Automatisierung, Duplikatsprüfung & Batch-Processing (In Bearbeitung)
 
 #### User Story 14.1: Automatisierter Inbox-Scan mit Duplikats- & Re-Import-Erkennung (Abgeschlossen)
 > **Als** Administrator
@@ -687,17 +687,17 @@ Bisher war das Feld `tracks` in `Certificate` rein optional (`blank=True`). Unve
 
 ---
 
-#### User Story 14.3: Automatisierte Integritäts- und Bereinigungs-Checks (Abgeschlossen)
+#### User Story 14.3: Automatisierte Integritäts- und Bereinigungs-Checks (Geplant)
 > **Als** Systembetreuer
 > **möchte ich** einen Management-Befehl `verify_certificate_integrity`, der alle Zertifikate gegen den S3-Storage abgleicht,
 > **damit** tote Links, fehlende Storage-Objekte oder Hash-Inkonsistenzen sofort aufgedeckt werden.
 
 **Akzeptanzkriterien (Acceptance Criteria):**
-- [x] **Szenario 1 (Storage-Sync-Audit):**
+- [ ] **Szenario 1 (Storage-Sync-Audit):**
   - **Given** die in der Datenbank hinterlegten `Certificate.storage_key` und `pdf_file`-Pfade
   - **When** `python manage.py verify_certificate_integrity` ausgeführt wird
   - **Then** prüft der Befehl via S3 `head_object`, ob alle Dateien physisch existieren.
-- [x] **Szenario 2 (Orphan-File-Erkennung):**
+- [ ] **Szenario 2 (Orphan-File-Erkennung):**
   - **Given** Dateien im S3-Storage-Bucket unter `certificates/`
   - **When** der Audit-Lauf durchgeführt wird
   - **Then** identifiziert das Skript verwaiste Dateien (Orphans), die keinem Datenbankobjekt mehr zugeordnet sind, und listet sie auf.

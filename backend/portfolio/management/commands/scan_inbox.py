@@ -212,14 +212,18 @@ class Command(BaseCommand):
 
             run.files_imported += 1
             ocr_flag = " (OCR ausstehend)" if result.ocr_pending else ""
+            stage_info = result.extraction_stage or "unknown"
+            conf_info = f"{result.title_confidence:.0%}"
             run.append_log(
                 f"OK    {file_path.name} hash={file_hash[:12]} -> Titel: {result.guessed_title or '-'} "
-                f"provider={result.guessed_provider or '-'} date={result.issued_date or '-'} tracks={tracks_info}{ocr_flag}"
+                f"provider={result.guessed_provider or '-'} date={result.issued_date or '-'} "
+                f"tracks={tracks_info} stage={stage_info} conf={conf_info}{ocr_flag}"
             )
             self.stdout.write(
                 self.style.SUCCESS(
                     f"  -> Gespeichert als Pending: {file_path.name} "
-                    f"(Titel: {result.guessed_title or '-'}, Provider: {result.guessed_provider or '-'}, Tracks: {tracks_info}{ocr_flag})"
+                    f"(Titel: {result.guessed_title or '-'}, Provider: {result.guessed_provider or '-'}, "
+                    f"Tracks: {tracks_info}, Stage: {stage_info}, Conf: {conf_info}{ocr_flag})"
                 )
             )
 

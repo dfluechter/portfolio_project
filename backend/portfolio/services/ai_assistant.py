@@ -118,6 +118,8 @@ def check_and_reserve_ai_budget(estimated_tokens: int) -> tuple[bool, str]:
             f"Anfrage überschreitet das Token-Limit pro Aufruf ({estimated_tokens} > {max_input_tokens}).",
         )
 
+    cache.add(AI_DAILY_TOKENS_KEY, 0, timeout=AI_BUDGET_TTL)
+    cache.add(AI_DAILY_REQUESTS_KEY, 0, timeout=AI_BUDGET_TTL)
     current_tokens = int(cache.get(AI_DAILY_TOKENS_KEY) or 0)
     current_reqs = int(cache.get(AI_DAILY_REQUESTS_KEY) or 0)
 
@@ -133,16 +135,22 @@ def check_and_reserve_ai_budget(estimated_tokens: int) -> tuple[bool, str]:
         trip_ai_circuit_breaker(reason)
         return False, reason
 
-    cache.set(
-        AI_DAILY_TOKENS_KEY,
-        current_tokens + estimated_tokens,
-        timeout=AI_BUDGET_TTL,
-    )
-    cache.set(
-        AI_DAILY_REQUESTS_KEY,
-        current_reqs + 1,
-        timeout=AI_BUDGET_TTL,
-    )
+    try:
+        cache.incr(AI_DAILY_TOKENS_KEY, estimated_tokens)
+    except ValueError:
+        cache.set(
+            AI_DAILY_TOKENS_KEY,
+            current_tokens + estimated_tokens,
+            timeout=AI_BUDGET_TTL,
+        )
+    try:
+        cache.incr(AI_DAILY_REQUESTS_KEY, 1)
+    except ValueError:
+        cache.set(
+            AI_DAILY_REQUESTS_KEY,
+            current_reqs + 1,
+            timeout=AI_BUDGET_TTL,
+        )
     return True, ""
 
 
@@ -159,11 +167,15 @@ def record_actual_ai_tokens(
     except ValueError:
         daily_token_limit = DEFAULT_DAILY_TOKEN_LIMIT
 
+    cache.add(AI_DAILY_TOKENS_KEY, 0, timeout=AI_BUDGET_TTL)
     current_tokens = int(cache.get(AI_DAILY_TOKENS_KEY) or 0)
     diff = max(0, int(actual_total_tokens) - int(reserved_tokens))
     updated_tokens = current_tokens + diff
     if diff > 0:
-        cache.set(AI_DAILY_TOKENS_KEY, updated_tokens, timeout=AI_BUDGET_TTL)
+        try:
+            updated_tokens = int(cache.incr(AI_DAILY_TOKENS_KEY, diff))
+        except ValueError:
+            cache.set(AI_DAILY_TOKENS_KEY, updated_tokens, timeout=AI_BUDGET_TTL)
 
     if updated_tokens >= daily_token_limit:
         trip_ai_circuit_breaker(
@@ -439,7 +451,7 @@ def answer_portfolio_query(
     history: list[dict[str, str]] | None = None,
     language: str = "de",
 ) -> dict[str, Any]:
-    """Beantwortet eine Besucher-Frage über das Portfolio mit RAG via Gemini 3.8 Flash.
+    """Beantwortet eine Besucher-Frage über das Portfolio mit RAG via Gemini 2.5 Flash.
 
     Verwendet Guardrails, In-Memory-Caching, Token-Pruning und versioniertes Response-Caching.
     """
@@ -582,8 +594,9 @@ def answer_portfolio_query(
             types.Content(role="user", parts=[types.Part.from_text(text=cleaned_query)])
         )
 
+        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash"
         response = client.models.generate_content(
-            model="gemini-3.8-flash",
+            model=gemini_model,
             contents=contents,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,

@@ -23,19 +23,19 @@ class TestProjectCRUD:
             status.HTTP_403_FORBIDDEN,
         ]
 
-    def test_authenticated_can_update_project(self, auth_client):
+    def test_authenticated_can_update_project(self, staff_client):
         project = Project.objects.create(title="Old Title", description="Test")
         url = reverse("project-detail", kwargs={"pk": project.pk})
-        response = auth_client.put(
+        response = staff_client.put(
             url, {"title": "New Title", "description": "Test"}, format="json"
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data["title"] == "New Title"
 
-    def test_authenticated_can_partial_update_project(self, auth_client):
+    def test_authenticated_can_partial_update_project(self, staff_client):
         project = Project.objects.create(title="Old Title", description="Old Desc")
         url = reverse("project-detail", kwargs={"pk": project.pk})
-        response = auth_client.patch(url, {"title": "Patched Title"}, format="json")
+        response = staff_client.patch(url, {"title": "Patched Title"}, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["title"] == "Patched Title"
         assert response.data["description"] == "Old Desc"
@@ -50,9 +50,9 @@ class TestProjectCRUD:
         ]
         assert Project.objects.filter(pk=project.pk).exists()
 
-    def test_authenticated_can_delete_project(self, auth_client):
+    def test_authenticated_can_delete_project(self, staff_client):
         project = Project.objects.create(title="Delete Me", description="Test")
         url = reverse("project-detail", kwargs={"pk": project.pk})
-        response = auth_client.delete(url)
+        response = staff_client.delete(url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not Project.objects.filter(pk=project.pk).exists()

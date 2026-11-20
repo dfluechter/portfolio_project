@@ -77,6 +77,27 @@ class TestPendingCertificateActionsView:
         res = self.api_client.get(f"/api/pending-certificates/{self.pending.id}/")
         assert res.status_code == 200
         assert "extracted_text" in res.json()
+        assert "suggested_tracks" in res.json()
+
+    def test_list_includes_suggested_tracks(self):
+        self.pending.suggested_tracks.add(self.track)
+        res = self.api_client.get("/api/pending-certificates/")
+        assert res.status_code == 200
+        assert res.json()[0]["suggested_tracks"] == [self.track.id]
+
+    def test_file_endpoint_rejects_symlinks(self, tmp_path):
+        from pathlib import Path
+
+        target = tmp_path / "cert.pdf"
+        target.write_bytes(b"%PDF-1.4 content")
+        self.pending.file_path = str(target)
+        self.pending.save()
+
+        with patch.object(Path, "is_symlink", return_value=True):
+            res = self.api_client.get(
+                f"/api/pending-certificates/{self.pending.id}/file/"
+            )
+        assert res.status_code == 404
 
     def test_approve_validates_track_ids_and_promotes(self):
         # 1. Ungültiger Typ für track_ids
@@ -200,3 +221,90 @@ class TestTrackViewSet:
         assert data["icon"] == "terminal"
         track.refresh_from_db()
         assert track.icon == "terminal"
+
+
+@pytest.mark.django_db
+class TestContactMessageView:
+    """Tests für den Kontaktformular-Endpunkt /api/contact/."""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.url = "/api/contact/"
+
+    def test_contact_message_success(self, mailoutbox):
+        payload = {
+            "name": "Max Mustermann",
+            "email": "max@example.com",
+            "subject": "Projektanfrage",
+            "message": "Hallo Dominik, wir haben ein spannendes Django-Projekt für dich.",
+        }
+        res = self.client.post(self.url, payload, format="json")
+        assert res.status_code == 200
+        assert res.json()["status"] == "sent"
+        assert len(mailoutbox) == 1
+        assert mailoutbox[0].reply_to == ["max@example.com"]
+        assert "Projektanfrage" in mailoutbox[0].subject
+
+    def test_contact_message_validation_errors(self):
+        # Kurzer Name
+        res_name = self.client.post(
+            self.url,
+            {
+                "name": "A",
+                "email": "max@example.com",
+                "message": "Ausreichend lange Nachricht.",
+            },
+            format="json",
+        )
+        assert res_name.status_code == 400
+
+        # Ungültige E-Mail
+        res_email = self.client.post(
+            self.url,
+            {
+                "name": "Max",
+                "email": "not-an-email",
+                "message": "Ausreichend lange Nachricht.",
+            },
+            format="json",
+        )
+        assert res_email.status_code == 400
+
+        # Zu kurze Nachricht
+        res_msg = self.client.post(
+            self.url,
+            {
+                "name": "Max",
+                "email": "max@example.com",
+                "message": "Zu kurz",
+            },
+            format="json",
+        )
+        assert res_msg.status_code == 400
+
+    def test_contact_message_honeypot_silently_drops_without_sending(self, mailoutbox):
+        payload = {
+            "name": "Spam Bot",
+            "email": "bot@spam.example",
+            "message": "Buy crypto now for free money!",
+            "website": "https://spam.example",
+        }
+        res = self.client.post(self.url, payload, format="json")
+        assert res.status_code == 200
+        assert res.json()["status"] == "sent"
+        assert len(mailoutbox) == 0
+
+    def test_contact_message_smtp_failure_returns_503(self):
+        payload = {
+            "name": "Max Mustermann",
+            "email": "max@example.com",
+            "subject": "Projektanfrage",
+            "message": "Hallo Dominik, wir haben ein spannendes Django-Projekt für dich.",
+        }
+        with patch(
+            "django.core.mail.EmailMessage.send",
+            side_effect=RuntimeError("SMTP unreachable"),
+        ):
+            res = self.client.post(self.url, payload, format="json")
+        assert res.status_code == 503
+        assert res.json()["status"] == "error"

@@ -33,3 +33,6 @@ scratch/
 .venv/
 .ruff_cache/
 *.empty
+
+
+backend/pytest-of-Domski/

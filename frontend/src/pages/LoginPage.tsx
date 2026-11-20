@@ -48,12 +48,12 @@ export const LoginPage: React.FC = () => {
       setResetSuccess(
         res.detail ||
           t(
-            'login.resetSuccessDefault',
+            'login.resetSuccess',
             'Eine E-Mail mit dem Wiederherstellungslink wurde erfolgreich an die hinterlegte Inhaber-Adresse versendet!'
           )
       );
     } catch (err: unknown) {
-      let msg = t('login.resetErrorDefault', 'Fehler beim Anfordern des Passwort-Resets.');
+      let msg = t('login.resetError', 'Fehler beim Anfordern des Passwort-Resets.');
       if (axios.isAxiosError(err)) {
         msg = err.response?.data?.detail || msg;
       } else if (err instanceof Error) {
@@ -146,10 +146,10 @@ export const LoginPage: React.FC = () => {
                 {t('login.eyebrow', 'AUTH // SYSTEM ACCESS')}
               </span>
               <h2 className="text-2xl font-extrabold text-white tracking-tight">
-                {t('login.heading', 'Portfolio Admin Login')}
+                {t('login.title', 'Portfolio Admin Login')}
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                {t('login.subheading', 'Authentifizierung via JWT & Django REST')}
+                {t('login.subtitle', 'Authentifizierung via JWT & Django REST')}
               </p>
             </div>
           </div>
@@ -225,7 +225,7 @@ export const LoginPage: React.FC = () => {
               {capsLockActive && (
                 <p role="status" className="text-[11px] text-amber-400 font-medium mt-1.5 flex items-center gap-1.5 animate-in fade-in">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                  <span>{t('login.capsLockWarning', 'Feststelltaste (Caps Lock) ist aktiviert')}</span>
+                  <span>{t('login.capsLockActive', 'Feststelltaste (Caps Lock) ist aktiviert')}</span>
                 </p>
               )}
             </div>
@@ -256,7 +256,7 @@ export const LoginPage: React.FC = () => {
                   <span>{t('login.loggingIn', 'Wird angemeldet...')}</span>
                 </>
               ) : (
-                <span>{t('login.submitBtn', 'Sicher Einloggen')}</span>
+                <span>{t('login.submitButton', 'Sicher Einloggen')}</span>
               )}
             </button>
           </form>
@@ -287,10 +287,10 @@ export const LoginPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 id="reset-modal-title" className="text-base font-bold text-white">
-                    {t('login.resetModalTitle', 'Passwort zurücksetzen')}
+                    {t('login.resetTitle', 'Passwort zurücksetzen')}
                   </h3>
                   <p className="text-xs text-slate-400">
-                    {t('login.resetModalSub', 'Sicheren Wiederherstellungs-Link anfordern')}
+                    {t('login.resetSubtitle', 'Sicheren Wiederherstellungs-Link anfordern')}
                   </p>
                 </div>
               </div>
@@ -298,7 +298,7 @@ export const LoginPage: React.FC = () => {
                 type="button"
                 onClick={() => setShowResetModal(false)}
                 className="cursor-pointer text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors duration-200"
-                aria-label={t('login.closeAria', 'Schließen')}
+                aria-label={t('login.close', 'Schließen')}
               >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -315,13 +315,13 @@ export const LoginPage: React.FC = () => {
                   onClick={() => setShowResetModal(false)}
                   className="cursor-pointer w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition-colors duration-200 shadow-sm"
                 >
-                  {t('login.closeSuccess', 'Verstanden & Schließen')}
+                  {t('login.understoodClose', 'Verstanden & Schließen')}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleRequestReset} className="space-y-4">
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  {t('login.resetModalDesc', 'Ein Link zum Zurücksetzen deines Passworts wird direkt an die in der Server-Konfiguration hinterlegte Inhaber-Adresse')}{' '}
+                  {t('login.resetNotice', 'Ein Link zum Zurücksetzen deines Passworts wird direkt an die in der Server-Konfiguration hinterlegte Inhaber-Adresse')}{' '}
                   (<code className="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded font-mono">{PORTFOLIO_OWNER_EMAIL}</code>)
                 </p>
 
@@ -343,10 +343,10 @@ export const LoginPage: React.FC = () => {
                     {resetMutation.isPending ? (
                       <>
                         <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>{t('login.sendingEmail', 'Wird versendet...')}</span>
+                        <span>{t('login.sending', 'Wird versendet...')}</span>
                       </>
                     ) : (
-                      <span>{t('login.sendEmailBtn', 'E-Mail an Inhaber senden')}</span>
+                      <span>{t('login.sendResetEmail', 'E-Mail an Inhaber senden')}</span>
                     )}
                   </button>
                   <button
@@ -354,7 +354,7 @@ export const LoginPage: React.FC = () => {
                     onClick={() => setShowResetModal(false)}
                     className="cursor-pointer py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition-colors duration-200"
                   >
-                    {t('login.cancelBtn', 'Abbrechen')}
+                    {t('login.cancel', 'Abbrechen')}
                   </button>
                 </div>
               </form>

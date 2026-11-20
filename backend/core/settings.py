@@ -50,7 +50,7 @@ CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
         "CSRF_TRUSTED_ORIGINS",
-        "http://localhost:8000,http://localhost:3001,http://127.0.0.1:3001",
+        "http://localhost:8000,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173",
     ).split(",")
     if origin.strip()
 ]
@@ -326,6 +326,9 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "60/minute",
         "ai_chat": "20/minute",
+        "ai_chat_burst": "5/minute",
+        "ai_chat_sustained": "50/day",
+        "ai_chat_global": "300/day",
     },
 }
 
@@ -337,7 +340,7 @@ SIMPLE_JWT = {
 }
 
 DOMAIN = (
-    os.getenv("FRONTEND_DOMAIN", "localhost:3001")
+    os.getenv("FRONTEND_DOMAIN", "localhost:3000")
     .replace("https://", "")
     .replace("http://", "")
     .rstrip("/")
@@ -370,7 +373,7 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
         "CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173",
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173",
     ).split(",")
     if origin.strip()
 ]

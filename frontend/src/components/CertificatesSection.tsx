@@ -24,7 +24,7 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
     return (
       <div
         id={`cert-${cert.id}`}
-        className="group rounded-2xl bg-slate-50/70 dark:bg-slate-900/55 border border-slate-200/90 dark:border-slate-800/90 p-5 hover:border-indigo-500/50 hover:shadow-lg hover:bg-white dark:hover:bg-slate-900/90 transition-all duration-200 flex flex-col justify-between shadow-xs h-full hover:-translate-y-0.5"
+        className="group rounded-2xl bg-slate-50/70 dark:bg-slate-900/55 border border-slate-200/90 dark:border-slate-800/90 p-5 hover:border-indigo-500/50 hover:shadow-lg hover:bg-white dark:hover:bg-slate-900/90 transition-all duration-200 flex flex-col justify-between shadow-xs h-full hover:-translate-y-0.5 surface-refraction"
       >
         <div>
           <div className="flex items-center justify-between gap-2 mb-3">
@@ -64,7 +64,7 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
                       name: trackObj.name,
                       defaultValue: `Zertifikat-Track: ${trackObj.name}`,
                     })}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors duration-200 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isSelected
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium active:scale-[0.98] active:translate-y-[1px] transition-all duration-200 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isSelected
                       ? 'bg-indigo-600 text-white shadow-xs'
                       : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/70 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600 dark:hover:text-indigo-400'
                       }`}
@@ -94,7 +94,7 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
                 href={cert.credential_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline active:scale-[0.98] active:translate-y-[1px] transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
                 title={t('certificates.verifyOnlineTitle', 'Online verifizieren')}
               >
                 <span>{t('certificates.verifyOnline', 'Online prüfen')}</span>
@@ -106,7 +106,7 @@ const CertificateCardItem: React.FC<CertificateCardItemProps> = React.memo(
                 href={cert.pdf_file}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline active:scale-[0.98] active:translate-y-[1px] transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
               >
                 <span>PDF</span>
                 <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
@@ -127,7 +127,7 @@ CertificateCardItem.displayName = 'CertificateCardItem';
 
 export const CertificatesSection: React.FC = () => {
   const { t } = useTranslation();
-  const { data: rawCertificates, isLoading } = useCertificates();
+  const { data: rawCertificates, isLoading, isError, refetch } = useCertificates();
   const certificates = useMemo(
     () => (Array.isArray(rawCertificates) ? rawCertificates : []),
     [rawCertificates]
@@ -215,12 +215,33 @@ export const CertificatesSection: React.FC = () => {
   }, [filteredCertificates, columns]);
 
   const listRef = useRef<HTMLDivElement>(null);
+  const [scrollMargin, setScrollMargin] = useState(0);
+
+  useEffect(() => {
+    const updateScrollMargin = () => {
+      if (listRef.current) {
+        const nextMargin = listRef.current.offsetTop;
+        setScrollMargin((prev) => (prev !== nextMargin ? nextMargin : prev));
+      }
+    };
+    updateScrollMargin();
+    window.addEventListener('resize', updateScrollMargin);
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && typeof document !== 'undefined') {
+      observer = new ResizeObserver(updateScrollMargin);
+      observer.observe(document.body);
+    }
+    return () => {
+      window.removeEventListener('resize', updateScrollMargin);
+      observer?.disconnect();
+    };
+  }, [rows.length]);
 
   const virtualizer = useWindowVirtualizer({
     count: rows.length,
     estimateSize: () => 240,
     overscan: 2,
-    scrollMargin: listRef.current?.offsetTop ?? 0,
+    scrollMargin,
   });
 
   const isAnyFilterActive =
@@ -233,6 +254,11 @@ export const CertificatesSection: React.FC = () => {
 
   const singleActiveTrack =
     selectedTrackIds.length === 1 ? trackMap.get(selectedTrackIds[0]) : null;
+
+  const activeFilterQueryLabel =
+    searchTerm.trim() ||
+    (selectedIssuer !== 'all' ? selectedIssuer : '') ||
+    activeTrackNames.join(', ');
 
   return (
     <section
@@ -269,8 +295,8 @@ export const CertificatesSection: React.FC = () => {
           </p>
         </div>
 
-        {/* Filter & Search Bar */}
-        <div className="flex flex-col gap-3.5 mb-8 bg-slate-50/90 dark:bg-slate-900/50 p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs">
+        {/* Filter & Search Toolbar — Hairline Architectural Divider instead of Box-in-Box Card */}
+        <div className="flex flex-col gap-3.5 mb-8 py-4 border-y border-slate-200/80 dark:border-slate-800/80">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3">
               {/* Search Input */}
@@ -281,14 +307,14 @@ export const CertificatesSection: React.FC = () => {
                   placeholder={t('certificates.searchPlaceholder', 'Titel, Aussteller suchen...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full min-h-[40px] pl-10 pr-8 py-2 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors shadow-2xs"
+                  className="w-full min-h-[40px] pl-10 pr-8 py-2 bg-slate-50 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors shadow-2xs"
                 />
                 {searchTerm && (
                   <button
                     type="button"
                     onClick={clearSearch}
                     aria-label={t('certificates.resetSearchAria', 'Suche zurücksetzen')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-0.5"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white active:scale-[0.95] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded p-0.5"
                   >
                     <X className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
@@ -303,9 +329,9 @@ export const CertificatesSection: React.FC = () => {
                   key={issuer}
                   type="button"
                   onClick={() => setSelectedIssuer(issuer)}
-                  className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${selectedIssuer === issuer
+                  className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap active:scale-[0.98] active:translate-y-[1px] transition-all duration-200 shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${selectedIssuer === issuer
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/90 dark:border-slate-800 hover:border-indigo-500/30'
+                    : 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/90 dark:border-slate-800 hover:border-indigo-500/30'
                     }`}
                 >
                   {issuer === 'all' ? `${t('certificates.allIssuers', 'Alle Aussteller')} (${certificates.length})` : issuer}
@@ -316,7 +342,7 @@ export const CertificatesSection: React.FC = () => {
 
           {/* Interaktive Many-to-Many Track-Filterchips */}
           {tracks.length > 0 && (
-            <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-200/70 dark:border-slate-800/70">
+            <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
@@ -326,7 +352,7 @@ export const CertificatesSection: React.FC = () => {
                   <button
                     type="button"
                     onClick={resetTracks}
-                    className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+                    className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline active:scale-[0.98] flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
                   >
                     <RotateCcw className="w-3 h-3" aria-hidden="true" />
                     {t('certificates.showAllTracks', 'Alle Tracks anzeigen')}
@@ -339,9 +365,9 @@ export const CertificatesSection: React.FC = () => {
                   type="button"
                   onClick={resetTracks}
                   aria-label={`${t('certificates.allCertificatesAria', 'Alle Zertifikate')} (${certificates.length})`}
-                  className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${selectedTrackIds.length === 0
+                  className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap active:scale-[0.98] active:translate-y-[1px] transition-all duration-200 shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${selectedTrackIds.length === 0
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/90 dark:border-slate-800'
+                    : 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/90 dark:border-slate-800'
                     }`}
                 >
                   {t('certificates.allTracks', 'Alle')} ({certificates.length})
@@ -360,9 +386,9 @@ export const CertificatesSection: React.FC = () => {
                         defaultValue: `Track-Filter: ${tr.name} (${count})`,
                       })}
                       aria-pressed={isSelected}
-                      className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 flex items-center gap-2 shadow-2xs border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isSelected
+                      className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap active:scale-[0.98] active:translate-y-[1px] transition-all duration-200 flex items-center gap-2 shadow-2xs border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isSelected
                         ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border-slate-200/90 dark:border-slate-800 hover:border-indigo-500/30'
+                        : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border-slate-200/90 dark:border-slate-800 hover:border-indigo-500/30'
                         }`}
                     >
                       <TrackIcon track={tr} className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`} />
@@ -385,7 +411,7 @@ export const CertificatesSection: React.FC = () => {
 
         {/* Active Track Banner im klaren Slate/Indigo-Architekturschema */}
         {selectedTrackIds.length > 0 && (
-          <div className="mb-8 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-indigo-200/80 dark:border-indigo-900/60 flex items-start justify-between gap-4">
+          <div className="mb-8 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-indigo-200/80 dark:border-indigo-900/60 flex items-start justify-between gap-4 surface-refraction">
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 shrink-0">
                 {singleActiveTrack ? (
@@ -415,7 +441,7 @@ export const CertificatesSection: React.FC = () => {
             <button
               type="button"
               onClick={resetTracks}
-              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-white shrink-0 p-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-white active:scale-[0.95] shrink-0 p-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
               title={t('certificates.resetTracksAria', 'Track-Filter zurücksetzen')}
               aria-label={t('certificates.resetTracksAria', 'Track-Filter zurücksetzen')}
             >
@@ -424,18 +450,52 @@ export const CertificatesSection: React.FC = () => {
           </div>
         )}
 
-        {/* Certificates Grid */}
+        {/* Certificates Grid (Loading / Error / Empty / Data) */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div
+            data-testid="certificates-skeleton"
+            aria-busy="true"
+            aria-label={t('common.loading', 'Wird geladen...')}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-44 rounded-2xl bg-slate-200 dark:bg-slate-900 animate-pulse" />
+              <div
+                key={n}
+                className="rounded-2xl bg-slate-50/70 dark:bg-slate-900/55 border border-slate-200/90 dark:border-slate-800/90 p-5 flex flex-col justify-between space-y-5 surface-refraction"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="h-6 w-28 rounded-md bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                    <div className="h-4 w-20 rounded bg-slate-200/80 dark:bg-slate-800/70 animate-pulse" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-full rounded bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                    <div className="h-4 w-3/4 rounded bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                  </div>
+                  <div className="h-3 w-32 rounded bg-slate-200/70 dark:bg-slate-800/60 animate-pulse" />
+                  <div className="flex gap-2 pt-1">
+                    <div className="h-6 w-24 rounded-lg bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                    <div className="h-6 w-20 rounded-lg bg-slate-200/70 dark:bg-slate-800/60 animate-pulse" />
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/80 flex items-center justify-between">
+                  <div className="h-4 w-20 rounded bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                  <div className="h-4 w-16 rounded bg-slate-200/80 dark:bg-slate-800/70 animate-pulse" />
+                </div>
+              </div>
             ))}
           </div>
+        ) : isError && certificates.length === 0 ? (
+          <SectionEmptyState
+            sectionName={t('nav.certificates', 'Zertifikate')}
+            isError
+            onRetry={() => void refetch()}
+          />
         ) : filteredCertificates.length === 0 ? (
           <SectionEmptyState
             sectionName={t('nav.certificates', 'Zertifikate')}
-            query={searchTerm || selectedIssuer || activeTrackNames.join(', ')}
-            onReset={resetAllFilters}
+            query={activeFilterQueryLabel}
+            onReset={isAnyFilterActive ? resetAllFilters : undefined}
           />
         ) : filteredCertificates.length <= 6 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

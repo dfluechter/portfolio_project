@@ -214,7 +214,7 @@ export const NotFoundPage: React.FC = () => {
       {/* Subtle Technical Footer */}
       <footer className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-5 border-t border-slate-200/80 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400 font-mono">
         <div>
-          SYS // ERROR_HANDLER • {new Date().getFullYear()} {PORTFOLIO_OWNER_NAME}
+          SYS // ERROR_HANDLER • {CURRENT_YEAR} {PORTFOLIO_OWNER_NAME}
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true" />
@@ -224,3 +224,5 @@ export const NotFoundPage: React.FC = () => {
     </div>
   );
 };
+
+const CURRENT_YEAR = new Date().getFullYear();

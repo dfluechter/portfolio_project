@@ -28,7 +28,7 @@ def clear_cache_between_tests():
 class TestAIChatThrottlingAndCaching:
     """Verifiziert Burst-Throttling, Global-Budget-Cap und Prompt-Caching."""
 
-    def test_burst_throttle_blocks_excessive_requests(self, settings):
+    def test_burst_throttle_blocks_excessive_requests(self, settings, monkeypatch):
         """Prüft, ob nach Überschreiten des Burst-Limits HTTP 429 (Too Many Requests) folgt."""
         settings.REST_FRAMEWORK = {
             **getattr(settings, "REST_FRAMEWORK", {}),
@@ -41,42 +41,42 @@ class TestAIChatThrottlingAndCaching:
                 "ai_chat_global": "500/day",
             },
         }
-        AIChatBurstThrottle.THROTTLE_RATES["ai_chat_burst"] = "2/min"
-        AIChatSustainedThrottle.THROTTLE_RATES["ai_chat_sustained"] = "50/day"
-        AIChatGlobalBudgetThrottle.THROTTLE_RATES["ai_chat_global"] = "500/day"
+        monkeypatch.setitem(AIChatBurstThrottle.THROTTLE_RATES, "ai_chat_burst", "2/min")
+        monkeypatch.setitem(
+            AIChatSustainedThrottle.THROTTLE_RATES, "ai_chat_sustained", "50/day"
+        )
+        monkeypatch.setitem(
+            AIChatGlobalBudgetThrottle.THROTTLE_RATES, "ai_chat_global", "500/day"
+        )
 
         client = APIClient()
-        url = "/api/chat/"
+        url = "/api/ai/chat/"
 
         with patch(
-            "portfolio.services.ai_assistant.answer_portfolio_query",
+            "portfolio.views.answer_portfolio_query",
             return_value={"reply": "Test-Antwort", "sources": []},
         ):
             for _ in range(2):
                 response = client.post(
                     url, {"message": "Welche Skills hast du?"}, format="json"
                 )
-                assert response.status_code in (
-                    status.HTTP_200_OK,
-                    status.HTTP_404_NOT_FOUND,
-                )
+                assert response.status_code == status.HTTP_200_OK
 
-            # 3. Anfrage innerhalb einer Minute muss bei aktivem Endpunkt 429 liefern
+            # 3. Anfrage innerhalb einer Minute muss 429 liefern
             third_response = client.post(
                 url, {"message": "Noch eine Frage"}, format="json"
             )
-            if third_response.status_code != status.HTTP_404_NOT_FOUND:
-                assert third_response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+            assert third_response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
     def test_global_budget_throttle_uses_shared_key_across_ips(self):
         """Prüft, ob der globale Circuit-Breaker denselben Cache-Key für verschiedene IPs nutzt."""
         throttle = AIChatGlobalBudgetThrottle()
         client = APIClient()
 
-        req1 = client.post("/api/chat/").wsgi_request
+        req1 = client.post("/api/ai/chat/").wsgi_request
         req1.META["REMOTE_ADDR"] = "192.0.2.1"
 
-        req2 = client.post("/api/chat/").wsgi_request
+        req2 = client.post("/api/ai/chat/").wsgi_request
         req2.META["REMOTE_ADDR"] = "198.51.100.42"
 
         key1 = throttle.get_cache_key(req1, None)
@@ -92,7 +92,7 @@ class TestAIChatThrottlingAndCaching:
         throttle = AIChatGlobalBudgetThrottle()
         client = APIClient()
 
-        req = client.post("/api/chat/").wsgi_request
+        req = client.post("/api/ai/chat/").wsgi_request
         req.user = test_user
 
         assert throttle.get_cache_key(req, None) is None

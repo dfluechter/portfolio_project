@@ -25,7 +25,9 @@ import {
   useRejectPendingCertificate,
   useTracks,
 } from '../../hooks/usePortfolio';
+import { apiClient } from '../../api/client';
 import type { PendingCertificate } from '../../types';
+import { ConfirmModal } from './ConfirmModal';
 
 interface PendingCertificateManagerProps {
   onNotify: (msg: { type: 'success' | 'error'; text: string }) => void;
@@ -88,12 +90,38 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
   const [editTitle, setEditTitle] = useState('');
   const [editProvider, setEditProvider] = useState('');
   const [editTrackIds, setEditTrackIds] = useState<number[]>([]);
+  const [confirmState, setConfirmState] = useState<{
+    title: string;
+    message: string;
+    confirmText: string;
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+
+  const handleShowFile = async (id: number) => {
+    try {
+      const response = await apiClient.get<Blob>(`/api/pending-certificates/${id}/file/`, {
+        responseType: 'blob',
+      });
+      const blobUrl = URL.createObjectURL(response.data);
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch {
+      onNotify({
+        type: 'error',
+        text: 'Originaldatei konnte nicht geladen werden.',
+      });
+    }
+  };
 
   const handleStartReview = (item: PendingCertificate) => {
     setSelectedPending(item);
     setEditTitle(item.guessed_title || item.original_file_name.replace(/\.[^/.]+$/, ''));
     setEditProvider(item.guessed_provider || (providers[0]?.provider ?? ''));
+<<<<<<< HEAD
     setEditTrackIds(item.suggested_tracks && item.suggested_tracks.length > 0 ? item.suggested_tracks : []);
+=======
+    setEditTrackIds(item.suggested_tracks ?? []);
+>>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
   };
 
   const handleCancelReview = () => {
@@ -132,6 +160,7 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
     }
   };
 
+<<<<<<< HEAD
   const handleReject = async (item: PendingCertificate) => {
     if (!window.confirm(t('inbox.confirmRejectSingle', { fileName: item.original_file_name }))) {
       return;
@@ -154,6 +183,34 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
         text: detail,
       });
     }
+=======
+  const handleReject = (item: PendingCertificate) => {
+    setConfirmState({
+      title: 'Zertifikat ablehnen',
+      message: `Möchtest du "${item.original_file_name}" wirklich ablehnen?`,
+      confirmText: 'Ja, ablehnen',
+      onConfirm: async () => {
+        try {
+          await rejectMutation.mutateAsync(item.id);
+          onNotify({
+            type: 'success',
+            text: `"${item.original_file_name}" wurde abgelehnt.`,
+          });
+          if (selectedPending?.id === item.id) {
+            setSelectedPending(null);
+          }
+          setSelectedIds((prev) => prev.filter((id) => id !== item.id));
+        } catch {
+          onNotify({
+            type: 'error',
+            text: 'Fehler beim Ablehnen des Zertifikats.',
+          });
+        } finally {
+          setConfirmState(null);
+        }
+      },
+    });
+>>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
   };
 
   // Multi-Select Handler
@@ -174,6 +231,74 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
     }
   };
 
+<<<<<<< HEAD
+=======
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) return;
+
+    try {
+      const res = await bulkApproveMutation.mutateAsync({
+        ids: selectedIds,
+        track_ids: bulkTrackIds.length > 0 ? bulkTrackIds : undefined,
+      });
+
+      if (res.approved_count > 0 && res.failed_count === 0) {
+        onNotify({
+          type: 'success',
+          text: `${res.approved_count} Zertifikat(e) erfolgreich freigegeben und übertragen.`,
+        });
+      } else if (res.approved_count > 0 && res.failed_count > 0) {
+        onNotify({
+          type: 'success',
+          text: `${res.approved_count} erfolgreich freigegeben, ${res.failed_count} fehlgeschlagen.`,
+        });
+      } else {
+        const errorDetails = res.errors.map((e) => e.error).join(', ');
+        onNotify({
+          type: 'error',
+          text: `Keine Zertifikate freigegeben: ${errorDetails}`,
+        });
+      }
+
+      setSelectedIds([]);
+      setBulkTrackIds([]);
+      setShowBulkTrackPicker(false);
+    } catch {
+      onNotify({
+        type: 'error',
+        text: 'Fehler bei der Massenfreigabe der Zertifikate.',
+      });
+    }
+  };
+
+  const handleBulkReject = () => {
+    if (selectedIds.length === 0) return;
+    setConfirmState({
+      title: 'Ausgewählte Zertifikate ablehnen',
+      message: `Möchtest du die ${selectedIds.length} ausgewählten Zertifikate wirklich ablehnen?`,
+      confirmText: 'Ja, ablehnen',
+      onConfirm: async () => {
+        try {
+          const res = await bulkRejectMutation.mutateAsync(selectedIds);
+          onNotify({
+            type: 'success',
+            text: `${res.rejected_count} Zertifikat(e) abgelehnt.`,
+          });
+          setSelectedIds([]);
+          setShowBulkTrackPicker(false);
+        } catch {
+          onNotify({
+            type: 'error',
+            text: 'Fehler bei der Massenablehnung der Zertifikate.',
+          });
+        } finally {
+          setConfirmState(null);
+        }
+      },
+    });
+  };
+
+>>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
   const pendingOnly = pendingList.filter((item) => item.status === 'pending');
   const filteredList = pendingOnly.filter((item) => {
     const q = searchTerm.toLowerCase();
@@ -317,18 +442,22 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <a
-                href={`/api/pending-certificates/${selectedPending.id}/file/`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => handleShowFile(selectedPending.id)}
                 className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold transition-colors"
                 title={t('inbox.showFileTitle')}
               >
                 <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+<<<<<<< HEAD
                 {t('inbox.showFileWithExt', {
                   ext: selectedPending.original_file_name.split('.').pop()?.toUpperCase() || 'FILE',
                 })}
               </a>
+=======
+                Show File ({selectedPending.original_file_name.split('.').pop()?.toUpperCase()})
+              </button>
+>>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
               <button
                 type="button"
                 onClick={handleCancelReview}
@@ -527,16 +656,20 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <a
-                    href={`/api/pending-certificates/${item.id}/file/`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => handleShowFile(item.id)}
                     className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     title={t('inbox.showFileTitle')}
                   >
                     <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+<<<<<<< HEAD
                     {t('inbox.showFile')}
                   </a>
+=======
+                    Show File
+                  </button>
+>>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
                   <button
                     type="button"
                     onClick={() => handleStartReview(item)}
@@ -675,6 +808,19 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(confirmState)}
+        title={confirmState?.title ?? ''}
+        message={confirmState?.message ?? ''}
+        confirmText={confirmState?.confirmText ?? 'Bestätigen'}
+        cancelText="Abbrechen"
+        isDestructive
+        onConfirm={() => {
+          void confirmState?.onConfirm();
+        }}
+        onCancel={() => setConfirmState(null)}
+      />
     </div>
   );
 };

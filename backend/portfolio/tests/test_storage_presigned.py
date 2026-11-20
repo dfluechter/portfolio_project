@@ -235,3 +235,56 @@ class TestPresignedUploadAPI:
         response = self.client.post("/api/certificates/", payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "pdf_file" in response.json()
+
+    @pytest.mark.parametrize(
+        "bad_key",
+        [
+            "public/other/cert.pdf",
+            "certificates/uploads/../secret.pdf",
+        ],
+    )
+    def test_create_certificate_rejects_invalid_s3_prefix_or_traversal(
+        self, settings, bad_key
+    ):
+        settings.USE_SUPABASE_S3 = True
+        self.client.force_authenticate(user=self.user)
+        payload = {
+            "title": "Bad Prefix S3 Cert",
+            "provider": self.provider.id,
+            "storage_key": bad_key,
+        }
+        response = self.client.post("/api/certificates/", payload, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "storage_key" in response.json()
+
+    def test_patch_certificate_with_new_storage_key_verifies_s3_and_updates_hash(
+        self, settings
+    ):
+        settings.USE_SUPABASE_S3 = True
+        self.client.force_authenticate(user=self.user)
+
+        cert = Certificate.objects.create(
+            title="Update S3 Cert",
+            provider=self.provider,
+            storage_key="certificates/uploads/old.pdf",
+            sha256_hash="a" * 64,
+        )
+
+        new_bytes = b"%PDF-1.4 new verified s3 binary"
+        expected_hash = hashlib.sha256(new_bytes).hexdigest()
+        mock_s3 = _make_mock_s3_client(new_bytes)
+
+        with patch("portfolio.services.storage.get_s3_client", return_value=mock_s3):
+            response = self.client.patch(
+                f"/api/certificates/{cert.id}/",
+                {
+                    "storage_key": "certificates/uploads/new.pdf",
+                    "sha256_hash": expected_hash,
+                },
+                format="json",
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        cert.refresh_from_db()
+        assert cert.storage_key == "certificates/uploads/new.pdf"
+        assert cert.sha256_hash == expected_hash

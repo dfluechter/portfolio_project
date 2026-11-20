@@ -173,3 +173,30 @@ class TestModelSignalsTriggerCacheInvalidation:
         entry.delete()
         assert cache.get(GROUNDING_CACHE_KEY) is None
         assert cache.get(RAG_VERSION_KEY) == 43
+
+    def test_provider_and_track_updates_resync_certificate_chunks(self):
+        from portfolio.models import KnowledgeChunk, Track
+
+        provider = Provider.objects.create(provider="OldProvider")
+        track = Track.objects.create(name="OldTrack", slug="old-track")
+        cert = Certificate.objects.create(
+            title="Signal Sync Cert",
+            provider=provider,
+            sha256_hash="signalprovidertrackhash",
+            is_published=True,
+        )
+        cert.tracks.add(track)
+
+        provider.provider = "NewProvider"
+        provider.save()
+        chunk = KnowledgeChunk.objects.get(
+            source_type="certificate", source_id=cert.id, chunk_index=0
+        )
+        assert "NewProvider" in chunk.content
+
+        track.name = "NewTrack"
+        track.save()
+        chunk = KnowledgeChunk.objects.get(
+            source_type="certificate", source_id=cert.id, chunk_index=0
+        )
+        assert "NewTrack" in chunk.content

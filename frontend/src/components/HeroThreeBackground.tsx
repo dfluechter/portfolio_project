@@ -163,6 +163,26 @@ const CodingAINeuralScene: React.FC<CodingAISceneProps> = ({ isDark }) => {
     };
   }, [aiCyan, neuralViolet, codeEmerald, tensorCoral]);
 
+  useEffect(() => {
+    const group = rootGroupRef.current;
+    return () => {
+      if (!group) return;
+      group.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (mesh.geometry) {
+          mesh.geometry.dispose();
+        }
+        if (mesh.material) {
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((m) => m.dispose());
+          } else {
+            mesh.material.dispose();
+          }
+        }
+      });
+    };
+  }, []);
+
   useFrame((state, delta) => {
     const t = state.clock.getElapsedTime();
 
@@ -398,7 +418,7 @@ export interface HeroThreeBackgroundProps {
 }
 
 export const HeroThreeBackground: React.FC<HeroThreeBackgroundProps> = ({ forceWebGL }) => {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const shouldReduceMotion = useReducedMotion();
   const [webglSupported] = useState<boolean>(() =>
     typeof forceWebGL === 'boolean' ? forceWebGL : canUseWebGL()
@@ -418,7 +438,7 @@ export const HeroThreeBackground: React.FC<HeroThreeBackgroundProps> = ({ forceW
     };
   }, []);
 
-  const isDark = theme === 'dark';
+  const isDark = resolvedTheme === 'dark';
   const showWebGLCanvas = webglSupported && !shouldReduceMotion;
 
   return (
@@ -438,8 +458,8 @@ export const HeroThreeBackground: React.FC<HeroThreeBackgroundProps> = ({ forceW
           className="w-full h-full object-cover object-center opacity-30 dark:opacity-25 mix-blend-luminosity filter blur-[0.4px] scale-105 transition-opacity duration-700"
         />
         {/* Harmonische Farb- & Gradient-Overlays für exzellente Typografie-Lesbarkeit */}
-        <div className="absolute inset-0 bg-gradient-to-b from-surface/50 via-surface/85 to-surface dark:from-slate-950/60 dark:via-slate-950/85 dark:to-slate-950" />
-        <div className="absolute inset-0 bg-gradient-to-r from-surface/90 via-transparent to-surface/90 dark:from-slate-950/90 dark:via-transparent dark:to-slate-950/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/85 to-background dark:from-slate-950/60 dark:via-slate-950/85 dark:to-slate-950" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-transparent to-background/90 dark:from-slate-950/90 dark:via-transparent dark:to-slate-950/90" />
       </div>
 
       {showWebGLCanvas ? (

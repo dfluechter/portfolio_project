@@ -131,4 +131,48 @@ describe('CertificatesSection Component', () => {
       expect(screen.queryByText('Kubernetes Administrator CKA')).not.toBeInTheDocument();
     });
   });
+
+  it('renders structured skeletal loader while certificates are loading', () => {
+    vi.mocked(usePublishedCertificates).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePublishedCertificates>);
+
+    renderWithProviders(<CertificatesSection />);
+    expect(screen.getByTestId('certificates-skeleton')).toBeInTheDocument();
+  });
+
+  it('renders error state and triggers refetch when API call fails', () => {
+    const refetchSpy = vi.fn();
+    vi.mocked(usePublishedCertificates).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: refetchSpy,
+    } as unknown as ReturnType<typeof usePublishedCertificates>);
+
+    renderWithProviders(<CertificatesSection />);
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText(/Zertifikate konnten nicht geladen werden/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Erneut versuchen/i }));
+    expect(refetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders clean empty state without bogus "all" query when dataset is empty and no filter is active', () => {
+    vi.mocked(usePublishedCertificates).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePublishedCertificates>);
+
+    renderWithProviders(<CertificatesSection />);
+
+    expect(screen.getByText('Keine Einträge in Zertifikate')).toBeInTheDocument();
+    expect(screen.queryByText('„all“')).not.toBeInTheDocument();
+  });
 });

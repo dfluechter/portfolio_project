@@ -5,24 +5,31 @@ import json
 import logging
 import os
 import re
-import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import pytesseract
 from django.utils.text import slugify
 from PIL import Image
 from pypdf import PdfReader
 
-# Tesseract-Pfad & Datenverzeichnis für Windows absichern
-if os.name == "nt":
-    _tesseract_default = Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe")
-    if _tesseract_default.is_file():
-        pytesseract.pytesseract.tesseract_cmd = str(_tesseract_default)
-    _tessdata_default = Path(r"C:\Program Files\Tesseract-OCR\tessdata")
-    if _tessdata_default.is_dir() and "TESSDATA_PREFIX" not in os.environ:
-        os.environ["TESSDATA_PREFIX"] = str(_tessdata_default)
+from portfolio.services.ocr import (
+    render_pdf_pages_to_images,
+    resolve_tesseract_cmd,
+    run_tesseract_ocr,
+)
+from portfolio.services.title_extractor import (
+    LayoutLine,
+    extract_best_title,
+    extract_pdf_layout_lines,
+    is_non_title_line,
+    is_weak_title,
+    normalize_title,
+    normalize_whitespace,
+)
+
+# Tesseract-Pfad (TESSERACT_CMD / PATH / Windows-Standardpfade) initial absichern
+resolve_tesseract_cmd()
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +107,8 @@ class ExtractionResult:
     file_size: int
     image_dimensions: str  # 'WxH' or empty
     guessed_track_slugs: list[str] = field(default_factory=list)
+    title_confidence: float = 0.0
+    extraction_stage: str = ""
 
 
 def compute_file_hash(file_path: Path) -> str:
@@ -306,11 +315,19 @@ def guess_provider(
         return "Coursera"
     if re.search(r"(?i)\bedx\.org\b", text):
         return "edX"
+    if re.search(r"(?i)\blinkedin\.com/learning\b|\blinkedin\s+learning\b", text):
+        return "LinkedIn Learning"
+    if re.search(r"(?i)\blearn\.microsoft\.com\b|\bmicrosoft\s+certified\b", text):
+        return "Microsoft"
+    if re.search(r"(?i)\baws\.amazon\.com\b|\baws\s+training\s+and\s+certification\b|\baws\s+certified\b", text):
+        return "AWS"
+    if re.search(r"(?i)\bcredly\.com\b", text):
+        return "Credly"
 
     # 2. Textinhalt: Explizite Phrasen (z. B. "Offered by Coursera", "Ausgestellt von...")
     phrase_pattern = re.compile(
         r"(?i)(?:offered\s+by|authorized\s+by|issued\s+by|ausgestellt\s+von|"
-        r"institution|organisation)[\s:]*([A-Za-z0-9\s&.-]{2,40})"
+        r"institution|organisation|veranstalter)[\s:]*([A-Za-z0-9ÄäÖöÜüß\s&.-]{2,40})"
     )
     phrase_match = phrase_pattern.search(text)
     if phrase_match:
@@ -337,96 +354,24 @@ def guess_provider(
     return ""
 
 
-def guess_title(text: str, filename: str, pdf_meta: dict, provider: str = "") -> str:
-    """
-    Ermittelt den Zertifikatstitel aus Text-Mustern, PDF-Metadaten oder Dateinamen.
-    """
-    # 0. Strukturmuster für Plattformen (mehrzeilig vor Zeilenende-Mustern)
-    # Udemy Deutsch & Englisch: "Zertifikat über die erfolgreiche Teilnahme\n<Kursname>\nLehrkraft..."
-    udemy_match = re.search(
-        r"(?i)(?:zertifikat\s+(?:über\s+die\s+erfolgreiche\s+teilnahme|der\s+fertigstellung)|certificate\s+of\s+completion)\s*\n+([^\n\r]+?)(?:\s*\n+(?:lehrkraft|instructors?|dozent|unterrichtet\s+von|datum|date|zertifikat-nr|certificate\s+no|dauer|length|referenznummer))",
+def guess_title(
+    text: str,
+    filename: str,
+    pdf_meta: dict,
+    provider: str = "",
+    *,
+    known_providers: list[str] | None = None,
+    layout_lines: list[LayoutLine] | None = None,
+) -> str:
+    """Ermittelt den Zertifikatstitel über die mehrstufige Titel-Pipeline."""
+    return extract_best_title(
         text,
-    )
-    if udemy_match:
-        cand = udemy_match.group(1).strip(" :,-_")
-        if (
-            cand
-            and len(cand) > 3
-            and not any(
-                n in cand.lower()
-                for n in ["dominik flüchter", "dominik", "completion", "zertifikat"]
-            )
-        ):
-            return cand
-
-    title_patterns = [
-        r"(?i)certificate\s+of\s+(?:completion|achievement|accomplishment|attendance)[\s:]*(?:for)?\s*([^\n\r]+)",
-        r"(?i)has\s+successfully\s+completed\s+(?:the\s+(?:course|program|specialization)\s+)?([^\n\r]+)",
-        r"(?i)(?:erfolgreich\s+teilgenommen\s+am\s+kurs|bescheinigung\s+über)[\s:]*([^\n\r]+)",
-        r"(?i)course\s+certificate[\s:]+([^\n\r]+)",
-        r"(?i)certificate\s+(?:of\s+)?([^\n\r]+)",
-    ]
-
-    for pat in title_patterns:
-        match = re.search(pat, text)
-        if match:
-            candidate = match.group(1).strip(" :,-_")
-            # Kürzen falls mehrzeilig
-            if "\n" in candidate:
-                candidate = candidate.split("\n")[0].strip()
-
-            # Negativprüfung: Name des Teilnehmers oder reine Standardfloskeln verwerfen
-            candidate_lower = candidate.lower()
-            owner_name = os.getenv("PORTFOLIO_OWNER_NAME", "Dominik Flüchter").lower()
-            if any(
-                n in candidate_lower
-                for n in [
-                    owner_name,
-                    "dominik flüchter",
-                    "dominik fluechter",
-                    "dominik",
-                ]
-            ) or candidate_lower in {
-                "completion",
-                "achievement",
-                "accomplishment",
-                "attendance",
-                "erfolgreich",
-                "teilnahme",
-                "certificate",
-                "zertifikat",
-            }:
-                continue
-
-            if candidate and len(candidate) > 3 and len(candidate) <= 120:
-                return candidate
-
-    # 2. PDF-Metadaten-Titel
-    meta_title = (pdf_meta.get("title") or "").strip()
-    if meta_title and meta_title.lower() not in {
-        "untitled",
-        "certificate",
-        "document",
-        "pdf",
-        "scan",
-    }:
-        return meta_title
-
-    # 3. Fallback: Bereinigter Dateiname
-    stem = Path(filename).stem
-    # Temporäre System-Dateinamen (z. B. tmplz6lmxh3) niemals als Titel verwenden
-    if re.match(r"^tmp[a-z0-9_]{4,}$", stem.lower()):
-        return ""
-
-    # Provider aus Dateinamen entfernen, falls vorhanden
-    if provider:
-        stem = re.sub(rf"(?i)\b{re.escape(provider)}\b", "", stem)
-
-    # Trennzeichen durch Leerzeichen ersetzen
-    clean_stem = re.sub(r"[_\-+.]+", " ", stem).strip()
-    # Führende oder nachgestellte "cert", "certificate" bereinigen, wenn mehr Text vorhanden
-    clean_title = re.sub(r"(?i)^(certificate|zertifikat)\s+", "", clean_stem)
-    return clean_title.strip() or clean_stem or stem
+        filename,
+        pdf_meta,
+        provider=provider,
+        known_providers=known_providers,
+        layout_lines=layout_lines,
+    ).title
 
 
 def extract_credential_id(text: str) -> str:
@@ -452,25 +397,25 @@ def extract_credential_id(text: str) -> str:
     return ""
 
 
-def _extract_from_pdf(
+def _extract_from_pdf_detailed(
     file_path: Path, enable_ocr: bool = True
-) -> tuple[dict, str, bool]:
+) -> tuple[dict[str, str], str, bool, list[LayoutLine], str]:
     """
-    Stufe 1 der Metadaten-Extraktion:
-    Liest PDF-Metadaten und Textlayer via pypdf mit fehlertolerantem In-Memory-Parsing (strict=False),
-    NFKC-Normalisierung und intelligenter Quality-Score-Heuristik (Short-Circuiting).
-    Bei unzureichendem Textlayer erfolgt geordneter Fallback auf Stufe 2 (Tesseract-OCR).
+    Stufe 1 & 2 der PDF-Metadaten-Extraktion:
+    Liest PDF-Metadaten, Textlayer und Layout-Zeilen (Fontgrößen/Positionen) aus,
+    und fällt bei fehlendem/unzureichendem Textlayer geordnet auf PDF-Rendering +
+    Tesseract-OCR (PyMuPDF -> pdftoppm -> eingebettete PDF-Bilder) zurück.
     """
     metadata: dict[str, str] = {}
     extracted_text = ""
     ocr_pending = False
+    layout_lines: list[LayoutLine] = []
+    extraction_stage = "pdf-text"
 
     try:
-        # In-Memory Stream Processing
         with open(file_path, "rb") as f:
             file_bytes = f.read()
 
-        # 1. Tolerantes In-Memory-Parsing mit strict=False
         stream = io.BytesIO(file_bytes)
         try:
             reader = PdfReader(stream, strict=False)
@@ -485,20 +430,17 @@ def _extract_from_pdf(
                 "creation_date": str(reader.metadata.creation_date or ""),
             }
 
-        # 2. Textlayer auslesen & Unicode-Normalisierung (NFKC) + Ligatur-Bereinigung
         raw_pages_text = []
         for page in reader.pages:
             text = page.extract_text() or ""
             if text:
                 raw_pages_text.append(text)
 
-        full_raw_text = "\n".join(raw_pages_text)
-        normalized_text = unicodedata.normalize("NFKC", full_raw_text)
-        cleaned_text = re.sub(r"[ \t]+", " ", normalized_text)
-        cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text).strip()
-        extracted_text = cleaned_text
+        extracted_text = normalize_whitespace("\n".join(raw_pages_text))
 
-        # 3. Intelligente Quality-Score-Heuristik (Short-Circuiting)
+        # Layout-Zeilen (Fontgrößen, Bold, Positionen) für Titel-Ranking extrahieren
+        layout_lines = extract_pdf_layout_lines(file_path, reader=reader, max_pages=2)
+
         words = extracted_text.split()
         has_certificate_keywords = bool(
             re.search(
@@ -511,54 +453,92 @@ def _extract_from_pdf(
             len(extracted_text) >= 100 and len(words) >= 10 and has_certificate_keywords
         ) or (len(extracted_text) >= 160 and len(words) >= 20)
 
+<<<<<<< HEAD
         # Wenn echter Textlayer ausreichend ist (oder >= 60 Zeichen und >= 8 Wörter bei deaktiviertem OCR)
         if is_sufficient or (
             len(extracted_text) >= 60 and len(words) >= 8 and not enable_ocr
         ):
+=======
+        if is_sufficient or (len(extracted_text) >= 60 and len(words) >= 8 and not enable_ocr):
+>>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
             ocr_pending = False
-        else:
-            # Bildbasierte PDF oder unvollständiger Text: Stufe 2 OCR auf ersten 2 Seiten ausführen
-            if enable_ocr:
-                ocr_texts: list[str] = []
+        elif enable_ocr:
+            ocr_texts: list[str] = []
+
+            # Stufe 2a: Vollseitiges PDF-Rendering (PyMuPDF ohne Poppler, oder pdftoppm)
+            try:
+                rendered_pages = render_pdf_pages_to_images(
+                    file_path, max_pages=2, dpi=300
+                )
+                for rendered_img in rendered_pages:
+                    snippet = run_tesseract_ocr(rendered_img)
+                    if snippet:
+                        ocr_texts.append(snippet)
+            except Exception as render_err:  # noqa: BLE001
+                logger.warning(
+                    "PDF-Seitenrendering für OCR fehlgeschlagen (%s): %s",
+                    file_path.name,
+                    render_err,
+                )
+
+            # Stufe 2b: Fallback auf direkt eingebettete PDF-Bilder (z. B. ohne Renderer oder in Mocks)
+            if not ocr_texts:
                 try:
                     for page in reader.pages[:2]:
-                        for img_file in page.images:
+                        for img_file in getattr(page, "images", []):
                             try:
                                 img = Image.open(io.BytesIO(img_file.data))
-                                ocr_snippet = pytesseract.image_to_string(img)
-                                if ocr_snippet.strip():
-                                    ocr_texts.append(ocr_snippet.strip())
+                                snippet = run_tesseract_ocr(img)
+                                if snippet:
+                                    ocr_texts.append(snippet)
                             except Exception as img_err:  # noqa: BLE001
-                                logger.debug(
-                                    "Bild-OCR in PDF fehlgeschlagen: %s",
+                                logger.warning(
+                                    "Bild-OCR in PDF %s fehlgeschlagen: %s",
+                                    file_path.name,
                                     img_err,
                                 )
-                                continue
-                    if ocr_texts:
-                        extracted_text = "\n".join(ocr_texts).strip()
-                        ocr_pending = False
-                    else:
-                        ocr_pending = True
                 except Exception as ocr_err:  # noqa: BLE001
                     logger.warning(
-                        "OCR für PDF %s nicht möglich: %s",
+                        "OCR über eingebettete Bilder in PDF %s nicht möglich: %s",
                         file_path.name,
                         ocr_err,
                     )
-                    ocr_pending = True
+
+            if ocr_texts:
+                ocr_combined = normalize_whitespace("\n".join(ocr_texts))
+                if len(ocr_combined) > len(extracted_text):
+                    extracted_text = ocr_combined
+                ocr_pending = False
+                extraction_stage = "tesseract-ocr"
             else:
+                logger.warning(
+                    "Kein Text aus PDF %s per Textlayer oder Tesseract-OCR extrahiert.",
+                    file_path.name,
+                )
                 ocr_pending = True
+        else:
+            ocr_pending = True
     except Exception as exc:  # noqa: BLE001
         logger.warning("PDF-Extraktion fehlgeschlagen für %s: %s", file_path.name, exc)
         ocr_pending = True
 
+    return metadata, extracted_text, ocr_pending, layout_lines, extraction_stage
+
+
+def _extract_from_pdf(
+    file_path: Path, enable_ocr: bool = True
+) -> tuple[dict[str, str], str, bool]:
+    """Abwärtskompatible PDF-Extraktionsfunktion (gibt 3-Tupel zurück)."""
+    metadata, extracted_text, ocr_pending, _layout, _stage = _extract_from_pdf_detailed(
+        file_path, enable_ocr=enable_ocr
+    )
     return metadata, extracted_text, ocr_pending
 
 
 def _extract_from_image(
     file_path: Path, enable_ocr: bool = True
 ) -> tuple[dict, str, str, bool]:
-    """Liest Bilddateien (.png, .jpg) und führt optional Tesseract-OCR aus."""
+    """Liest Bilddateien (.png, .jpg) und führt optional Tesseract-OCR mit Preprocessing aus."""
     metadata: dict[str, str] = {}
     extracted_text = ""
     dimensions = ""
@@ -580,16 +560,13 @@ def _extract_from_image(
                     metadata["creation_date"] = str(date)
 
             if enable_ocr:
-                try:
-                    extracted_text = pytesseract.image_to_string(img).strip()
-                    ocr_pending = not bool(extracted_text)
-                except Exception as ocr_err:  # noqa: BLE001
+                extracted_text = normalize_whitespace(run_tesseract_ocr(img))
+                ocr_pending = not bool(extracted_text)
+                if ocr_pending:
                     logger.warning(
-                        "OCR fehlgeschlagen für %s: %s",
+                        "Tesseract-OCR lieferte keinen Text für Bild %s.",
                         file_path.name,
-                        ocr_err,
                     )
-                    ocr_pending = True
             else:
                 ocr_pending = True
     except Exception as exc:  # noqa: BLE001
@@ -614,7 +591,7 @@ def extract_via_gemini_vision(
 ) -> dict[str, Any] | None:
     """
     Stufe 3 der Metadaten-Extraktion:
-    Analysiert gescannte oder bildbasierte Zertifikate via Google Gemini 3.8 Flash Vision.
+    Analysiert gescannte oder bildbasierte Zertifikate via Google Gemini 2.5 Flash Vision.
     Fällt transparent auf None zurück, wenn kein GEMINI_API_KEY konfiguriert ist oder
     Token-Grenzen/Circuit-Breaker greifen (0-Kosten-Garantie & Graceful Degradation).
     """
@@ -695,7 +672,7 @@ def extract_via_gemini_vision(
         )
         return None
 
-    gemini_model: str = str(model or os.getenv("GEMINI_MODEL") or "gemini-3.8-flash")
+    gemini_model: str = str(model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash")
 
     try:
         from google import genai
@@ -774,27 +751,40 @@ def extract_metadata(
     ocr_pending = False
     image_dimensions = ""
     ext = file_path.suffix.lower()
+    layout_lines: list[LayoutLine] = []
+    extraction_stage = ""
 
     pdf_meta: dict[str, str] = {}
     if ext == ".pdf":
         source_type = "pdf"
-        pdf_meta, extracted_text, ocr_pending = _extract_from_pdf(
-            file_path, enable_ocr=enable_ocr
+        pdf_meta, extracted_text, ocr_pending, layout_lines, extraction_stage = (
+            _extract_from_pdf_detailed(file_path, enable_ocr=enable_ocr)
         )
     elif ext in {".png", ".jpg", ".jpeg"}:
         source_type = "image"
         _img_meta, extracted_text, image_dimensions, ocr_pending = _extract_from_image(
             file_path, enable_ocr=enable_ocr
         )
+        extraction_stage = "tesseract-ocr" if extracted_text else "image-pending"
     else:
         return None
 
     guessed_provider = guess_provider(
         extracted_text, effective_filename, known_providers
     )
-    guessed_title = guess_title(
-        extracted_text, effective_filename, pdf_meta, guessed_provider
+    title_cand = extract_best_title(
+        extracted_text,
+        effective_filename,
+        pdf_meta,
+        provider=guessed_provider,
+        known_providers=known_providers,
+        layout_lines=layout_lines,
     )
+    guessed_title = title_cand.title
+    title_confidence = title_cand.confidence
+    if title_cand.source == "filename" and extraction_stage != "tesseract-ocr":
+        extraction_stage = "filename-fallback"
+
     credential_id = extract_credential_id(extracted_text)
     issued_date = extract_issued_date(extracted_text)
     if not issued_date and pdf_meta.get("creation_date"):
@@ -804,27 +794,28 @@ def extract_metadata(
     guessed_track_slug = guessed_track_slugs[0] if guessed_track_slugs else ""
 
     # Stufe 3: Multimodaler Gemini Flash Vision Fallback
-    # Triggert, wenn Text unvollständig ist, Titel minderwertig/fehlt oder Aussteller fehlt
-    is_weak_title = (
-        not guessed_title
-        or guessed_title.lower() in {"certificate", "zertifikat", "document", "scan"}
-        or guessed_title == Path(file_path.name).stem
-        or (len(guessed_title.split()) <= 1 and len(guessed_title) < 15)
-        or any(
-            n in guessed_title.lower()
-            for n in ["dominik flüchter", "dominik fluechter"]
-        )
+    # Triggert, wenn Text unvollständig ist, Titel unsicher/schwach ist oder Aussteller fehlt
+    weak_title = is_weak_title(
+        guessed_title,
+        title_confidence,
+        effective_filename,
+        provider=guessed_provider,
     )
-    if ocr_pending or len(extracted_text) < 60 or is_weak_title or not guessed_provider:
+    if ocr_pending or len(extracted_text) < 60 or weak_title or not guessed_provider:
         gemini_data = extract_via_gemini_vision(file_path)
         if gemini_data and isinstance(gemini_data, dict):
             logger.info(
                 "Metadaten erfolgreich via Gemini Vision (Stufe 3) für %s extrahiert.",
                 file_path.name,
             )
-            g_title = str(gemini_data.get("title") or "").strip()
-            if g_title:
+            g_title = normalize_title(str(gemini_data.get("title") or ""))
+            if g_title and not is_non_title_line(
+                g_title,
+                provider=guessed_provider,
+                known_providers=known_providers,
+            ):
                 guessed_title = g_title
+                title_confidence = max(title_confidence, 0.96)
 
             g_provider = str(gemini_data.get("provider") or "").strip()
             if g_provider:
@@ -854,6 +845,7 @@ def extract_metadata(
 
             # Gemini Vision hat das Dokument erfolgreich analysiert
             ocr_pending = False
+            extraction_stage = "gemini-vision"
 
     return ExtractionResult(
         sha256_hash=sha256_hash,
@@ -868,4 +860,6 @@ def extract_metadata(
         file_size=file_size,
         image_dimensions=image_dimensions,
         guessed_track_slugs=guessed_track_slugs,
+        title_confidence=title_confidence,
+        extraction_stage=extraction_stage,
     )

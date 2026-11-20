@@ -21,10 +21,10 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
+    SAFE_METHODS,
     AllowAny,
+    BasePermission,
     IsAdminUser,
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly,
 )
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -71,6 +71,11 @@ from .services.storage import (
     ensure_certificate_in_storage,
     generate_presigned_upload,
     verify_s3_uploaded_certificate,
+)
+from .throttles import (
+    AIChatBurstThrottle,
+    AIChatGlobalBudgetThrottle,
+    AIChatSustainedThrottle,
 )
 
 logger = logging.getLogger(__name__)
@@ -249,9 +254,22 @@ class ConditionalCacheMixin:
         return response
 
 
+class IsAdminUserOrReadOnly(BasePermission):
+    """Lesezugriff (GET, HEAD, OPTIONS) für alle, Schreibzugriff nur für Staff/Admins."""
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        if request.method in SAFE_METHODS:
+            return True
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.is_staff
+        )
+
+
 class ProjectViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (IsAdminUserOrReadOnly,)
 
     def get_queryset(self) -> QuerySet[Project]:
         qs = Project.objects.all().prefetch_related("skills")
@@ -262,7 +280,7 @@ class ProjectViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
 
 class ProviderViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     serializer_class = ProviderSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (IsAdminUserOrReadOnly,)
 
     def get_queryset(self) -> QuerySet[Provider]:
         qs = Provider.objects.all()
@@ -286,7 +304,7 @@ class ProviderViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
 
 class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     serializer_class = CertificateSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (IsAdminUserOrReadOnly,)
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self) -> QuerySet[Certificate]:
@@ -318,6 +336,8 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
                 | Q(
                     title__iregex=r"^(1[67][0-9]{10}|share[0-9]+|UC-[a-f0-9-]+|\.trashed-)"
                 )
+                | Q(title__istartswith="cert_")
+                | Q(title__icontains="certificate")
                 | Q(title__iendswith=".pdf")
                 | Q(title__iendswith=".jpg")
                 | Q(title__iendswith=".png")
@@ -350,9 +370,34 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
 
         return qs.distinct()
 
+    def _ensure_unique_sha256(
+        self,
+        sha256_val: str,
+        exclude_pk: int | None = None,
+        field_name: str = "pdf_file",
+    ) -> None:
+        qs = Certificate.objects.filter(sha256_hash=sha256_val)
+        if exclude_pk is not None:
+            qs = qs.exclude(pk=exclude_pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                {
+                    field_name: "Ein Zertifikat mit diesem Datei-Hash (SHA-256) existiert bereits."
+                }
+            )
+
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         try:
             return super().create(request, *args, **kwargs)
+        except S3StorageNotConfiguredError as err:
+            return Response(
+                {"detail": str(err)},
+                status=status.HTTP_501_NOT_IMPLEMENTED,
+            )
+
+    def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        try:
+            return super().update(request, *args, **kwargs)
         except S3StorageNotConfiguredError as err:
             return Response(
                 {"detail": str(err)},
@@ -369,8 +414,10 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
             for chunk in pdf_file.chunks():
                 sha256.update(chunk)
             pdf_file.seek(0)  # Datei-Cursor zurücksetzen für Storage
+            sha256_val = sha256.hexdigest()
+            self._ensure_unique_sha256(sha256_val, field_name="pdf_file")
             serializer.save(
-                sha256_hash=sha256.hexdigest(),
+                sha256_hash=sha256_val,
                 storage_key=storage_key or "",
                 is_published=False,
             )
@@ -384,6 +431,7 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
             except ValueError as err:
                 raise serializers.ValidationError({"storage_key": str(err)}) from err
 
+            self._ensure_unique_sha256(sha256_val, field_name="pdf_file")
             serializer.save(
                 pdf_file=storage_key,
                 storage_key=storage_key,
@@ -396,10 +444,42 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     def perform_update(self, serializer: serializers.BaseSerializer) -> None:
         """Erlaubt autorisierten Nutzern das Ändern von Status und Datei bei Updates."""
         update_kwargs: dict[str, Any] = {}
+        instance = serializer.instance
+        pdf_file = self.request.FILES.get("pdf_file")
         storage_key = self.request.data.get("storage_key")
-        if storage_key and not self.request.FILES.get("pdf_file"):
+
+        if pdf_file:
+            sha256 = hashlib.sha256()
+            for chunk in pdf_file.chunks():
+                sha256.update(chunk)
+            pdf_file.seek(0)
+            sha256_val = sha256.hexdigest()
+            self._ensure_unique_sha256(
+                sha256_val,
+                exclude_pk=instance.pk if instance else None,
+                field_name="pdf_file",
+            )
+            update_kwargs["sha256_hash"] = sha256_val
+            if storage_key is not None:
+                update_kwargs["storage_key"] = storage_key
+        elif storage_key and (instance is None or storage_key != instance.storage_key):
+            client_hash = self.request.data.get("sha256_hash")
+            try:
+                sha256_val = verify_s3_uploaded_certificate(
+                    storage_key=str(storage_key),
+                    client_hash=str(client_hash) if client_hash else None,
+                )
+            except ValueError as err:
+                raise serializers.ValidationError({"storage_key": str(err)}) from err
+
+            self._ensure_unique_sha256(
+                sha256_val,
+                exclude_pk=instance.pk if instance else None,
+                field_name="pdf_file",
+            )
             update_kwargs["pdf_file"] = storage_key
             update_kwargs["storage_key"] = storage_key
+            update_kwargs["sha256_hash"] = sha256_val
 
         if "is_published" in self.request.data:
             raw_is_published = self.request.data.get("is_published")
@@ -407,7 +487,6 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
             is_pub_bool = (
                 parsed_is_pub if parsed_is_pub is not None else bool(raw_is_published)
             )
-            instance = serializer.instance
 
             # Track-Pflicht greift NUR bei Neu-Veröffentlichung (Statuswechsel von False -> True):
             # Bereits veröffentlichte Zertifikate unterliegen dem Bestandsschutz.
@@ -466,7 +545,7 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=["post"],
-        permission_classes=[IsAuthenticated],
+        permission_classes=[IsAdminUser],
         url_path="presigned_upload",
     )
     def presigned_upload(self, request: Request) -> Response:
@@ -498,7 +577,7 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], permission_classes=[IsAdminUser])
     def publish(self, request: Request, pk: str | None = None) -> Response:
         """Dedizierter Endpoint zur Veröffentlichung eines geprüften Zertifikats.
 
@@ -526,7 +605,7 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
         cert.save(update_fields=["is_published", "pdf_file", "storage_key"])
         return Response({"status": "published", "is_published": True})
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], permission_classes=[IsAdminUser])
     def unpublish(self, request: Request, pk: str | None = None) -> Response:
         """Dedizierter Endpoint zum Zurückziehen eines Zertifikats."""
         cert = self.get_object()
@@ -534,7 +613,7 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
         cert.save(update_fields=["is_published"])
         return Response({"status": "unpublished", "is_published": False})
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], permission_classes=[IsAdminUser])
     def extract_metadata(self, request: Request, pk: str | None = None) -> Response:
         """Zweistufige On-Demand Extraktion (Textschicht + OCR) für Zertifikat."""
         cert = self.get_object()
@@ -625,13 +704,13 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
 class SkillViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     queryset = Skill.objects.all()
     serializer_class = SkillSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (IsAdminUserOrReadOnly,)
 
 
 class TimelineEntryViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     queryset = TimelineEntry.objects.all().prefetch_related("skills")
     serializer_class = TimelineEntrySerializer
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (IsAdminUserOrReadOnly,)
 
 
 class TrackViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
@@ -644,7 +723,7 @@ class TrackViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
         )
     )
     serializer_class = TrackSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (IsAdminUserOrReadOnly,)
 
     def _sync_track_icon(self, track: Track) -> None:
         """Synchronisiert und sichert das Track-Icon lokal über ensure_track_icon."""
@@ -669,7 +748,7 @@ class TrackViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
 class PendingCertificateViewSet(viewsets.ModelViewSet):
     """Nur für Staff-Nutzer - nie öffentlich lesbar."""
 
-    queryset = PendingCertificate.objects.all()
+    queryset = PendingCertificate.objects.all().prefetch_related("suggested_tracks")
     serializer_class = PendingCertificateSerializer
     permission_classes = (IsAdminUser,)
 
@@ -902,7 +981,11 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
             )
 
         file_path = Path(pending.file_path)
-        if not file_path.exists() or not file_path.is_file():
+        if (
+            file_path.is_symlink()
+            or not file_path.exists()
+            or not file_path.is_file()
+        ):
             return Response(
                 {
                     "detail": f"Datei '{pending.original_file_name}' existiert lokal nicht mehr."
@@ -917,26 +1000,31 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
         elif ext in {".jpg", ".jpeg"}:
             content_type = "image/jpeg"
 
-        response = FileResponse(open(file_path, "rb"), content_type=content_type)  # noqa: SIM115
-        response["Content-Disposition"] = (
-            f'inline; filename="{pending.original_file_name}"'
+        safe_filename = Path(pending.original_file_name).name or file_path.name
+        return FileResponse(
+            open(file_path, "rb"),
+            content_type=content_type,
+            as_attachment=False,
+            filename=safe_filename,
         )
-        return response
 
 
 class AIChatView(APIView):
-    """Beantwortet Besucherfragen zum Portfolio mittels RAG und Gemini 3.8 Flash.
+    """Beantwortet Besucherfragen zum Portfolio mittels RAG und Gemini 2.5 Flash.
 
-    Öffentlich erreichbar mit Scoped Rate Limiting (20 Anfragen/Minute).
+    Öffentlich erreichbar mit mehrstufigem Rate Limiting (Burst, Sustained, Global Budget).
     """
 
     permission_classes = (AllowAny,)
-    throttle_classes = (ScopedRateThrottle,)
-    throttle_scope = "ai_chat"
+    throttle_classes = (
+        AIChatBurstThrottle,
+        AIChatSustainedThrottle,
+        AIChatGlobalBudgetThrottle,
+    )
 
     @extend_schema(
         summary="Portfolio AI-Copilot Chat",
-        description="Beantwortet Fragen zum Portfolio, Projekten, Skills und Zertifikaten mit RAG via Gemini 3.8 Flash.",
+        description="Beantwortet Fragen zum Portfolio, Projekten, Skills und Zertifikaten mit RAG via Gemini 2.5 Flash.",
         request={
             "application/json": {
                 "type": "object",
@@ -1228,10 +1316,17 @@ class ContactMessageView(APIView):
             )
             return Response(
                 {
+<<<<<<< HEAD
                     "detail": "Nachricht wurde erfasst (Mail-Relay im Offline-Modus).",
                     "status": "queued",
                 },
                 status=status.HTTP_200_OK,
+=======
+                    "detail": "Der E-Mail-Versand ist vorübergehend nicht erreichbar. Bitte versuche es später erneut.",
+                    "status": "error",
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+>>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
             )
 
         return Response(

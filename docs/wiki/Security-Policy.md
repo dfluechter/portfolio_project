@@ -27,9 +27,9 @@ Sicherheit folgt im Portfolio-Projekt dem Prinzip der **Defense-in-Depth**. Dies
 2. **Passwort-Reset & Session-Sync**:
    - Bietet einen Single-User-Reset-Flow über das Login-Modal und eine gesicherte Bestätigungsseite (`/password-reset/confirm/:uid/:token`).
    - Bei abgelaufenem Refresh-Token sichert ein Axios-Interceptor den sauberen Logout via `auth:unauthorized`.
-3. **JWT-Laufzeiten & Auto-Revocation**:
+3. **JWT-Laufzeiten & Session-Purge**:
    - Access-Token: 60 Minuten Gültigkeit.
-   - Refresh-Token: 7 Tage Gültigkeit mit atomarer Token-Rotation.
+   - Refresh-Token: 7 Tage Gültigkeit mit automatischer Client-Session-Bereinigung via `auth:unauthorized` bei Ablauf oder Logout.
 4. **Schreibschutz für Provider**:
    - `Provider` mit verknüpften Zertifikaten sind durch `on_delete=models.PROTECT` vor versehentlichem Löschen geschützt. Löschanfragen antworten mit `409 Conflict`.
 5. **Track-Pflicht für Veröffentlichungen**:
@@ -61,5 +61,5 @@ Zum Schutz vor Missbrauch des Chat-Endpunkts (`POST /api/ai/chat/`):
 ## 5. Responsible Disclosure
 
 Sicherheitsrelevante Schwachstellen können vertraulich gemeldet werden:
-- **Kontakt**: `security@dfluechter.ipv64.de` oder direkt via GitHub Security Advisories.
+- **Kontakt**: `dominik.fluechter@googlemail.com` oder direkt via GitHub Security Advisories.
 - Es wird gebeten, keine Sicherheitslücken in öffentlichen GitHub Issues zu posten.

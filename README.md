@@ -2,7 +2,7 @@
 
 [![CI/CD Pipeline](https://github.com/dfluechter/portfolio_project/actions/workflows/ci.yml/badge.svg)](https://github.com/dfluechter/portfolio_project/actions/workflows/ci.yml)
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/dfluechter/portfolio_project/CI%2FCD%20Pipeline?branch=main&style=for-the-badge&logo=github)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/dfluechter/portfolio_project/ci.yml?branch=main&style=for-the-badge&logo=github)
 ![Coverage](https://img.shields.io/badge/Coverage-%3E95%25-brightgreen?style=for-the-badge&logo=pytest)
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-5.2%2B-092E20?style=for-the-badge&logo=django&logoColor=white)
@@ -47,8 +47,9 @@ Cloud-native **Headless Django REST API** (Backend) und **React 19 Single Page A
 - **Track-Pflicht & Icon-Caching**: Bevor ein Zertifikat veröffentlicht werden kann (`is_published=True`), muss ihm mindestens ein Fachbereich (Track) zugewiesen sein. Die zugehörigen FontAwesome SVG-Icons werden beim Erstabruf validiert und lokal unter `/static/img/icons/` geordnet gespeichert.
 
 ### ⚡ 3. Infrastruktur, Performance & CI/CD-Pipelines
+- **Single-Service Production Deployment**: Auf Render kompiliert `backend/build.sh` sowohl das React-Frontend (`frontend/dist`) als auch die statischen Backend-Assets und liefert die gesamte Anwendung über Gunicorn und WhiteNoise unter einer einheitlichen Domain aus.
 - **Neon Connection Separation**: Web-Requests nutzen zur Skalierung den PgBouncer-Pooler (`DATABASE_URL`). Datenbank-Migrationen (`migrate` in `build.sh`) verwenden automatisch die direkte Compute-Verbindung (`DIRECT_DATABASE_URL`).
-- **Ephemeres Neon Branching in GitHub Actions**: CI-Pipeline-Läufe erstellen einen isolierten Datenbank-Branch (`ci-${{ github.run_id }}-${{ github.run_attempt }}`). Nach Ausführung der Testsuite gegen echtes PostgreSQL inkl. `pgvector` wird dieser Branch automatisch verworfen.
+- **Mehrstufige GitHub Actions CI/CD**: Jeder Push und Pull Request durchläuft Commitlint, Backend-CI (Ruff, Mypy, Markdown-Integrität, Pytest mit $\ge 95\%$ Coverage-Gate), Frontend-CI (Oxlint, Vitest, Vite-Production-Build), Produktions-Build-Verifikation (`check --deploy`, `makemigrations --check`, `collectstatic` inkl. gebautem Frontend-Artefakt) und triggert bei Erfolg auf `main` den Render Zero-Downtime Deploy Hook.
 - **Performance & Frontend Cold-Start-UX**: Die Admin-Komponenten (`DashboardPage`, `LoginPage`, `PasswordResetConfirmPage`) werden träge nachgeladen (`React.lazy`). Bei Nutzung der kostenlosen Server-Instanz auf Render weist ein `ColdStartBanner` den Nutzer auf das Aufwachen des Containers hin.
 
 ### 📥 4. Inbox-Automatisierung & Batch-Processing
@@ -247,5 +248,5 @@ portfolio_project/
 │   └── backlog.md               # Agiles Product Backlog (Epics 1–12)
 ├── AGENTS.md                    # Projektrichtlinien & Read-Only Schutzregeln für Agenten
 ├── build.sh                     # Resilientes Root-Build-Skript (delegiert an backend/build.sh)
-└── render.yaml                  # Deklaratives Render Blueprint (Backend Web Service + Frontend Static Site)
+└── render.yaml                  # Deklaratives Render Blueprint (Single-Service: Django API + WhiteNoise React SPA)
 ```

@@ -122,6 +122,8 @@
     "clear": "Clear search",
     "noMatchesInSection": "No matches in {{sectionName}}",
     "noMatchesInSectionDesc": "No matching entries found in this section for the query \"{{query}}\".",
+    "emptySectionTitle": "No entries in {{sectionName}}",
+    "emptySectionDesc": "There are currently no published records available in this module.",
     "resetFilter": "Reset search filter",
     "categories": {
       "project": "Project",
@@ -223,7 +225,11 @@
     "successTitle": "Message transmitted successfully",
     "successText": "Thank you for your message! I will get back to you shortly.",
     "sendAnother": "Compose another message",
+    "nameError": "Please enter your name (at least 2 characters).",
+    "emailError": "Please enter a valid email address.",
+    "messageError": "Please enter a message with at least 10 characters.",
     "validationError": "Please enter your name, a valid email address, and a message (at least 10 characters).",
+    "submitError": "Failed to send message. Please check your connection or try again.",
     "copyEmail": "Copy Email",
     "emailCopied": "Email copied",
     "copy": "Copy",
@@ -350,6 +356,7 @@
     "linkTimeline": "Career Chronology & Milestones",
     "linkContact": "Direct Communication & Formmailer"
   },
+<<<<<<< HEAD
   "inbox": {
     "title": "Inbox & Certificate Review",
     "pendingBadge": "{{count}} Pending",
@@ -403,5 +410,23 @@
     "notifyBulkApproveError": "Error during bulk certificate approval.",
     "notifyBulkRejectSuccess": "{{count}} certificate(s) rejected.",
     "notifyBulkRejectError": "Error during bulk certificate rejection."
+=======
+  "passwordReset": {
+    "backToLogin": "Back to Login",
+    "eyebrow": "AUTH // CREDENTIAL RECOVERY",
+    "title": "Set New Password",
+    "subtitle": "Choose a strong new password for your portfolio admin account.",
+    "newPasswordLabel": "New Password (min. 8 characters)",
+    "confirmPasswordLabel": "Confirm New Password",
+    "saveButton": "Save New Password",
+    "saving": "Saving...",
+    "successTitle": "Password changed successfully!",
+    "successDesc": "You will be redirected to the login page automatically in a few seconds...",
+    "loginNow": "Log in now",
+    "invalidLink": "Invalid or incomplete password recovery link.",
+    "passwordTooShort": "Password must be at least 8 characters long.",
+    "passwordMismatch": "Passwords do not match.",
+    "resetFailed": "Failed to reset password. The link may have expired."
+>>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
   }
 }

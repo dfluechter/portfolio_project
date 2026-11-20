@@ -122,6 +122,8 @@
     "clear": "Suche leeren",
     "noMatchesInSection": "Keine Treffer in {{sectionName}}",
     "noMatchesInSectionDesc": "Für den Suchbegriff „{{query}}“ wurden in diesem Bereich keine passenden Einträge gefunden.",
+    "emptySectionTitle": "Keine Einträge in {{sectionName}}",
+    "emptySectionDesc": "Derzeit sind in diesem Bereich noch keine veröffentlichten Einträge hinterlegt.",
     "resetFilter": "Suchfilter zurücksetzen",
     "categories": {
       "project": "Projekt",
@@ -212,10 +214,10 @@
     "subheading": "Interesse an einer technischen Zusammenarbeit, einem Architektur-Review oder fachlichem Austausch? Nutze direkt den Formmailer oder vernetze dich über GitHub und Credly.",
     "formTitle": "Formmailer",
     "formSubtitle": "Direkte Nachricht an Dominik Flüchter senden",
-    "nameLabel": "Ihre Name",
-    "namePlaceholder": "Ihre Name",
-    "emailLabel": "Ihre Email Adresse",
-    "emailPlaceholder": "Ihre Email Adresse",
+    "nameLabel": "Ihr Name",
+    "namePlaceholder": "Ihr Name",
+    "emailLabel": "Ihre E-Mail-Adresse",
+    "emailPlaceholder": "Ihre E-Mail-Adresse",
     "messageLabel": "Nachricht",
     "messagePlaceholder": "Ihre Nachricht...",
     "submitButton": "Nachricht senden",
@@ -223,7 +225,11 @@
     "successTitle": "Nachricht erfolgreich übermittelt",
     "successText": "Vielen Dank für Ihre Nachricht! Ich melde mich zeitnah bei Ihnen zurück.",
     "sendAnother": "Weitere Nachricht verfassen",
-    "validationError": "Bitte füllen Sie Ihre Name, Ihre Email Adresse und eine Nachricht (mind. 10 Zeichen) aus.",
+    "nameError": "Bitte geben Sie Ihren Namen ein (mind. 2 Zeichen).",
+    "emailError": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    "messageError": "Bitte geben Sie eine Nachricht mit mindestens 10 Zeichen ein.",
+    "validationError": "Bitte füllen Sie Ihren Namen, eine gültige E-Mail und Ihre Nachricht aus.",
+    "submitError": "Die Nachricht konnte nicht gesendet werden. Bitte prüfen Sie Ihre Verbindung oder versuchen Sie es erneut.",
     "copyEmail": "E-Mail kopieren",
     "emailCopied": "E-Mail kopiert",
     "copy": "Kopieren",
@@ -350,6 +356,7 @@
     "linkTimeline": "Chronologie & Meilensteine",
     "linkContact": "Direkte Kommunikation & Formmailer"
   },
+<<<<<<< HEAD
   "inbox": {
     "title": "Inbox & Zertifikats-Review",
     "pendingBadge": "{{count}} Ausstehend",
@@ -403,5 +410,23 @@
     "notifyBulkApproveError": "Fehler bei der Massenfreigabe der Zertifikate.",
     "notifyBulkRejectSuccess": "{{count}} Zertifikat(e) abgelehnt.",
     "notifyBulkRejectError": "Fehler bei der Massenablehnung der Zertifikate."
+=======
+  "passwordReset": {
+    "backToLogin": "Zurück zum Login",
+    "eyebrow": "AUTH // CREDENTIAL RECOVERY",
+    "title": "Neues Passwort vergeben",
+    "subtitle": "Wähle ein sicheres neues Passwort für deinen Portfolio-Admin-Zugang.",
+    "newPasswordLabel": "Neues Passwort (min. 8 Zeichen)",
+    "confirmPasswordLabel": "Neues Passwort bestätigen",
+    "saveButton": "Neues Passwort speichern",
+    "saving": "Wird gespeichert...",
+    "successTitle": "Passwort erfolgreich geändert!",
+    "successDesc": "Du wirst in wenigen Sekunden automatisch zur Login-Seite weitergeleitet...",
+    "loginNow": "Jetzt direkt anmelden",
+    "invalidLink": "Ungültiger oder unvollständiger Wiederherstellungs-Link.",
+    "passwordTooShort": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+    "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+    "resetFailed": "Fehler beim Zurücksetzen des Passworts. Der Link ist möglicherweise abgelaufen."
+>>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
   }
 }

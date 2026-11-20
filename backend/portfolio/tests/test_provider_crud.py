@@ -8,14 +8,14 @@ from portfolio.models import Certificate, Provider
 
 @pytest.mark.django_db
 class TestProviderAndCertificateCRUD:
-    def test_authenticated_can_update_provider(self, auth_client):
+    def test_authenticated_can_update_provider(self, staff_client):
         provider = Provider.objects.create(provider="Coursera", aktiv=True)
         url = reverse("provider-detail", kwargs={"pk": provider.pk})
-        response = auth_client.patch(url, {"aktiv": False}, format="json")
+        response = staff_client.patch(url, {"aktiv": False}, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert not response.data["aktiv"]
 
-    def test_provider_with_certificate_cannot_be_deleted_returns_409(self, auth_client):
+    def test_provider_with_certificate_cannot_be_deleted_returns_409(self, staff_client):
         provider = Provider.objects.create(provider="Udemy")
         dummy_file = SimpleUploadedFile(
             "cert.pdf", b"data", content_type="application/pdf"
@@ -28,17 +28,17 @@ class TestProviderAndCertificateCRUD:
         )
 
         url = reverse("provider-detail", kwargs={"pk": provider.pk})
-        response = auth_client.delete(url)
+        response = staff_client.delete(url)
 
         assert response.status_code == status.HTTP_409_CONFLICT
         assert "Zertifikate" in response.data["detail"]
         assert Provider.objects.filter(pk=provider.pk).exists()
         assert Certificate.objects.filter(provider=provider).exists()
 
-    def test_authenticated_can_delete_provider_without_certificates(self, auth_client):
+    def test_authenticated_can_delete_provider_without_certificates(self, staff_client):
         provider = Provider.objects.create(provider="Delete Me")
         url = reverse("provider-detail", kwargs={"pk": provider.pk})
-        response = auth_client.delete(url)
+        response = staff_client.delete(url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not Provider.objects.filter(pk=provider.pk).exists()
 

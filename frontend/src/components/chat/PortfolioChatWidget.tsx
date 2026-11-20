@@ -445,11 +445,11 @@ export const PortfolioChatWidget: FC = () => {
         text:
           status === 429
             ? t(
-                'chat.rateLimitReached',
+                'chat.rateLimitError',
                 'Das kostenfreie Anfrage-Limit wurde erreicht. Die KI-Komponente wurde zum Schutz vor Kosten deaktiviert.'
               )
             : t(
-                'chat.serviceUnavailable',
+                'chat.serviceUnavailableError',
                 'Entschuldigung, der KI-Dienst ist gerade nicht erreichbar. Bitte versuche es später noch einmal.'
               ),
         timestamp: formatChatTimestamp(),
@@ -590,7 +590,7 @@ export const PortfolioChatWidget: FC = () => {
               maxLength={MAX_INPUT_CHARS}
               placeholder={
                 isDisabled
-                  ? (i18n.language.startsWith('en') ? 'AI Assistant disabled (token limit)' : 'KI-Assistent deaktiviert (Token-Limit geschützt)')
+                  ? t('chat.disabledPlaceholder', 'KI-Assistent deaktiviert (Token-Limit geschützt)')
                   : t('chat.inputPlaceholder')
               }
               value={inputValue}

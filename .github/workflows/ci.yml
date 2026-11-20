@@ -65,11 +65,15 @@ jobs:
       - name: Statische Typprüfung (MyPy)
         run: uv run mypy .
 
+      - name: Markdown- & Dokumentations-Integrität prüfen
+        run: uv run python ../scripts/verify_markdown_integrity.py
+
       - name: Backend API-Tests mit JUnit-Reporting & Coverage-Gate (>= 95%)
         id: run-backend-tests
         run: |
           mkdir -p test-results
           uv run pytest \
+            --cov=core \
             --cov=portfolio \
             --cov-report=xml:test-results/coverage.xml \
             --cov-report=term \
@@ -84,8 +88,8 @@ jobs:
           USE_SUPABASE_S3: "False"
           GEMINI_API_KEY: "mock-gemini-key-for-ci-runs"
           GEMINI_AI_ENABLED: "False"
-          DAILY_TOKEN_LIMIT: "50000"
-          MAX_DAILY_AI_REQUESTS: "100"
+          GEMINI_DAILY_TOKEN_LIMIT: "50000"
+          GEMINI_DAILY_REQUEST_LIMIT: "100"
           DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
           CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000"
 
@@ -155,6 +159,13 @@ jobs:
       - name: TypeScript-Typen & Vite-Produktions-Build prüfen
         run: npm run build
 
+      - name: Gebautes Frontend-Artefakt (dist/) bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
   # --- JOB 4: Backend-Build (Produktions-Artefakt-Verifikation) ---
   backend-build:
     name: Backend Build & Migration Verification
@@ -167,6 +178,12 @@ jobs:
     steps:
       - name: Code auschecken
         uses: actions/checkout@v4
+
+      - name: Gebautes Frontend-Artefakt (frontend/dist) laden
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
 
       - name: Python 3.13 einrichten
         uses: actions/setup-python@v5
@@ -187,7 +204,6 @@ jobs:
         env:
           SECRET_KEY: "django-insecure-ci-production-check-secret-key"
           DEBUG: "False"
-          ALLOWED_HOSTS: "localhost,127.0.0.1"
           DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
           PORTFOLIO_OWNER_EMAIL: "test@example.com"
           FRONTEND_DOMAIN: "localhost:3000"

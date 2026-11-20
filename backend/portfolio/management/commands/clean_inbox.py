@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 from pathlib import Path
 
@@ -74,13 +75,7 @@ PRIVATE_KEYWORDS: tuple[str, ...] = (
     "nachweis",
     "kontoauszug",
     "sgb",
-    "familienpass",
     "schreiben",
-    "epieos",
-    "karriere-profil",
-    "bioage",
-    "psychologie-tools",
-    "430668061",
 )
 
 # Schlüsselwörter für Kursmaterialien, eBooks, Folien, Workbooks (keine Zertifikate)
@@ -98,26 +93,26 @@ COURSE_MATERIAL_KEYWORDS: tuple[str, ...] = (
     "review_de",
     "resources_de",
     "reading",
-    "wp-lhind",
-    "resilienz",
-    "shilajit",
-    "iodine",
     "arxiv",
-    "2302.11382",
     "module5",
     "chapter1",
     "custom-template-tags",
-    "bestbodyguide",
-    "gymondo",
     "study_plan",
     "study-plan",
 )
 
 
+def _get_extra_keywords() -> tuple[str, ...]:
+    """Lädt optionale zusätzliche Filter-Schlüsselwörter aus CLEAN_INBOX_EXTRA_KEYWORDS."""
+    raw = os.getenv("CLEAN_INBOX_EXTRA_KEYWORDS", "")
+    return tuple(k.strip().lower() for k in raw.split(",") if k.strip())
+
+
 def is_private_document(filename: str, title: str) -> bool:
     """Erkennt private, sensible oder behördliche Dokumente."""
     combined = f"{filename} {title}".lower()
-    return any(keyword in combined for keyword in PRIVATE_KEYWORDS)
+    keywords = PRIVATE_KEYWORDS + _get_extra_keywords()
+    return any(keyword in combined for keyword in keywords)
 
 
 def is_course_material_or_noise(filename: str, title: str) -> bool:

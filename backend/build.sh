@@ -24,9 +24,10 @@ trap 'log_error "build.sh ist unerwartet in Zeile $LINENO mit Exit-Code $? abgeb
 
 # 1. Sicherstellen, dass uv verfügbar und lauffähig ist
 if ! command -v uv >/dev/null 2>&1 || ! uv --version >/dev/null 2>&1; then
-    log_info "uv ist nicht im PATH verfügbar. Installiere Astral uv..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh || {
-        log_error "Installation von Astral uv fehlgeschlagen!"
+    UV_INSTALL_VERSION="${UV_VERSION:-0.5.29}"
+    log_info "uv ist nicht im PATH verfügbar. Installiere Astral uv v${UV_INSTALL_VERSION}..."
+    curl -LsSf "https://astral.sh/uv/${UV_INSTALL_VERSION}/install.sh" | sh || {
+        log_error "Installation von Astral uv v${UV_INSTALL_VERSION} fehlgeschlagen!"
         exit 1
     }
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
@@ -47,7 +48,7 @@ node_is_compatible() {
 
 if ! node_is_compatible; then
     CURRENT_NODE="$(command -v node >/dev/null 2>&1 && node --version || echo 'nicht installiert')"
-    NODE_VERSION="22.14.0"
+    NODE_VERSION="${NODE_VERSION:-22.14.0}"
     log_info "Node.js fehlt oder ist inkompatibel (${CURRENT_NODE}; benötigt ^20.19.0 || >=22.12.0). Installiere Node.js LTS (v${NODE_VERSION})..."
     ARCH=$(uname -m)
     case "$ARCH" in
@@ -55,12 +56,32 @@ if ! node_is_compatible; then
         aarch64|arm64) NODE_ARCH="arm64" ;;
         *) NODE_ARCH="x64" ;;
     esac
-    rm -rf "$HOME/.local/node"
-    mkdir -p "$HOME/.local/node"
-    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.gz" | tar -xz --strip-components=1 -C "$HOME/.local/node" || {
-        log_error "Installation von Node.js v${NODE_VERSION} fehlgeschlagen!"
+    NODE_TARBALL="node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.gz"
+    NODE_BASE_URL="https://nodejs.org/dist/v${NODE_VERSION}"
+    TMP_NODE_DIR="$(mktemp -d)"
+    curl -fsSL "${NODE_BASE_URL}/${NODE_TARBALL}" -o "${TMP_NODE_DIR}/${NODE_TARBALL}" || {
+        rm -rf "${TMP_NODE_DIR}"
+        log_error "Download von ${NODE_TARBALL} fehlgeschlagen!"
         exit 1
     }
+    curl -fsSL "${NODE_BASE_URL}/SHASUMS256.txt" -o "${TMP_NODE_DIR}/SHASUMS256.txt" || {
+        rm -rf "${TMP_NODE_DIR}"
+        log_error "Download von SHASUMS256.txt für Node.js v${NODE_VERSION} fehlgeschlagen!"
+        exit 1
+    }
+    (cd "${TMP_NODE_DIR}" && grep " ${NODE_TARBALL}\$" SHASUMS256.txt | sha256sum -c - >/dev/null 2>&1) || {
+        rm -rf "${TMP_NODE_DIR}"
+        log_error "SHA-256 Checksummen-Prüfung für ${NODE_TARBALL} fehlgeschlagen!"
+        exit 1
+    }
+    rm -rf "$HOME/.local/node"
+    mkdir -p "$HOME/.local/node"
+    tar -xzf "${TMP_NODE_DIR}/${NODE_TARBALL}" --strip-components=1 -C "$HOME/.local/node" || {
+        rm -rf "${TMP_NODE_DIR}"
+        log_error "Entpacken von Node.js v${NODE_VERSION} fehlgeschlagen!"
+        exit 1
+    }
+    rm -rf "${TMP_NODE_DIR}"
     export PATH="$HOME/.local/node/bin:$PATH"
     hash -r 2>/dev/null || true
 fi
@@ -85,7 +106,7 @@ log_success "Django System-Check erfolgreich bestanden."
 # 3b. React Frontend kompilieren (für integrierte Single-Domain SPA Auslieferung auf https://dfluechter.ipv64.de)
 if [ -d "../frontend" ]; then
     log_info "Kompiliere React Frontend (npm run build)..."
-    (cd ../frontend && npm ci --include=optional --legacy-peer-deps && npm run build) || {
+    (cd ../frontend && npm ci --include=optional && npm run build) || {
         log_error "React Frontend-Build fehlgeschlagen! Bitte frontend Dependencies und Build-Skript prüfen."
         exit 1
     }

@@ -1,14 +1,20 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, KeyRound, Lock, Shield } from 'lucide-react';
 import { useConfirmPasswordReset } from '../hooks/usePortfolio';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { PORTFOLIO_OWNER_NAME } from '../constants';
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export const PasswordResetConfirmPage: React.FC = () => {
+  const { t } = useTranslation();
   const { uid, token } = useParams<{ uid: string; token: string }>();
   const navigate = useNavigate();
   const confirmMutation = useConfirmPasswordReset();
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [newPassword, setNewPassword] = useState('');
   const [reNewPassword, setReNewPassword] = useState('');
@@ -16,22 +22,36 @@ export const PasswordResetConfirmPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!uid || !token) {
-      setError('Ungültiger oder unvollständiger Wiederherstellungs-Link.');
+      setError(
+        t('passwordReset.invalidLink', 'Ungültiger oder unvollständiger Wiederherstellungs-Link.')
+      );
       return;
     }
 
     if (newPassword.length < 8) {
-      setError('Das Passwort muss mindestens 8 Zeichen lang sein.');
+      setError(
+        t('passwordReset.passwordTooShort', 'Das Passwort muss mindestens 8 Zeichen lang sein.')
+      );
       return;
     }
 
     if (newPassword !== reNewPassword) {
-      setError('Die Passwörter stimmen nicht überein.');
+      setError(
+        t('passwordReset.passwordMismatch', 'Die Passwörter stimmen nicht überein.')
+      );
       return;
     }
 
@@ -43,11 +63,17 @@ export const PasswordResetConfirmPage: React.FC = () => {
         re_new_password: reNewPassword,
       });
       setIsSuccess(true);
-      setTimeout(() => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+      redirectTimerRef.current = setTimeout(() => {
         navigate('/login');
       }, 3500);
     } catch (err: unknown) {
-      let msg = 'Fehler beim Zurücksetzen des Passworts. Der Link ist möglicherweise abgelaufen.';
+      let msg = t(
+        'passwordReset.resetFailed',
+        'Fehler beim Zurücksetzen des Passworts. Der Link ist möglicherweise abgelaufen.'
+      );
       if (axios.isAxiosError(err)) {
         msg =
           err.response?.data?.new_password?.[0] ||
@@ -64,17 +90,20 @@ export const PasswordResetConfirmPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 bg-architectural-grid text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white relative overflow-hidden">
       {/* Top Header */}
-      <header className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
+      <header className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between gap-4">
         <Link
           to="/login"
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors duration-200 bg-slate-900/90 border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Zurück zum Login
+          {t('passwordReset.backToLogin', 'Zurück zum Login')}
         </Link>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300 text-xs font-mono">
-          <span className="w-2 h-2 rounded-full bg-emerald-400" aria-hidden="true" />
-          <span>SECURITY • RESET</span>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300 text-xs font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" aria-hidden="true" />
+            <span>SECURITY • RESET</span>
+          </div>
         </div>
       </header>
 
@@ -89,13 +118,16 @@ export const PasswordResetConfirmPage: React.FC = () => {
 
             <div>
               <span className="block text-[10px] font-mono uppercase tracking-widest text-indigo-400 mb-1">
-                AUTH // CREDENTIAL RECOVERY
+                {t('passwordReset.eyebrow', 'AUTH // CREDENTIAL RECOVERY')}
               </span>
               <h2 className="text-2xl font-extrabold text-white tracking-tight">
-                Neues Passwort vergeben
+                {t('passwordReset.title', 'Neues Passwort vergeben')}
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Wähle ein sicheres neues Passwort für deinen Portfolio-Admin-Zugang.
+                {t(
+                  'passwordReset.subtitle',
+                  'Wähle ein sicheres neues Passwort für deinen Portfolio-Admin-Zugang.'
+                )}
               </p>
             </div>
           </div>
@@ -108,16 +140,21 @@ export const PasswordResetConfirmPage: React.FC = () => {
             >
               <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" aria-hidden="true" />
               <div>
-                <h3 className="text-sm font-bold text-white">Passwort erfolgreich geändert!</h3>
+                <h3 className="text-sm font-bold text-white">
+                  {t('passwordReset.successTitle', 'Passwort erfolgreich geändert!')}
+                </h3>
                 <p className="text-xs text-slate-300 mt-1">
-                  Du wirst in wenigen Sekunden automatisch zur Login-Seite weitergeleitet...
+                  {t(
+                    'passwordReset.successDesc',
+                    'Du wirst in wenigen Sekunden automatisch zur Login-Seite weitergeleitet...'
+                  )}
                 </p>
               </div>
               <Link
                 to="/login"
                 className="inline-block py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors duration-200 shadow-sm"
               >
-                Jetzt direkt anmelden
+                {t('passwordReset.loginNow', 'Jetzt direkt anmelden')}
               </Link>
             </div>
           ) : (
@@ -138,7 +175,7 @@ export const PasswordResetConfirmPage: React.FC = () => {
                     htmlFor="reset-new-password"
                     className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5"
                   >
-                    Neues Passwort (min. 8 Zeichen)
+                    {t('passwordReset.newPasswordLabel', 'Neues Passwort (min. 8 Zeichen)')}
                   </label>
                   <div className="relative flex items-center">
                     <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 pointer-events-none" aria-hidden="true" />
@@ -156,7 +193,11 @@ export const PasswordResetConfirmPage: React.FC = () => {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="cursor-pointer absolute right-3 text-slate-500 hover:text-indigo-400 rounded p-1 transition-colors duration-200"
-                      aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                      aria-label={
+                        showPassword
+                          ? t('login.hidePassword', 'Passwort verbergen')
+                          : t('login.showPassword', 'Passwort anzeigen')
+                      }
                     >
                       {showPassword ? (
                         <EyeOff className="w-4 h-4" aria-hidden="true" />
@@ -172,7 +213,7 @@ export const PasswordResetConfirmPage: React.FC = () => {
                     htmlFor="reset-confirm-password"
                     className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5"
                   >
-                    Neues Passwort bestätigen
+                    {t('passwordReset.confirmPasswordLabel', 'Neues Passwort bestätigen')}
                   </label>
                   <div className="relative flex items-center">
                     <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 pointer-events-none" aria-hidden="true" />
@@ -197,10 +238,10 @@ export const PasswordResetConfirmPage: React.FC = () => {
                   {confirmMutation.isPending ? (
                     <>
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Wird gespeichert...</span>
+                      <span>{t('passwordReset.saving', 'Wird gespeichert...')}</span>
                     </>
                   ) : (
-                    <span>Neues Passwort speichern</span>
+                    <span>{t('passwordReset.saveButton', 'Neues Passwort speichern')}</span>
                   )}
                 </button>
               </form>
@@ -218,10 +259,8 @@ export const PasswordResetConfirmPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center text-xs text-slate-500 font-mono">
-        &copy; {CURRENT_YEAR} {PORTFOLIO_OWNER_NAME} • All Rights Reserved
+        &copy; {CURRENT_YEAR} {PORTFOLIO_OWNER_NAME} • {t('footer.allRightsReserved', 'All Rights Reserved')}
       </footer>
     </div>
   );
 };
-
-const CURRENT_YEAR = new Date().getFullYear();

@@ -51,6 +51,7 @@ IGNORE_DIRS = {
     "build",
     ".next",
     "__pycache__",
+    ".agents",
     ".agents/teamwork",  # Internal ephemeral scratchpad
 }
 
@@ -130,8 +131,8 @@ def gfm_slug(text: str) -> str:
     t = t.strip().lower()
     # Strip punctuation & emojis: keep letters, numbers, whitespace, hyphens and underscores
     t = re.sub(r"[^\w\s-]", "", t)
-    # Replace spaces with hyphens
-    t = re.sub(r"\s+", "-", t)
+    # Replace each space with a hyphen (GFM preserves multiple hyphens when symbols between spaces are stripped)
+    t = re.sub(r" ", "-", t)
     # GFM strips leading hyphens if an emoji/symbol was removed at the start
     t = t.lstrip("-")
     return t
@@ -237,12 +238,16 @@ class MarkdownHarness:
                     level = len(h_match.group(1))
                     h_text = h_match.group(2).strip()
                     base_slug = gfm_slug(h_text)
+                    collapsed_slug = re.sub(r"-+", "-", base_slug)
+                    space_collapsed_slug = re.sub(r"-{3,}", "--", base_slug)
 
                     count = slug_counts.get(base_slug, 0)
                     slug = base_slug if count == 0 else f"{base_slug}-{count}"
                     slug_counts[base_slug] = count + 1
 
                     anchors.add(slug)
+                    anchors.add(collapsed_slug if count == 0 else f"{collapsed_slug}-{count}")
+                    anchors.add(space_collapsed_slug if count == 0 else f"{space_collapsed_slug}-{count}")
                     headings.append((idx, level, h_text, slug))
 
                 # HTML anchors <a name="..." id="..."> or <element id="...">
@@ -413,7 +418,6 @@ class MarkdownHarness:
         - No deprecated Gemini models (gemini-2.5-flash, gemini-1.5-*); standard is gemini-3.8-flash.
         """
         deprecated_models = {
-            "gemini-2.5-flash",
             "gemini-1.5-flash",
             "gemini-1.5-pro",
             "gemini-2.0-flash",

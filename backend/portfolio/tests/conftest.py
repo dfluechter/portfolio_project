@@ -35,10 +35,29 @@ def inactive_user(db):
 
 @pytest.fixture
 def auth_client(api_client, test_user):
-    """APIClient mit gültigem SimpleJWT Bearer Token."""
+    """APIClient mit gültigem SimpleJWT Bearer Token (regulärer Benutzer)."""
     refresh = RefreshToken.for_user(test_user)
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token!s}")
     return api_client
+
+
+@pytest.fixture
+def staff_user(db):
+    """Erstellt einen Staff-/Admin-Testbenutzer."""
+    return User.objects.create_user(
+        email="staff@example.com",
+        password="StaffPassword123!",
+        is_staff=True,
+    )
+
+
+@pytest.fixture
+def staff_client(staff_user):
+    """APIClient mit gültigem SimpleJWT Bearer Token für Staff-Nutzer."""
+    client = APIClient()
+    refresh = RefreshToken.for_user(staff_user)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token!s}")
+    return client
 
 
 import shutil

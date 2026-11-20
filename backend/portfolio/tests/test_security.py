@@ -25,18 +25,6 @@ DENIED = (status.HTTP_401_UNAUTHORIZED,)
 
 
 @pytest.fixture
-def staff_client(db):
-    """APIClient mit JWT eines Staff-Benutzers."""
-    user = User.objects.create_user(
-        email="staff@example.com", password="StaffPassword123!", is_staff=True
-    )
-    client = APIClient()
-    token = RefreshToken.for_user(user).access_token
-    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token!s}")
-    return client
-
-
-@pytest.fixture
 def provider(db):
     return Provider.objects.create(provider="Security Provider")
 
@@ -83,6 +71,30 @@ class TestAnonymousWriteAccess:
     def test_anonymous_can_read_public_lists(self, api_client, basename):
         response = api_client.get(reverse(f"{basename}-list"))
         assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.django_db
+class TestRegularUserWriteAccess:
+    """Authentifizierte Benutzer ohne Staff-Status dürfen nicht schreiben (403 Forbidden)."""
+
+    @pytest.mark.parametrize(
+        "basename",
+        ["project", "provider", "skill", "timeline", "track", "certificate"],
+    )
+    def test_regular_user_post_is_forbidden(self, auth_client, basename):
+        response = auth_client.post(reverse(f"{basename}-list"), {}, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_regular_user_cannot_modify_or_delete_existing_objects(self, auth_client):
+        skill = Skill.objects.create(name="StaffOnly")
+        url = reverse("skill-detail", kwargs={"pk": skill.pk})
+
+        assert auth_client.put(url, {"name": "X"}, format="json").status_code == status.HTTP_403_FORBIDDEN
+        assert auth_client.patch(url, {"name": "X"}, format="json").status_code == status.HTTP_403_FORBIDDEN
+        assert auth_client.delete(url).status_code == status.HTTP_403_FORBIDDEN
+
+        skill.refresh_from_db()
+        assert skill.name == "StaffOnly"
 
 
 @pytest.mark.django_db
@@ -214,32 +226,32 @@ class TestUploadSecurity:
             format="multipart",
         )
 
-    def test_disallowed_extension_is_rejected(self, auth_client, provider):
+    def test_disallowed_extension_is_rejected(self, staff_client, provider):
         upload = SimpleUploadedFile("shell.php", b"<?php ?>", "text/plain")
-        response = self._upload(auth_client, provider, upload)
+        response = self._upload(staff_client, provider, upload)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "pdf_file" in response.data
 
-    def test_double_extension_is_rejected(self, auth_client, provider):
+    def test_double_extension_is_rejected(self, staff_client, provider):
         upload = SimpleUploadedFile("invoice.pdf.exe", b"MZ", "application/pdf")
-        response = self._upload(auth_client, provider, upload)
+        response = self._upload(staff_client, provider, upload)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_file_over_5_mb_is_rejected(self, auth_client, provider):
+    def test_file_over_5_mb_is_rejected(self, staff_client, provider):
         upload = SimpleUploadedFile(
             "big.pdf", b"0" * (5 * 1024 * 1024 + 1), "application/pdf"
         )
-        response = self._upload(auth_client, provider, upload)
+        response = self._upload(staff_client, provider, upload)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert Certificate.objects.count() == 0
 
     def test_path_traversal_filename_stays_inside_certificate_dir(
-        self, auth_client, provider
+        self, staff_client, provider
     ):
         upload = SimpleUploadedFile(
             "../../evil.pdf", b"%PDF-1.4 valid pdf content", "application/pdf"
         )
-        response = self._upload(auth_client, provider, upload)
+        response = self._upload(staff_client, provider, upload)
 
         assert response.status_code == status.HTTP_201_CREATED
         stored = Certificate.objects.get(pk=response.data["id"]).pdf_file.name
@@ -247,11 +259,11 @@ class TestUploadSecurity:
         assert ".." not in stored
         assert stored.startswith("certificates/security-provider/")
 
-    def test_client_cannot_set_hash_or_publish_flag(self, auth_client, provider):
+    def test_client_cannot_set_hash_or_publish_flag(self, staff_client, provider):
         upload = SimpleUploadedFile(
             "ok.pdf", b"%PDF-1.4 valid pdf content", "application/pdf"
         )
-        response = auth_client.post(
+        response = staff_client.post(
             reverse("certificate-list"),
             {
                 "title": "Mass Assignment",
@@ -279,9 +291,9 @@ class TestInjectionHandling:
 
     @pytest.mark.parametrize("payload", PAYLOADS)
     def test_malicious_strings_are_stored_verbatim_and_harmless(
-        self, auth_client, payload
+        self, staff_client, payload
     ):
-        response = auth_client.post(
+        response = staff_client.post(
             reverse("project-list"),
             {"title": payload, "description": payload},
             format="json",
@@ -290,7 +302,7 @@ class TestInjectionHandling:
         assert response.status_code == status.HTTP_201_CREATED
         assert Project.objects.get(pk=response.data["id"]).title == payload
         # Tabelle existiert weiterhin, Liste bleibt abrufbar
-        assert auth_client.get(reverse("project-list")).status_code == 200
+        assert staff_client.get(reverse("project-list")).status_code == 200
 
     def test_sql_injection_in_login_is_rejected(self, client):
         response = client.post(
@@ -303,13 +315,13 @@ class TestInjectionHandling:
             status.HTTP_401_UNAUTHORIZED,
         ]
 
-    def test_api_response_is_json_not_html(self, auth_client):
-        auth_client.post(
+    def test_api_response_is_json_not_html(self, staff_client):
+        staff_client.post(
             reverse("skill-list"),
             {"name": "<img src=x onerror=alert(1)>"},
             format="json",
         )
-        response = auth_client.get(reverse("skill-list"))
+        response = staff_client.get(reverse("skill-list"))
         assert response["Content-Type"].startswith("application/json")
 
 

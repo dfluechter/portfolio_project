@@ -460,3 +460,20 @@ class TestSchemaConstraintsAndIndexes:
 
         project_indexes = [idx.name for idx in Project._meta.indexes]
         assert "proj_pub_created_idx" in project_indexes
+
+    def test_provider_logo_and_project_image_validators(self):
+        spoofed_logo = SimpleUploadedFile(
+            "logo.png", b"not-a-png-header", content_type="image/png"
+        )
+        provider = Provider(provider="BadLogoProv", logo=spoofed_logo)
+        with pytest.raises(ValidationError) as exc_prov:
+            provider.full_clean()
+        assert "logo" in exc_prov.value.message_dict
+
+        bad_ext_img = SimpleUploadedFile(
+            "preview.svg", b"<svg></svg>", content_type="image/svg+xml"
+        )
+        project = Project(title="BadImgProj", description="Desc", image=bad_ext_img)
+        with pytest.raises(ValidationError) as exc_proj:
+            project.full_clean()
+        assert "image" in exc_proj.value.message_dict

@@ -221,43 +221,92 @@ def test_udemy_certificate_structure_extraction_live_example():
     assert issued == "2023-11-28"
 
 
-def test_real_downloaded_udemy_pdf_extraction():
-    """Testet die echte heruntergeladene Udemy-PDF, falls sie im lokalen Cache vorhanden ist."""
-    from pathlib import Path
+def _build_synthetic_vector_pdf(lines: list[tuple[str, str, int, int, int]]) -> bytes:
+    """Erstellt ein valides Vektor-PDF mit definierten Fonts, Größen und Positionen."""
+    stream_cmds = ["BT"]
+    for font_key, text, size, x, y in lines:
+        safe_txt = (
+            text.replace("\\", "\\\\")
+            .replace("(", "\\(")
+            .replace(")", "\\)")
+            .encode("latin-1", "replace")
+            .decode("latin-1")
+        )
+        stream_cmds.append(f"/{font_key} {size} Tf")
+        stream_cmds.append(f"1 0 0 1 {x} {y} Tm")
+        stream_cmds.append(f"({safe_txt}) Tj")
+    stream_cmds.append("ET")
+    stream_bytes = "\n".join(stream_cmds).encode("latin-1")
 
+    objects = [
+        b"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n",
+        b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n",
+        (
+            b"3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+            b"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >> endobj\n"
+        ),
+        (
+            f"4 0 obj << /Length {len(stream_bytes)} >>\nstream\n".encode("latin-1")
+            + stream_bytes
+            + b"\nendstream\nendobj\n"
+        ),
+        b"5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n",
+        b"6 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> endobj\n",
+    ]
+
+    pdf = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for obj in objects:
+        offsets.append(len(pdf))
+        pdf.extend(obj)
+    xref_pos = len(pdf)
+    pdf.extend(f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n".encode("latin-1"))
+    for off in offsets[1:]:
+        pdf.extend(f"{off:010d} 00000 n \n".encode("latin-1"))
+    pdf.extend(
+        (
+            f"trailer << /Size {len(objects) + 1} /Root 1 0 R >>\n"
+            f"startxref\n{xref_pos}\n%%EOF"
+        ).encode("latin-1")
+    )
+    return bytes(pdf)
+
+
+def test_synthetic_udemy_pdf_extraction(tmp_path):
+    """Testet die vollständige Pipeline anhand einer synthetischen Udemy-PDF-Fixture."""
     from portfolio.models import TRACK_RULES
     from portfolio.services.extractor import extract_metadata
 
-    pdf_path = Path(
-        r"C:\Users\domin\.gemini\antigravity-cli\brain\267cc78e-2285-4de8-8426-fff6f7143c91\.tempmediaStorage\60853499b5dd8817.pdf"
+    pdf_path = tmp_path / "udemy_data_science_cert.pdf"
+    pdf_bytes = _build_synthetic_vector_pdf(
+        [
+            ("F1", "ZERTIFIKAT UBER DIE ERFOLGREICHE TEILNAHME", 12, 60, 700),
+            ("F2", "Data Science - Datenvorbereitung und Excel", 22, 60, 620),
+            ("F1", "Lehrkraft: Dr. Example", 11, 60, 560),
+            ("F1", "Dominik Fluechter", 14, 60, 520),
+            ("F1", "Datum: 28. Nov. 2023", 10, 60, 480),
+            ("F1", "Zertifikat-Nr.: UC-3f0ea848-5950-4fe9-ad31-7d4cb00039d3", 10, 60, 450),
+            ("F1", "Zertifikat-URL: ude.my/UC-3f0ea848-5950-4fe9-ad31-7d4cb00039d3", 10, 60, 430),
+        ]
     )
-    if not pdf_path.exists():
-        # Fallback auf Downloads-Ordner des Users
-        pdf_path = Path(
-            r"C:\Users\domin\Downloads\data-science-datenvorbereitung-und-qualitatssicherung-excel.pdf"
+    pdf_path.write_bytes(pdf_bytes)
+
+    with patch(
+        "portfolio.services.extractor.extract_via_gemini_vision"
+    ) as mock_gemini:
+        res = extract_metadata(
+            pdf_path,
+            tmp_path,
+            TRACK_RULES,
+            enable_ocr=False,
+            known_providers=["Udemy"],
         )
-    if pdf_path.exists():
-        mock_gemini_udemy = {
-            "title": "Data Science - Datenvorbereitung und Qualitätssicherung Excel",
-            "provider": "Udemy",
-            "credential_id": "UC-3fOea848-5950-4fe9-ad31-7d4cb00039d3",
-            "issued_date": "2023-11-28",
-            "extracted_text": "ZERTIFIKAT ÜBER DIE ERFOLGREICHE TEILNAHME Data Science - Datenvorbereitung und Qualitätssicherung Excel",
-            "tracks": ["data-ai"],
-        }
-        with patch(
-            "portfolio.services.extractor.extract_via_gemini_vision",
-            return_value=mock_gemini_udemy,
-        ):
-            res = extract_metadata(
-                pdf_path,
-                pdf_path.parent,
-                TRACK_RULES,
-                enable_ocr=False,
-                known_providers=["Udemy"],
-            )
-            assert res is not None
-            assert "Data Science" in res.guessed_title
-            assert res.guessed_provider == "Udemy"
-            assert res.issued_date == "2023-11-28"
-            assert res.credential_id.startswith("UC-")
+
+    assert res is not None
+    assert res.guessed_title == "Data Science - Datenvorbereitung und Excel"
+    assert res.title_confidence >= 0.85
+    assert res.guessed_provider == "Udemy"
+    assert res.issued_date == "2023-11-28"
+    assert res.credential_id == "UC-3f0ea848-5950-4fe9-ad31-7d4cb00039d3"
+    assert "data-ai" in res.guessed_track_slugs
+    mock_gemini.assert_not_called()

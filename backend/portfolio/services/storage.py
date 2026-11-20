@@ -248,6 +248,11 @@ def verify_s3_uploaded_certificate(
             "Direct-to-Storage-Uploads erfordern eine aktive S3-Konfiguration (USE_SUPABASE_S3=True)."
         )
 
+    if not storage_key.startswith("certificates/uploads/") or ".." in storage_key:
+        raise ValueError(
+            "Ungültiger storage_key: Muss mit 'certificates/uploads/' beginnen und darf keine Pfad-Traversierung ('..') enthalten."
+        )
+
     ext = Path(storage_key).suffix.lower()
     if ext not in MAGIC_BYTE_SIGNATURES:
         allowed = ", ".join(MAGIC_BYTE_SIGNATURES.keys())

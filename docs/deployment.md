@@ -1,6 +1,6 @@
 # Deployment & Operations Leitfaden
 
-Dieses Dokument beschreibt den Deployment-Prozess auf Render (Django 6.0 / >=5.2 Headless REST API & React 19 Static Site), die CI/CD-Pipeline in GitHub Actions sowie die Konfiguration von Neon Serverless PostgreSQL.
+Dieses Dokument beschreibt den Deployment-Prozess auf Render (Single-Service: Django 6.0 / >=5.2 Headless REST API & integrierte React 19 SPA Auslieferung über WhiteNoise), die CI/CD-Pipeline in GitHub Actions sowie die Konfiguration von Neon Serverless PostgreSQL.
 
 ---
 
@@ -14,20 +14,17 @@ flowchart LR
     end
 
     subgraph Neon["Neon Serverless PostgreSQL"]
-        Branch["Ephemerer CI Branch<br>(neondatabase/create-branch-action)"]
-        ProdDB[("Produktions-Datenbank")]
+        ProdDB[("Produktions-Datenbank<br>(Pooled & Direct Connection)")]
     end
 
-    subgraph Render["Render Web Service"]
+    subgraph Render["Render Web Service (Single-Service)"]
         DeployHook["Render Deploy Hook (curl)"]
-        BuildHook["backend/build.sh<br>(collectstatic & migrate)"]
-        Gunicorn["Gunicorn WSGI Server"]
+        BuildHook["backend/build.sh<br>(Frontend Build, collectstatic & migrate)"]
+        Gunicorn["Gunicorn WSGI + WhiteNoise SPA"]
     end
 
     Commit --> CI
-    CI -->|Erstellt temporären Branch| Branch
-    CI -->|Führt Pytest/Vitest/Linter aus| CI
-    CI -->|Löscht ephemeren Branch| Branch
+    CI -->|Führt Commitlint, Pytest, Vitest, Build & Integrity Checks aus| CI
     CI -->|Push auf main| DeployHook
     DeployHook --> BuildHook
     BuildHook --> Gunicorn
@@ -39,7 +36,7 @@ flowchart LR
 ## 2. Render Web Service Konfiguration
 
 ### 2.1 Konfiguration (`render.yaml`)
-Das Projekt wird über ein deklaratives Render Blueprint verwaltet, das sowohl den Backend-Web-Service als auch das statische React-Frontend umfasst:
+Das Projekt wird über ein deklaratives Render Blueprint als integrierter **Single-Service** verwaltet, bei dem Django und WhiteNoise sowohl die REST-API als auch das gebaute React-Frontend (`frontend/dist`) ausliefern:
 ```yaml
 services:
   - type: web
@@ -50,20 +47,6 @@ services:
     buildCommand: "./build.sh"
     startCommand: "uv run gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4"
     healthCheckPath: /health_check
-  - type: web
-    name: portfolio-frontend
-    runtime: static
-    autoDeployTrigger: off
-    rootDir: frontend
-    buildCommand: npm ci --include=optional --legacy-peer-deps && npm run build
-    staticPublishPath: dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        value: https://portfolio-backend.onrender.com
 ```
 
 ### 2.2 Ausführungskontext von `build.sh`
@@ -71,21 +54,20 @@ Das primäre Build-Skript liegt unter [`backend/build.sh`](../backend/build.sh).
 
 ```bash
 #!/usr/bin/env bash
-set -o errexit
+set -euo pipefail
 
 uv sync --frozen --no-dev
+uv run python manage.py check
+(cd ../frontend && npm ci --include=optional && npm run build)
 uv run python manage.py collectstatic --noinput
 
 # Für Schema-Migrationen DIRECT_DATABASE_URL priorisieren (PgBouncer-Bypass)
 if [ -n "${DIRECT_DATABASE_URL:-}" ]; then
-    echo "==> Führe Migrationen mit direkter Neon-Verbindung (DIRECT_DATABASE_URL) aus..."
     RUNNING_MIGRATION=1 uv run python manage.py migrate --noinput
 else
-    echo "==> Führe Migrationen mit Standard-Verbindung aus..."
     uv run python manage.py migrate --noinput
 fi
 
-echo "==> Synchronisiere RAG Knowledge Chunks (Initial- & Delta-Indizierung)..."
 uv run python manage.py index_rag_chunks
 ```
 
@@ -109,26 +91,22 @@ In `core/settings.py` prüft Django automatisch, ob ein Migrationsbefehl aktiv i
 
 Die Pipeline ist in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) definiert, nutzt eine `concurrency`-Gruppe (`cancel-in-progress: true`) zur Vermeidung überlappender Läufe und umfasst folgende Jobs:
 
-0. **`evaluate-commit` (Erkennung & Skip unnötiger Builds)**:
-   - Prüft die HEAD-Commit-Message bzw. den PR-Titel auf Conventional-Commit-Typen (`docs:` oder `style:`, optional mit Scope z. B. `docs(readme):` oder `style(css):`).
-   - Wenn der Commit ausschließlich Dokumentation oder Code-Formatting/Styles betrifft, setzt der Job `skip_build_and_deploy=true`.
-   - Dadurch werden nachfolgend der Produktions-Artefakt-Build (`backend-build`) und das automatische Server-Deployment (`deploy`) übersprungen.
-   - Tests und Linter (`backend-lint-test`, `frontend-lint-test`) laufen dennoch, um Format- und Qualitätskriterien sicherzustellen.
-1. **`backend-lint-test`**:
-   - Startet einen pro Run eindeutigen ephemeren Neon DB-Branch (`ci-${{ github.run_id }}-${{ github.run_attempt }}`) via `neondatabase/create-branch-action@v5`, damit parallele Läufe sich niemals gegenseitig den Test-Branch löschen.
-   - Nutzt die direkte Neon-Compute-Verbindung (`steps.create-branch.outputs.db_url`) für `pytest`, um PgBouncer-Locks bei `CREATE DATABASE` und Schema-Migrationen (inkl. `pgvector` HNSW-Index) auszuschließen.
-   - Führt Ruff Linter (`check`), Ruff Formatter Check (`format --diff`), Mypy und Pytest mit Coverage ($\ge 95\%$, 314 Tests) aus.
-   - Bereinigt den eindeutigen Neon-Branch nach Testende (`always()`).
-2. **`frontend-lint-test`**:
-   - Führt `npm ci`, Oxlint, Vitest (117 Tests in 22 Dateien) und `npm run build` aus.
-3. **`backend-build` (Produktions-Artefakt-Verifikation)**:
-   - Läuft nur, wenn `evaluate-commit.outputs.skip_build_and_deploy != 'true'`.
-   - Validiert, dass Python 3.13 und Abhängigkeiten mit `uv` fehlerfrei auflösen.
-   - Führt `python manage.py check`, `python manage.py makemigrations --check --dry-run` und `python manage.py collectstatic` im Produktionsmodus (`DEBUG=False`) durch.
-   - **Wichtig**: Benötigt `defaults: run: working-directory: backend`.
-4. **`deploy` (Zero-Downtime Server-Deployment)**:
-   - Läuft nur bei erfolgreichem Push auf `main` und wenn `evaluate-commit.outputs.skip_build_and_deploy != 'true'`.
-   - Triggert den Render Deploy Hook via `curl` mit Retry-Logik.
+1. **`commitlint` (Conventional Commits Linter)**:
+   - Prüft alle Commits eines Pushes oder Pull Requests mit `wagoid/commitlint-github-action@v6` gegen die Regeln in [`.commitlintrc.json`](../.commitlintrc.json).
+2. **`backend-ci` (Python, Lint, Types, Docs & Pytest)**:
+   - Richtet Python 3.13 und `uv` mit Dependency-Caching (`backend/uv.lock`) ein.
+   - Führt Ruff Linter (`ruff check .`), Ruff Formatter Check (`ruff format --check .`), Mypy (`mypy .`) sowie die Dokumentations-Integritätsprüfung (`scripts/verify_markdown_integrity.py`) aus.
+   - Führt die Backend-Testsuite (`pytest --cov=core --cov=portfolio --cov-fail-under=95`, 314+ Tests) aus und lädt JUnit- sowie Cobertura-XML-Testberichte als Artefakte hoch.
+3. **`frontend-ci` (TypeScript, Lint, Vitest & Build)**:
+   - Führt auf Node.js 22 LTS `npm ci`, Oxlint (`npm run lint`), Vitest (117 Tests in 22 Dateien) und `npm run build` aus.
+   - Stellt das kompilierte `frontend/dist/`-Verzeichnis als Artefakt (`frontend-dist`) für die nachfolgende Backend-Build-Verifikation bereit.
+4. **`backend-build` (Produktions-Artefakt-Verifikation)**:
+   - Lädt das gebaute `frontend/dist/`-Artefakt und installiert die reinen Produktionsabhängigkeiten (`uv sync --frozen --no-dev`).
+   - Führt `python manage.py check --deploy`, `python manage.py makemigrations --check --dry-run` und `python manage.py collectstatic --noinput` im Produktionsmodus (`DEBUG=False`) durch.
+   - **Wichtig**: Nutzt `defaults: run: working-directory: backend`.
+5. **`deploy` (Zero-Downtime Server-Deployment)**:
+   - Läuft nur bei erfolgreichem Push auf `main` nach bestandenem `backend-build`.
+   - Triggert den Render Deploy Hook (`RENDER_DEPLOY_HOOK_URL`) via `curl` mit automatischer Retry-Logik.
    - In [`render.yaml`](../render.yaml) sind `autoDeployTrigger: off` und `buildFilter` (ignoriert `*.md`, `docs/**`) hinterlegt, sodass Render nicht bei jedem Git-Push unkoordiniert neu baut, sondern strikt dem GitHub Actions Freigabe-Signal folgt.
 
 ### 3.1 Code Ownership & PR-Governance (`.github/CODEOWNERS`)
@@ -184,10 +162,10 @@ npx --no -- commitlint --edit "$1"
 ```
 Verstößt eine Commit-Nachricht gegen die Konvention (z. B. Großschreibung im Subject, falscher Scope-Casing oder ungültiger Typ), wird der Commit lokal mit einer präzisen Fehlermeldung abgelehnt, bevor er in den Git-Verlauf gelangt.
 
-#### Synergie mit der CI/CD-Pipeline (`evaluate-commit`)
-Die strikte Einhaltung der Conventional Commits ermöglicht in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) intelligente Skip-Entscheidungen:
-- **`docs(...)` & `style(...)`**: Der teure Server-Build (`backend-build`) und das Deployment (`deploy`) werden automatisch übersprungen.
-- **`feat(...)`, `fix(...)` & `enh(...)`**: Führen den vollständigen Test- und Deployment-Zyklus aus.
+#### Synergie mit Render `buildFilter`
+Die strikte Trennung von Dokumentations- und Code-Commits harmoniert mit dem `buildFilter` in [`render.yaml`](../render.yaml):
+- Reine Änderungen an `docs/**` oder `README.md` werden vom Render-Build-Filter ignoriert.
+- Code-Commits in `backend/**` und `frontend/**` durchlaufen den vollständigen Test- und Deployment-Zyklus.
 
 ---
 
@@ -195,12 +173,13 @@ Die strikte Einhaltung der Conventional Commits ermöglicht in [`.github/workflo
 
 | Variable | Scope | Zweck |
 |---|---|---|
-| `NEON_PROJECT_ID` | GitHub Actions Secret | ID des Neon-Projekts für ephemere Test-Branches |
-| `NEON_API_KEY` | GitHub Actions Secret | API-Key für Neon Management CLI (`neonctl`) |
 | `RENDER_DEPLOY_HOOK_URL` | GitHub Actions Secret | Webhook-URL zum Starten des Render-Deployments |
 | `DATABASE_URL` | Render Environment | Gepoolter Connection-String (`-pooler`) für Gunicorn |
 | `DIRECT_DATABASE_URL` | Render Environment | Direkter Connection-String (ohne `-pooler`) für Schema-Migrationen |
 | `SECRET_KEY` | Render Environment | Django Secret Key |
+| `DJANGO_ALLOWED_HOSTS` | Render Environment | Kommagetrennte Liste erlaubter Hostnamen (`dfluechter.ipv64.de,dfluechter.onrender.com,...`) |
+| `CORS_ALLOWED_ORIGINS` | Render Environment | Erlaubte CORS-Origins (`https://dfluechter.ipv64.de,https://dfluechter.onrender.com`) |
+| `CSRF_TRUSTED_ORIGINS` | Render Environment | Vertrauenswürdige CSRF-Origins (`https://dfluechter.ipv64.de,https://dfluechter.onrender.com`) |
 | `USE_SUPABASE_S3` | Render Environment | `True` aktiviert den S3-Storage via `django-storages` |
 | `AWS_ACCESS_KEY_ID` | Render Environment | Supabase S3 Access Key ID |
 | `AWS_SECRET_ACCESS_KEY` | Render Environment | Supabase S3 Secret Access Key |
@@ -209,8 +188,11 @@ Die strikte Einhaltung der Conventional Commits ermöglicht in [`.github/workflo
 | `AWS_S3_REGION_NAME` | Render Environment | Region (z. B. `eu-central-1`) |
 | `AWS_S3_PUBLIC_BUCKET` | Render Environment | `True` für dauerhafte Direkt-URLs, `False` für signierte URLs |
 | `SUPABASE_PUBLIC_MEDIA_URL` | Render Environment | Öffentliche CDN-Basis-URL des Buckets |
-| `GEMINI_API_KEY` | Render Environment | API-Key für Google Gemini 3.8 Flash (RAG Portfolio-Copilot & multimodale OCR) |
-| `VITE_API_URL` | Render Frontend | Basis-URL des Backend-Webservices (z. B. `https://portfolio-backend.onrender.com`) |
+| `GEMINI_API_KEY` | Render Environment | API-Key für Google Gemini (RAG Portfolio-Copilot & multimodale OCR) |
+| `GEMINI_MODEL` | Render Environment | Konfiguriertes Gemini-Modell (Standard: `gemini-2.5-flash`) |
+| `GEMINI_EMBEDDING_MODEL` | Render Environment | Konfiguriertes Embedding-Modell (Standard: `gemini-embedding-001`) |
+| `GEMINI_DAILY_TOKEN_LIMIT` | Render Environment | Tägliches Token-Budget für den Zero-Cost Circuit-Breaker (`50000`) |
+| `GEMINI_DAILY_REQUEST_LIMIT` | Render Environment | Tägliches Request-Limit für KI-Aufrufe (`100`) |
 
 ---
 
@@ -222,7 +204,8 @@ Da der Browser beim Direct-to-Storage Upload (User Story 10.1) Binärdateien dir
 [
   {
     "AllowedOrigins": [
-      "https://portfolio.onrender.com",
+      "https://dfluechter.ipv64.de",
+      "https://dfluechter.onrender.com",
       "http://localhost:3000",
       "http://localhost:5173"
     ],
@@ -235,3 +218,33 @@ Da der Browser beim Direct-to-Storage Upload (User Story 10.1) Binärdateien dir
 ```
 
 Diese Konfiguration kann über das Supabase Dashboard (Storage $\rightarrow$ Bucket Configuration $\rightarrow$ CORS Policies) oder über die AWS/S3-kompatible API hinterlegt werden.
+
+---
+
+## 6. Lokales OCR-Setup (Tesseract & PDF-Rendering)
+
+Für die lokale Stufe-2-OCR-Extraktion von gescannten Zertifikaten (`.png`, `.jpg` sowie bildbasierte PDFs) wird **Tesseract OCR** inklusive deutschem Sprachpaket (`deu`) benötigt:
+
+1. **Installation unter Windows (`winget`):**
+
+   ```powershell
+   winget install --id UB-Mannheim.TesseractOCR -e
+   ```
+
+   Im Setup unter *Additional language data* das Paket **German (`deu`)** auswählen (alternativ `deu.traineddata` nach `C:\Program Files\Tesseract-OCR\tessdata\` kopieren).
+
+2. **Umgebungsvariablen (optional bei abweichendem Pfad):**
+
+   ```env
+   TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
+   TESSDATA_PREFIX=C:\Program Files\Tesseract-OCR\tessdata
+   ```
+
+   Für bildbasierte PDFs ohne eingebetteten Textlayer wird bevorzugt `PyMuPDF` (`fitz`) oder alternativ Poppler (`pdftoppm`, konfigurierbar über `POPPLER_PATH`) genutzt.
+
+3. **Health-Check & Read-Only-Evaluation:**
+
+   ```powershell
+   python manage.py check_ocr
+   python manage.py evaluate_ocr --limit 25
+   ```

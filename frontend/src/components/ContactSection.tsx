@@ -25,26 +25,50 @@ export const ContactSection: React.FC = () => {
   const [honeypot, setHoneypot] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
+    email?: string;
+    message?: string;
+  }>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setFieldErrors({});
 
     const trimmedName = name.trim();
     const trimmedEmail = senderEmail.trim();
     const trimmedMessage = message.trim();
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (
-      trimmedName.length < 2 ||
-      !emailRegex.test(trimmedEmail) ||
-      trimmedMessage.length < 10
-    ) {
+    const nextFieldErrors: { name?: string; email?: string; message?: string } = {};
+
+    if (trimmedName.length < 2) {
+      nextFieldErrors.name = t(
+        'contact.nameError',
+        'Bitte geben Sie Ihren Namen ein (mind. 2 Zeichen).'
+      );
+    }
+    if (!emailRegex.test(trimmedEmail)) {
+      nextFieldErrors.email = t(
+        'contact.emailError',
+        'Bitte geben Sie eine gültige E-Mail-Adresse ein.'
+      );
+    }
+    if (trimmedMessage.length < 10) {
+      nextFieldErrors.message = t(
+        'contact.messageError',
+        'Bitte geben Sie eine Nachricht mit mindestens 10 Zeichen ein.'
+      );
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
       setFormError(
         t(
           'contact.validationError',
-          'Bitte füllen Sie Ihre Name, Ihre Email Adresse und eine Nachricht (mind. 10 Zeichen) aus.'
+          'Bitte füllen Sie Ihren Namen, eine gültige E-Mail und Ihre Nachricht aus.'
         )
       );
       return;
@@ -64,7 +88,12 @@ export const ContactSection: React.FC = () => {
       setSenderEmail('');
       setMessage('');
     } catch {
-      setIsSubmitted(true);
+      setFormError(
+        t(
+          'contact.submitError',
+          'Die Nachricht konnte nicht gesendet werden. Bitte prüfen Sie Ihre Verbindung oder versuchen Sie es erneut.'
+        )
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -254,7 +283,7 @@ export const ContactSection: React.FC = () => {
           </div>
 
           {/* Right Column: Interactive Formmailer ('Ihre Name', 'Ihre Email Adresse', 'Nachricht') */}
-          <div className="lg:col-span-7 rounded-2xl bg-white dark:bg-slate-900/75 border border-slate-200/90 dark:border-slate-800/90 overflow-hidden shadow-sm">
+          <div className="lg:col-span-7 rounded-2xl bg-white dark:bg-slate-900/75 border border-slate-200/90 dark:border-slate-800/90 overflow-hidden shadow-sm surface-refraction">
             {/* Formmailer Header Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-5 bg-slate-50/80 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800/80">
               <div className="flex items-center gap-3.5">
@@ -278,7 +307,7 @@ export const ContactSection: React.FC = () => {
                 <div
                   role="status"
                   aria-live="polite"
-                  className="py-10 px-6 text-center rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-4"
+                  className="py-10 px-6 text-center rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-4 surface-refraction"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
@@ -298,7 +327,7 @@ export const ContactSection: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsSubmitted(false)}
-                      className="inline-flex items-center gap-2 min-h-[40px] px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      className="inline-flex items-center gap-2 min-h-[40px] px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 active:scale-[0.98] active:translate-y-[1px] transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     >
                       <span>
                         {t('contact.sendAnother', 'Weitere Nachricht verfassen')}
@@ -332,34 +361,53 @@ export const ContactSection: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Field 1: Ihre Name */}
-                  <div>
+                  {/* Field 1: Ihr Name (Rule 6: Label above, gap-2, error below) */}
+                  <div className="flex flex-col gap-2">
                     <label
                       htmlFor="contact-name"
-                      className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                      className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
                     >
-                      {t('contact.nameLabel', 'Ihre Name')} <span className="text-indigo-500">*</span>
+                      {t('contact.nameLabel', 'Ihr Name')} <span className="text-indigo-500">*</span>
                     </label>
                     <input
                       id="contact-name"
                       name="name"
                       type="text"
                       required
+                      aria-invalid={Boolean(fieldErrors.name)}
+                      aria-describedby={fieldErrors.name ? 'contact-name-error' : undefined}
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder={t('contact.namePlaceholder', 'Ihre Name')}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        if (fieldErrors.name) {
+                          setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                        }
+                      }}
+                      placeholder={t('contact.namePlaceholder', 'Ihr Name')}
                       disabled={isSubmitting}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/90 border border-slate-200/90 dark:border-slate-800 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors"
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/90 border text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 transition-colors ${
+                        fieldErrors.name
+                          ? 'border-rose-500/70 focus:ring-rose-500/30 focus:border-rose-500'
+                          : 'border-slate-200/90 dark:border-slate-800 focus:ring-indigo-500/30 focus:border-indigo-500'
+                      }`}
                     />
+                    {fieldErrors.name && (
+                      <p
+                        id="contact-name-error"
+                        className="text-xs text-rose-600 dark:text-rose-400 font-medium"
+                      >
+                        {fieldErrors.name}
+                      </p>
+                    )}
                   </div>
 
-                  {/* Field 2: Ihre Email Adresse */}
-                  <div>
+                  {/* Field 2: Ihre E-Mail-Adresse */}
+                  <div className="flex flex-col gap-2">
                     <label
                       htmlFor="contact-email"
-                      className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                      className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
                     >
-                      {t('contact.emailLabel', 'Ihre Email Adresse')}{' '}
+                      {t('contact.emailLabel', 'Ihre E-Mail-Adresse')}{' '}
                       <span className="text-indigo-500">*</span>
                     </label>
                     <input
@@ -367,17 +415,36 @@ export const ContactSection: React.FC = () => {
                       name="email"
                       type="email"
                       required
+                      aria-invalid={Boolean(fieldErrors.email)}
+                      aria-describedby={fieldErrors.email ? 'contact-email-error' : undefined}
                       value={senderEmail}
-                      onChange={(e) => setSenderEmail(e.target.value)}
-                      placeholder={t('contact.emailPlaceholder', 'Ihre Email Adresse')}
+                      onChange={(e) => {
+                        setSenderEmail(e.target.value);
+                        if (fieldErrors.email) {
+                          setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                        }
+                      }}
+                      placeholder={t('contact.emailPlaceholder', 'Ihre E-Mail-Adresse')}
                       disabled={isSubmitting}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/90 border border-slate-200/90 dark:border-slate-800 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors"
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/90 border text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 transition-colors ${
+                        fieldErrors.email
+                          ? 'border-rose-500/70 focus:ring-rose-500/30 focus:border-rose-500'
+                          : 'border-slate-200/90 dark:border-slate-800 focus:ring-indigo-500/30 focus:border-indigo-500'
+                      }`}
                     />
+                    {fieldErrors.email && (
+                      <p
+                        id="contact-email-error"
+                        className="text-xs text-rose-600 dark:text-rose-400 font-medium"
+                      >
+                        {fieldErrors.email}
+                      </p>
+                    )}
                   </div>
 
                   {/* Field 3: Nachricht */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
                       <label
                         htmlFor="contact-message"
                         className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
@@ -395,12 +462,31 @@ export const ContactSection: React.FC = () => {
                       rows={5}
                       maxLength={2000}
                       required
+                      aria-invalid={Boolean(fieldErrors.message)}
+                      aria-describedby={fieldErrors.message ? 'contact-message-error' : undefined}
                       value={message}
-                      onChange={(e) => setMessage(e.target.value)}
+                      onChange={(e) => {
+                        setMessage(e.target.value);
+                        if (fieldErrors.message) {
+                          setFieldErrors((prev) => ({ ...prev, message: undefined }));
+                        }
+                      }}
                       placeholder={t('contact.messagePlaceholder', 'Ihre Nachricht...')}
                       disabled={isSubmitting}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/90 border border-slate-200/90 dark:border-slate-800 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors resize-y"
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/90 border text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 transition-colors resize-y ${
+                        fieldErrors.message
+                          ? 'border-rose-500/70 focus:ring-rose-500/30 focus:border-rose-500'
+                          : 'border-slate-200/90 dark:border-slate-800 focus:ring-indigo-500/30 focus:border-indigo-500'
+                      }`}
                     />
+                    {fieldErrors.message && (
+                      <p
+                        id="contact-message-error"
+                        className="text-xs text-rose-600 dark:text-rose-400 font-medium"
+                      >
+                        {fieldErrors.message}
+                      </p>
+                    )}
                   </div>
 
                   <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-200/70 dark:border-slate-800/80">
@@ -411,7 +497,7 @@ export const ContactSection: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/20 disabled:opacity-50 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] active:translate-y-[1px] text-white shadow-sm shadow-indigo-600/20 disabled:opacity-50 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     >
                       {isSubmitting ? (
                         <>
