@@ -160,7 +160,6 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
     }
   };
 
-<<<<<<< HEAD
   const handleReject = async (item: PendingCertificate) => {
     if (!window.confirm(t('inbox.confirmRejectSingle', { fileName: item.original_file_name }))) {
       return;
@@ -183,34 +182,6 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
         text: detail,
       });
     }
-=======
-  const handleReject = (item: PendingCertificate) => {
-    setConfirmState({
-      title: 'Zertifikat ablehnen',
-      message: `Möchtest du "${item.original_file_name}" wirklich ablehnen?`,
-      confirmText: 'Ja, ablehnen',
-      onConfirm: async () => {
-        try {
-          await rejectMutation.mutateAsync(item.id);
-          onNotify({
-            type: 'success',
-            text: `"${item.original_file_name}" wurde abgelehnt.`,
-          });
-          if (selectedPending?.id === item.id) {
-            setSelectedPending(null);
-          }
-          setSelectedIds((prev) => prev.filter((id) => id !== item.id));
-        } catch {
-          onNotify({
-            type: 'error',
-            text: 'Fehler beim Ablehnen des Zertifikats.',
-          });
-        } finally {
-          setConfirmState(null);
-        }
-      },
-    });
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
   };
 
   // Multi-Select Handler
@@ -231,74 +202,6 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
     }
   };
 
-<<<<<<< HEAD
-=======
-  const handleBulkApprove = async () => {
-    if (selectedIds.length === 0) return;
-
-    try {
-      const res = await bulkApproveMutation.mutateAsync({
-        ids: selectedIds,
-        track_ids: bulkTrackIds.length > 0 ? bulkTrackIds : undefined,
-      });
-
-      if (res.approved_count > 0 && res.failed_count === 0) {
-        onNotify({
-          type: 'success',
-          text: `${res.approved_count} Zertifikat(e) erfolgreich freigegeben und übertragen.`,
-        });
-      } else if (res.approved_count > 0 && res.failed_count > 0) {
-        onNotify({
-          type: 'success',
-          text: `${res.approved_count} erfolgreich freigegeben, ${res.failed_count} fehlgeschlagen.`,
-        });
-      } else {
-        const errorDetails = res.errors.map((e) => e.error).join(', ');
-        onNotify({
-          type: 'error',
-          text: `Keine Zertifikate freigegeben: ${errorDetails}`,
-        });
-      }
-
-      setSelectedIds([]);
-      setBulkTrackIds([]);
-      setShowBulkTrackPicker(false);
-    } catch {
-      onNotify({
-        type: 'error',
-        text: 'Fehler bei der Massenfreigabe der Zertifikate.',
-      });
-    }
-  };
-
-  const handleBulkReject = () => {
-    if (selectedIds.length === 0) return;
-    setConfirmState({
-      title: 'Ausgewählte Zertifikate ablehnen',
-      message: `Möchtest du die ${selectedIds.length} ausgewählten Zertifikate wirklich ablehnen?`,
-      confirmText: 'Ja, ablehnen',
-      onConfirm: async () => {
-        try {
-          const res = await bulkRejectMutation.mutateAsync(selectedIds);
-          onNotify({
-            type: 'success',
-            text: `${res.rejected_count} Zertifikat(e) abgelehnt.`,
-          });
-          setSelectedIds([]);
-          setShowBulkTrackPicker(false);
-        } catch {
-          onNotify({
-            type: 'error',
-            text: 'Fehler bei der Massenablehnung der Zertifikate.',
-          });
-        } finally {
-          setConfirmState(null);
-        }
-      },
-    });
-  };
-
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
   const pendingOnly = pendingList.filter((item) => item.status === 'pending');
   const filteredList = pendingOnly.filter((item) => {
     const q = searchTerm.toLowerCase();
@@ -449,15 +352,10 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
                 title={t('inbox.showFileTitle')}
               >
                 <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-<<<<<<< HEAD
                 {t('inbox.showFileWithExt', {
                   ext: selectedPending.original_file_name.split('.').pop()?.toUpperCase() || 'FILE',
                 })}
               </a>
-=======
-                Show File ({selectedPending.original_file_name.split('.').pop()?.toUpperCase()})
-              </button>
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
               <button
                 type="button"
                 onClick={handleCancelReview}
@@ -522,11 +420,10 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
                           setEditTrackIds([...editTrackIds, tItem.id]);
                         }
                       }}
-                      className={`cursor-pointer px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-                        isChecked
+                      className={`cursor-pointer px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isChecked
                           ? 'bg-indigo-600/30 border-indigo-500 text-indigo-300'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                      }`}
+                        }`}
                     >
                       {tItem.name}
                     </button>
@@ -582,14 +479,14 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
               className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
             >
               {filteredList.length > 0 &&
-              filteredList.every((item) => selectedIds.includes(item.id)) ? (
+                filteredList.every((item) => selectedIds.includes(item.id)) ? (
                 <CheckSquare className="w-4 h-4 text-indigo-400" aria-hidden="true" />
               ) : (
                 <Square className="w-4 h-4 text-slate-600" aria-hidden="true" />
               )}
               <span>
                 {filteredList.length > 0 &&
-                filteredList.every((item) => selectedIds.includes(item.id))
+                  filteredList.every((item) => selectedIds.includes(item.id))
                   ? t('inbox.deselectAll')
                   : t('inbox.selectAll')}
               </span>
@@ -608,11 +505,10 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
             {filteredList.map((item) => (
               <div
                 key={item.id}
-                className={`bg-slate-900/75 border p-4 sm:px-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${
-                  selectedIds.includes(item.id)
+                className={`bg-slate-900/75 border p-4 sm:px-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${selectedIds.includes(item.id)
                     ? 'border-indigo-500/50 bg-indigo-950/15'
                     : 'border-slate-800/90 hover:border-slate-700'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3.5">
                   <input
@@ -663,13 +559,8 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
                     title={t('inbox.showFileTitle')}
                   >
                     <FileText className="w-3.5 h-3.5" aria-hidden="true" />
-<<<<<<< HEAD
                     {t('inbox.showFile')}
                   </a>
-=======
-                    Show File
-                  </button>
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
                   <button
                     type="button"
                     onClick={() => handleStartReview(item)}
@@ -748,11 +639,10 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
                               isChecked ? prev.filter((id) => id !== tItem.id) : [...prev, tItem.id]
                             );
                           }}
-                          className={`cursor-pointer px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
-                            isChecked
+                          className={`cursor-pointer px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${isChecked
                               ? 'bg-indigo-600/30 border-indigo-500 text-indigo-300'
                               : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                          }`}
+                            }`}
                         >
                           {tItem.name}
                         </button>

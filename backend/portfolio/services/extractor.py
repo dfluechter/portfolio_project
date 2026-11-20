@@ -453,14 +453,10 @@ def _extract_from_pdf_detailed(
             len(extracted_text) >= 100 and len(words) >= 10 and has_certificate_keywords
         ) or (len(extracted_text) >= 160 and len(words) >= 20)
 
-<<<<<<< HEAD
         # Wenn echter Textlayer ausreichend ist (oder >= 60 Zeichen und >= 8 Wörter bei deaktiviertem OCR)
         if is_sufficient or (
             len(extracted_text) >= 60 and len(words) >= 8 and not enable_ocr
         ):
-=======
-        if is_sufficient or (len(extracted_text) >= 60 and len(words) >= 8 and not enable_ocr):
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
             ocr_pending = False
         elif enable_ocr:
             ocr_texts: list[str] = []

@@ -1316,17 +1316,10 @@ class ContactMessageView(APIView):
             )
             return Response(
                 {
-<<<<<<< HEAD
                     "detail": "Nachricht wurde erfasst (Mail-Relay im Offline-Modus).",
                     "status": "queued",
                 },
                 status=status.HTTP_200_OK,
-=======
-                    "detail": "Der E-Mail-Versand ist vorübergehend nicht erreichbar. Bitte versuche es später erneut.",
-                    "status": "error",
-                },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
             )
 
         return Response(

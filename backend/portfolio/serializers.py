@@ -189,13 +189,7 @@ class TrackSerializer(serializers.ModelSerializer):
 class PendingCertificateSerializer(serializers.ModelSerializer):
     """Inbox-Übersicht - kein file_path, kein extracted_text."""
 
-<<<<<<< HEAD
     suggested_tracks = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-=======
-    suggested_tracks = serializers.PrimaryKeyRelatedField(
-        many=True, read_only=True
-    )
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
 
     class Meta:
         model = PendingCertificate
@@ -215,13 +209,7 @@ class PendingCertificateSerializer(serializers.ModelSerializer):
 class PendingCertificateDetailSerializer(serializers.ModelSerializer):
     """Erweiterte Felder nur für authentifizierte Staff-Nutzer (Dashboard-Prüfung)."""
 
-<<<<<<< HEAD
     suggested_tracks = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-=======
-    suggested_tracks = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Track.objects.all(), required=False
-    )
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
 
     class Meta:
         model = PendingCertificate
