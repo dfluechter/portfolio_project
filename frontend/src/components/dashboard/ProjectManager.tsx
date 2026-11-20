@@ -113,6 +113,28 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
     }
   };
 
+  const toSafeImageSrc = (value: string | null): string | null => {
+    if (!value) return null;
+    const trimmed = value.trim();
+
+    // Allow local/root-relative media paths and browser-generated blob previews.
+    if (trimmed.startsWith('/') || trimmed.startsWith('blob:')) {
+      return trimmed;
+    }
+
+    // Allow only http(s) absolute URLs.
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return trimmed;
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -298,7 +320,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ onNotify }) => {
             {imagePreview ? (
               <div className="relative mb-2.5 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 p-2.5 flex items-center gap-3">
                 <img
-                  src={imagePreview}
+                  src={toSafeImageSrc(imagePreview) ?? ''}
                   alt="Vorschau"
                   className="w-16 h-16 object-cover rounded-lg border border-slate-800"
                 />
