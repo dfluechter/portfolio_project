@@ -89,8 +89,14 @@ class TestRegularUserWriteAccess:
         skill = Skill.objects.create(name="StaffOnly")
         url = reverse("skill-detail", kwargs={"pk": skill.pk})
 
-        assert auth_client.put(url, {"name": "X"}, format="json").status_code == status.HTTP_403_FORBIDDEN
-        assert auth_client.patch(url, {"name": "X"}, format="json").status_code == status.HTTP_403_FORBIDDEN
+        assert (
+            auth_client.put(url, {"name": "X"}, format="json").status_code
+            == status.HTTP_403_FORBIDDEN
+        )
+        assert (
+            auth_client.patch(url, {"name": "X"}, format="json").status_code
+            == status.HTTP_403_FORBIDDEN
+        )
         assert auth_client.delete(url).status_code == status.HTTP_403_FORBIDDEN
 
         skill.refresh_from_db()

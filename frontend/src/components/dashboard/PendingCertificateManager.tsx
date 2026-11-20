@@ -27,7 +27,6 @@ import {
 } from '../../hooks/usePortfolio';
 import { apiClient } from '../../api/client';
 import type { PendingCertificate } from '../../types';
-import { ConfirmModal } from './ConfirmModal';
 
 interface PendingCertificateManagerProps {
   onNotify: (msg: { type: 'success' | 'error'; text: string }) => void;
@@ -90,12 +89,6 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
   const [editTitle, setEditTitle] = useState('');
   const [editProvider, setEditProvider] = useState('');
   const [editTrackIds, setEditTrackIds] = useState<number[]>([]);
-  const [confirmState, setConfirmState] = useState<{
-    title: string;
-    message: string;
-    confirmText: string;
-    onConfirm: () => Promise<void>;
-  } | null>(null);
 
   const handleShowFile = async (id: number) => {
     try {
@@ -117,11 +110,7 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
     setSelectedPending(item);
     setEditTitle(item.guessed_title || item.original_file_name.replace(/\.[^/.]+$/, ''));
     setEditProvider(item.guessed_provider || (providers[0]?.provider ?? ''));
-<<<<<<< HEAD
-    setEditTrackIds(item.suggested_tracks && item.suggested_tracks.length > 0 ? item.suggested_tracks : []);
-=======
     setEditTrackIds(item.suggested_tracks ?? []);
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
   };
 
   const handleCancelReview = () => {
@@ -355,7 +344,7 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
                 {t('inbox.showFileWithExt', {
                   ext: selectedPending.original_file_name.split('.').pop()?.toUpperCase() || 'FILE',
                 })}
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={handleCancelReview}
@@ -560,7 +549,7 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
                   >
                     <FileText className="w-3.5 h-3.5" aria-hidden="true" />
                     {t('inbox.showFile')}
-                  </a>
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleStartReview(item)}
@@ -698,19 +687,6 @@ export const PendingCertificateManager: React.FC<PendingCertificateManagerProps>
           </div>
         </div>
       )}
-
-      <ConfirmModal
-        isOpen={Boolean(confirmState)}
-        title={confirmState?.title ?? ''}
-        message={confirmState?.message ?? ''}
-        confirmText={confirmState?.confirmText ?? 'Bestätigen'}
-        cancelText="Abbrechen"
-        isDestructive
-        onConfirm={() => {
-          void confirmState?.onConfirm();
-        }}
-        onCancel={() => setConfirmState(null)}
-      />
     </div>
   );
 };

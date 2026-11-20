@@ -279,9 +279,6 @@ describe('PendingCertificateManager Component', () => {
       'Möchtest du die 2 ausgewählten Zertifikate wirklich ablehnen?'
     );
 
-    const confirmBtn = screen.getByRole('button', { name: /Ja, ablehnen/i });
-    fireEvent.click(confirmBtn);
-
     await waitFor(() => {
       expect(mockBulkRejectMutateAsync).toHaveBeenCalledWith([1, 2]);
       expect(onNotify).toHaveBeenCalledWith({

@@ -126,10 +126,10 @@ class Command(BaseCommand):
         self.stdout.write(f"Geprüfte Dateien  : {total}")
         self.stdout.write(
             f"Titel erkannt     : {with_title}/{total} "
-            f"({(with_title / total * 100):.1f}%)" if total else "Titel erkannt: 0/0"
+            f"({(with_title / total * 100):.1f}%)"
+            if total
+            else "Titel erkannt: 0/0"
         )
-        self.stdout.write(
-            f"Hohe Confidence   : {high_conf}/{total} (>= 80%)"
-        )
+        self.stdout.write(f"Hohe Confidence   : {high_conf}/{total} (>= 80%)")
         self.stdout.write(f"OCR ausstehend    : {ocr_pending_count}/{total}")
         self.stdout.write(f"DB-Referenz Match : {db_matched}/{total}")

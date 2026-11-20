@@ -41,7 +41,9 @@ class TestAIChatThrottlingAndCaching:
                 "ai_chat_global": "500/day",
             },
         }
-        monkeypatch.setitem(AIChatBurstThrottle.THROTTLE_RATES, "ai_chat_burst", "2/min")
+        monkeypatch.setitem(
+            AIChatBurstThrottle.THROTTLE_RATES, "ai_chat_burst", "2/min"
+        )
         monkeypatch.setitem(
             AIChatSustainedThrottle.THROTTLE_RATES, "ai_chat_sustained", "50/day"
         )

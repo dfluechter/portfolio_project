@@ -319,7 +319,10 @@ def guess_provider(
         return "LinkedIn Learning"
     if re.search(r"(?i)\blearn\.microsoft\.com\b|\bmicrosoft\s+certified\b", text):
         return "Microsoft"
-    if re.search(r"(?i)\baws\.amazon\.com\b|\baws\s+training\s+and\s+certification\b|\baws\s+certified\b", text):
+    if re.search(
+        r"(?i)\baws\.amazon\.com\b|\baws\s+training\s+and\s+certification\b|\baws\s+certified\b",
+        text,
+    ):
         return "AWS"
     if re.search(r"(?i)\bcredly\.com\b", text):
         return "Credly"
@@ -668,7 +671,9 @@ def extract_via_gemini_vision(
         )
         return None
 
-    gemini_model: str = str(model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash")
+    gemini_model: str = str(
+        model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash"
+    )
 
     try:
         from google import genai

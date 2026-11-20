@@ -75,15 +75,21 @@ BOILERPLATE_PHRASE_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"(?i)^course\s+completed\s+(?:by|on)\b.*$"),
     re.compile(r"(?i)^learning\s+path\s+completed\b.*$"),
     re.compile(r"(?i)^kurs\s+abgeschlossen\b.*$"),
-    re.compile(r"(?i)^has\s+(?:successfully\s+)?completed(?:\s+the\s+(?:course|program|specialization|requirements))?\.?$"),
-    re.compile(r"(?i)^hat\s+(?:erfolgreich\s+)?(?:am\s+kurs|an\s+(?:der|dem)\s+\w+)?\s*teilgenommen\.?$"),
+    re.compile(
+        r"(?i)^has\s+(?:successfully\s+)?completed(?:\s+the\s+(?:course|program|specialization|requirements))?\.?$"
+    ),
+    re.compile(
+        r"(?i)^hat\s+(?:erfolgreich\s+)?(?:am\s+kurs|an\s+(?:der|dem)\s+\w+)?\s*teilgenommen\.?$"
+    ),
     re.compile(r"(?i)^an\s+online\s+(?:non-credit\s+)?course\s+authorized\s+by\b.*$"),
     re.compile(r"(?i)^(?:authorized|offered|presented|issued)\s+by\b.*$"),
     re.compile(r"(?i)^training\s+and\s+certification$"),
     re.compile(r"(?i)^verify\s+(?:at|authenticity)\b.*$"),
     re.compile(r"(?i)^verifizieren\s+(?:sie\s+)?unter\b.*$"),
     re.compile(r"(?i)^signed\s+by\b.*$"),
-    re.compile(r"(?i)^(?:unterschrift|signature|geschäftsführung|direktor|instructor|lehrkraft|dozent)\b.*$"),
+    re.compile(
+        r"(?i)^(?:unterschrift|signature|geschäftsführung|direktor|instructor|lehrkraft|dozent)\b.*$"
+    ),
 )
 
 # Label-Zeilen, die Metadaten statt Kurstitel enthalten
@@ -375,7 +381,11 @@ def extract_pdf_layout_lines(
             try:
                 tx = float(tm[4]) if tm and len(tm) >= 6 else 0.0
                 ty = float(tm[5]) if tm and len(tm) >= 6 else 0.0
-                scale_y = math.hypot(float(tm[2]), float(tm[3])) if tm and len(tm) >= 4 else 1.0
+                scale_y = (
+                    math.hypot(float(tm[2]), float(tm[3]))
+                    if tm and len(tm) >= 4
+                    else 1.0
+                )
                 eff_size = float(font_size or 0.0) * (scale_y or 1.0)
                 if eff_size <= 0.1:
                     eff_size = float(font_size or 10.0)
@@ -394,7 +404,9 @@ def extract_pdf_layout_lines(
             # DummyPage-Mocks in Unit-Tests unterstützen meist kein visitor_text
             continue
         except Exception as exc:  # noqa: BLE001
-            logger.debug("pypdf visitor_text auf Seite %d fehlgeschlagen: %s", page_idx, exc)
+            logger.debug(
+                "pypdf visitor_text auf Seite %d fehlgeschlagen: %s", page_idx, exc
+            )
             continue
 
         if not raw_fragments:
@@ -415,9 +427,7 @@ def extract_pdf_layout_lines(
             if not joined_text:
                 continue
             total_len = sum(max(1, len(g[2].strip())) for g in group)
-            avg_size = (
-                sum(g[3] * max(1, len(g[2].strip())) for g in group) / total_len
-            )
+            avg_size = sum(g[3] * max(1, len(g[2].strip())) for g in group) / total_len
             bold_len = sum(max(1, len(g[2].strip())) for g in group if g[4])
             lines.append(
                 LayoutLine(
@@ -514,7 +524,9 @@ def _match_structured_patterns(
     )
     if ms_match:
         ms_title = normalize_title(f"{ms_match.group(1)} {ms_match.group(2)}")
-        if not is_non_title_line(ms_title, provider=provider, known_providers=known_providers):
+        if not is_non_title_line(
+            ms_title, provider=provider, known_providers=known_providers
+        ):
             return TitleCandidate(
                 title=ms_title,
                 confidence=0.94,
@@ -533,7 +545,9 @@ def _match_structured_patterns(
     )
     if de_completed:
         cand = normalize_title(de_completed.group(1))
-        if cand and not is_non_title_line(cand, provider=provider, known_providers=known_providers):
+        if cand and not is_non_title_line(
+            cand, provider=provider, known_providers=known_providers
+        ):
             return TitleCandidate(
                 title=cand,
                 confidence=0.92,
@@ -548,7 +562,9 @@ def _match_structured_patterns(
     )
     if de_label:
         cand = normalize_title(de_label.group(1))
-        if cand and not is_non_title_line(cand, provider=provider, known_providers=known_providers):
+        if cand and not is_non_title_line(
+            cand, provider=provider, known_providers=known_providers
+        ):
             return TitleCandidate(
                 title=cand,
                 confidence=0.9,
@@ -608,9 +624,14 @@ def _match_structured_patterns(
                     if (
                         next_line
                         and not is_non_title_line(
-                            next_line, provider=provider, known_providers=known_providers
+                            next_line,
+                            provider=provider,
+                            known_providers=known_providers,
                         )
-                        and not re.match(r"(?i)^(?:an\s+online|authorized|offered|by:|date|datum)", next_line)
+                        and not re.match(
+                            r"(?i)^(?:an\s+online|authorized|offered|by:|date|datum)",
+                            next_line,
+                        )
                         and len(inline_part) + len(next_line) <= 130
                     ):
                         combined = normalize_title(f"{inline_part} {next_line}")
@@ -665,7 +686,9 @@ def _rank_layout_lines(
         cleaned = normalize_title(ln.text)
         if not cleaned or len(cleaned) < 4 or len(cleaned) > 130:
             continue
-        if is_non_title_line(cleaned, provider=provider, known_providers=known_providers):
+        if is_non_title_line(
+            cleaned, provider=provider, known_providers=known_providers
+        ):
             continue
 
         word_count = len(cleaned.split())
@@ -703,9 +726,13 @@ def _rank_layout_lines(
         if nxt_idx >= len(page0):
             break
         nxt = page0[nxt_idx]
-        if is_non_title_line(nxt.text, provider=provider, known_providers=known_providers):
+        if is_non_title_line(
+            nxt.text, provider=provider, known_providers=known_providers
+        ):
             break
-        size_diff = abs(nxt.font_size - best_line.font_size) / max(1.0, best_line.font_size)
+        size_diff = abs(nxt.font_size - best_line.font_size) / max(
+            1.0, best_line.font_size
+        )
         y_gap = nxt.y_norm - page0[nxt_idx - 1].y_norm
         if size_diff <= 0.15 and 0.0 <= y_gap <= 0.08 and len(nxt.text) <= 90:
             merged_parts.append(nxt.text)
@@ -868,7 +895,9 @@ def extract_best_title(
     if fn_cand:
         return fn_cand
 
-    return TitleCandidate(title="", confidence=0.0, source="none", reason="Kein Titel erkannt")
+    return TitleCandidate(
+        title="", confidence=0.0, source="none", reason="Kein Titel erkannt"
+    )
 
 
 def is_weak_title(
