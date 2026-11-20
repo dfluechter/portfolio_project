@@ -347,7 +347,7 @@ def test_check_tesseract_health_reports_oserror_clearly(monkeypatch):
 
     def raise_win_dll_err(*_args, **_kwargs):
         err = OSError("System-DLL verschoben")
-        err.winerror = 623
+        err.__dict__["winerror"] = 623
         raise err
 
     monkeypatch.setattr(subprocess, "run", raise_win_dll_err)
