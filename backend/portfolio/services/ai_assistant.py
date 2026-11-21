@@ -594,7 +594,9 @@ def answer_portfolio_query(
             types.Content(role="user", parts=[types.Part.from_text(text=cleaned_query)])
         )
 
-        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash"
+        gemini_model = (
+            os.getenv("GEMINI_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash"
+        )
         response = client.models.generate_content(
             model=gemini_model,
             contents=contents,

@@ -139,7 +139,9 @@ def test_udemy_multiline_title_extraction():
         "Zertifikat-Nr.: UC-aaaa1111-2222-3333-4444-555566667777"
     )
     cand = extract_best_title(text, "tmp9988.pdf", {}, provider="Udemy")
-    assert cand.title == "Fullstack Web Development mit Django REST Framework und React 19"
+    assert (
+        cand.title == "Fullstack Web Development mit Django REST Framework und React 19"
+    )
     assert cand.confidence >= 0.90
 
 
@@ -155,7 +157,13 @@ def test_coursera_multiline_layout_extraction(tmp_path):
                 ("F1", "has successfully completed", 11, 60, 595),
                 ("F2", "Machine Learning Engineering for", 20, 60, 555),
                 ("F2", "Production (MLOps) Specialization", 20, 60, 530),
-                ("F1", "an online non-credit course authorized by DeepLearning.AI", 10, 60, 480),
+                (
+                    "F1",
+                    "an online non-credit course authorized by DeepLearning.AI",
+                    10,
+                    60,
+                    480,
+                ),
                 ("F1", "Verify at https://coursera.org/verify/ABC123XYZ", 9, 60, 420),
             ]
         )
@@ -218,7 +226,13 @@ def test_ihk_german_teilnahmebescheinigung_extraction(tmp_path):
             [
                 ("F2", "Teilnahmebescheinigung", 18, 60, 720),
                 ("F1", "Herr Dominik Fluechter", 12, 60, 660),
-                ("F2", "Thema: IT-Sicherheit und Datenschutz im Unternehmen", 16, 60, 610),
+                (
+                    "F2",
+                    "Thema: IT-Sicherheit und Datenschutz im Unternehmen",
+                    16,
+                    60,
+                    610,
+                ),
                 ("F1", "Veranstalter: IHK Weiterbildungszentrum", 11, 60, 560),
                 ("F1", "Datum: 10.10.2024", 10, 60, 520),
             ]
@@ -263,11 +277,29 @@ def test_layout_font_size_wins_without_explicit_keywords(tmp_path):
     pdf_path.write_bytes(
         _build_vector_pdf(
             [
-                ("F2", "ZERTIFIKAT", 28, 60, 720),  # Größer, aber generischer Header -> gefiltert
+                (
+                    "F2",
+                    "ZERTIFIKAT",
+                    28,
+                    60,
+                    720,
+                ),  # Größer, aber generischer Header -> gefiltert
                 ("F1", "Dominik Fluechter", 16, 60, 650),  # Inhabername -> gefiltert
                 ("F2", "Kubernetes Production", 22, 60, 580),
-                ("F2", "Engineering & Security", 22, 60, 550),  # Zweizeiler mit gleicher Größe
-                ("F1", "Linux Foundation Training | Date: 2025-02-01 | Verify ID LF-4242", 10, 60, 440),
+                (
+                    "F2",
+                    "Engineering & Security",
+                    22,
+                    60,
+                    550,
+                ),  # Zweizeiler mit gleicher Größe
+                (
+                    "F1",
+                    "Linux Foundation Training | Date: 2025-02-01 | Verify ID LF-4242",
+                    10,
+                    60,
+                    440,
+                ),
             ]
         )
     )
@@ -314,9 +346,7 @@ def test_check_tesseract_health_reports_oserror_clearly(monkeypatch):
     )
 
     def raise_win_dll_err(*_args, **_kwargs):
-        err = OSError("System-DLL verschoben")
-        err.winerror = 623
-        raise err
+        raise OSError(22, "System-DLL verschoben", None, 623)
 
     monkeypatch.setattr(subprocess, "run", raise_win_dll_err)
 
@@ -353,8 +383,12 @@ def test_run_tesseract_ocr_logs_warning_and_falls_back_to_eng(caplog, monkeypatc
             raise pytesseract.TesseractError(1, "Failed loading language 'deu'")
         return "Python Backend Architecture Certification"
 
-    monkeypatch.setattr("portfolio.services.ocr.resolve_tesseract_cmd", lambda: "tesseract")
-    monkeypatch.setattr("portfolio.services.ocr._select_tesseract_langs", lambda _l=None: "deu+eng")
+    monkeypatch.setattr(
+        "portfolio.services.ocr.resolve_tesseract_cmd", lambda: "tesseract"
+    )
+    monkeypatch.setattr(
+        "portfolio.services.ocr._select_tesseract_langs", lambda _l=None: "deu+eng"
+    )
     monkeypatch.setattr(pytesseract, "image_to_string", fake_image_to_string)
 
     with caplog.at_level(logging.WARNING):
@@ -410,7 +444,9 @@ def test_render_pdf_pages_falls_back_to_pdftoppm(tmp_path, monkeypatch):
     pdf_path.write_bytes(b"%PDF-1.4")
 
     monkeypatch.setattr("portfolio.services.ocr._has_pymupdf", lambda: False)
-    monkeypatch.setattr("portfolio.services.ocr.resolve_pdftoppm_cmd", lambda: "pdftoppm")
+    monkeypatch.setattr(
+        "portfolio.services.ocr.resolve_pdftoppm_cmd", lambda: "pdftoppm"
+    )
 
     def fake_run(cmd, **_kwargs):
         out_prefix = Path(cmd[-1])

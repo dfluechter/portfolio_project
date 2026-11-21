@@ -6,20 +6,37 @@ import portfolio.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('portfolio', '0014_knowledgechunk_pgvector'),
+        ("portfolio", "0014_knowledgechunk_pgvector"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='project',
-            name='image',
-            field=models.ImageField(blank=True, null=True, upload_to='projects/', validators=[portfolio.models.validate_image_extension, portfolio.models.validate_file_size], verbose_name='Projekt-Vorschaubild'),
+            model_name="project",
+            name="image",
+            field=models.ImageField(
+                blank=True,
+                null=True,
+                upload_to="projects/",
+                validators=[
+                    portfolio.models.validate_image_extension,
+                    portfolio.models.validate_file_size,
+                ],
+                verbose_name="Projekt-Vorschaubild",
+            ),
         ),
         migrations.AlterField(
-            model_name='provider',
-            name='logo',
-            field=models.ImageField(blank=True, null=True, upload_to='provider_logos/', validators=[portfolio.models.validate_image_extension, portfolio.models.validate_file_size], verbose_name='Logo'),
+            model_name="provider",
+            name="logo",
+            field=models.ImageField(
+                blank=True,
+                null=True,
+                upload_to="provider_logos/",
+                validators=[
+                    portfolio.models.validate_image_extension,
+                    portfolio.models.validate_file_size,
+                ],
+                verbose_name="Logo",
+            ),
         ),
     ]

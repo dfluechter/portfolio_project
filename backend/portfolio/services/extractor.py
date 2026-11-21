@@ -319,7 +319,10 @@ def guess_provider(
         return "LinkedIn Learning"
     if re.search(r"(?i)\blearn\.microsoft\.com\b|\bmicrosoft\s+certified\b", text):
         return "Microsoft"
-    if re.search(r"(?i)\baws\.amazon\.com\b|\baws\s+training\s+and\s+certification\b|\baws\s+certified\b", text):
+    if re.search(
+        r"(?i)\baws\.amazon\.com\b|\baws\s+training\s+and\s+certification\b|\baws\s+certified\b",
+        text,
+    ):
         return "AWS"
     if re.search(r"(?i)\bcredly\.com\b", text):
         return "Credly"
@@ -453,14 +456,10 @@ def _extract_from_pdf_detailed(
             len(extracted_text) >= 100 and len(words) >= 10 and has_certificate_keywords
         ) or (len(extracted_text) >= 160 and len(words) >= 20)
 
-<<<<<<< HEAD
         # Wenn echter Textlayer ausreichend ist (oder >= 60 Zeichen und >= 8 Wörter bei deaktiviertem OCR)
         if is_sufficient or (
             len(extracted_text) >= 60 and len(words) >= 8 and not enable_ocr
         ):
-=======
-        if is_sufficient or (len(extracted_text) >= 60 and len(words) >= 8 and not enable_ocr):
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
             ocr_pending = False
         elif enable_ocr:
             ocr_texts: list[str] = []
@@ -672,7 +671,9 @@ def extract_via_gemini_vision(
         )
         return None
 
-    gemini_model: str = str(model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash")
+    gemini_model: str = str(
+        model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash"
+    )
 
     try:
         from google import genai
