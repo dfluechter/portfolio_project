@@ -387,18 +387,20 @@ class CertificateViewSet(ConditionalCacheMixin, viewsets.ModelViewSet):
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         try:
             return super().create(request, *args, **kwargs)
-        except S3StorageNotConfiguredError as err:
+        except S3StorageNotConfiguredError:
+            logger.exception("S3 storage is not configured during certificate create.")
             return Response(
-                {"detail": str(err)},
+                {"detail": "Storage backend is not configured."},
                 status=status.HTTP_501_NOT_IMPLEMENTED,
             )
 
     def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         try:
             return super().update(request, *args, **kwargs)
-        except S3StorageNotConfiguredError as err:
+        except S3StorageNotConfiguredError:
+            logger.exception("S3 storage is not configured during certificate update.")
             return Response(
-                {"detail": str(err)},
+                {"detail": "Storage backend is not configured."},
                 status=status.HTTP_501_NOT_IMPLEMENTED,
             )
 
