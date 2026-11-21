@@ -285,15 +285,25 @@ def test_synthetic_udemy_pdf_extraction(tmp_path):
             ("F1", "Lehrkraft: Dr. Example", 11, 60, 560),
             ("F1", "Dominik Fluechter", 14, 60, 520),
             ("F1", "Datum: 28. Nov. 2023", 10, 60, 480),
-            ("F1", "Zertifikat-Nr.: UC-3f0ea848-5950-4fe9-ad31-7d4cb00039d3", 10, 60, 450),
-            ("F1", "Zertifikat-URL: ude.my/UC-3f0ea848-5950-4fe9-ad31-7d4cb00039d3", 10, 60, 430),
+            (
+                "F1",
+                "Zertifikat-Nr.: UC-3f0ea848-5950-4fe9-ad31-7d4cb00039d3",
+                10,
+                60,
+                450,
+            ),
+            (
+                "F1",
+                "Zertifikat-URL: ude.my/UC-3f0ea848-5950-4fe9-ad31-7d4cb00039d3",
+                10,
+                60,
+                430,
+            ),
         ]
     )
     pdf_path.write_bytes(pdf_bytes)
 
-    with patch(
-        "portfolio.services.extractor.extract_via_gemini_vision"
-    ) as mock_gemini:
+    with patch("portfolio.services.extractor.extract_via_gemini_vision") as mock_gemini:
         res = extract_metadata(
             pdf_path,
             tmp_path,

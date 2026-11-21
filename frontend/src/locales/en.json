@@ -356,7 +356,6 @@
     "linkTimeline": "Career Chronology & Milestones",
     "linkContact": "Direct Communication & Formmailer"
   },
-<<<<<<< HEAD
   "inbox": {
     "title": "Inbox & Certificate Review",
     "pendingBadge": "{{count}} Pending",
@@ -410,23 +409,5 @@
     "notifyBulkApproveError": "Error during bulk certificate approval.",
     "notifyBulkRejectSuccess": "{{count}} certificate(s) rejected.",
     "notifyBulkRejectError": "Error during bulk certificate rejection."
-=======
-  "passwordReset": {
-    "backToLogin": "Back to Login",
-    "eyebrow": "AUTH // CREDENTIAL RECOVERY",
-    "title": "Set New Password",
-    "subtitle": "Choose a strong new password for your portfolio admin account.",
-    "newPasswordLabel": "New Password (min. 8 characters)",
-    "confirmPasswordLabel": "Confirm New Password",
-    "saveButton": "Save New Password",
-    "saving": "Saving...",
-    "successTitle": "Password changed successfully!",
-    "successDesc": "You will be redirected to the login page automatically in a few seconds...",
-    "loginNow": "Log in now",
-    "invalidLink": "Invalid or incomplete password recovery link.",
-    "passwordTooShort": "Password must be at least 8 characters long.",
-    "passwordMismatch": "Passwords do not match.",
-    "resetFailed": "Failed to reset password. The link may have expired."
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
   }
 }

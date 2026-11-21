@@ -449,7 +449,7 @@ class TestPendingCertificateBulkOperations:
             format="json",
         )
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
-        assert "nur 'pending' kann abgelehnt werden" in str(resp.data)
+        assert "Ungültige Anfrage" in str(resp.data)
 
         # Atomarer Schutz: p_valid darf NICHT geändert worden sein!
         p_valid.refresh_from_db()

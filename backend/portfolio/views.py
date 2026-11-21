@@ -261,9 +261,7 @@ class IsAdminUserOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.is_staff
+            request.user and request.user.is_authenticated and request.user.is_staff
         )
 
 
@@ -981,11 +979,7 @@ class PendingCertificateViewSet(viewsets.ModelViewSet):
             )
 
         file_path = Path(pending.file_path)
-        if (
-            file_path.is_symlink()
-            or not file_path.exists()
-            or not file_path.is_file()
-        ):
+        if file_path.is_symlink() or not file_path.exists() or not file_path.is_file():
             return Response(
                 {
                     "detail": f"Datei '{pending.original_file_name}' existiert lokal nicht mehr."
@@ -1316,17 +1310,10 @@ class ContactMessageView(APIView):
             )
             return Response(
                 {
-<<<<<<< HEAD
                     "detail": "Nachricht wurde erfasst (Mail-Relay im Offline-Modus).",
                     "status": "queued",
                 },
                 status=status.HTTP_200_OK,
-=======
-                    "detail": "Der E-Mail-Versand ist vorübergehend nicht erreichbar. Bitte versuche es später erneut.",
-                    "status": "error",
-                },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
             )
 
         return Response(

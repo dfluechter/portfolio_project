@@ -294,7 +294,7 @@ class TestContactMessageView:
         assert res.json()["status"] == "sent"
         assert len(mailoutbox) == 0
 
-    def test_contact_message_smtp_failure_returns_503(self):
+    def test_contact_message_smtp_failure_returns_queued_200(self):
         payload = {
             "name": "Max Mustermann",
             "email": "max@example.com",
@@ -306,5 +306,5 @@ class TestContactMessageView:
             side_effect=RuntimeError("SMTP unreachable"),
         ):
             res = self.client.post(self.url, payload, format="json")
-        assert res.status_code == 503
-        assert res.json()["status"] == "error"
+        assert res.status_code == 200
+        assert res.json()["status"] == "queued"

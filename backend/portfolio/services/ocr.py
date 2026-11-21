@@ -37,8 +37,16 @@ TESSERACT_INSTALL_GUIDE = (
 _WINDOWS_TESSERACT_CANDIDATES: tuple[Path, ...] = (
     Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
     Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
-    Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Tesseract-OCR" / "tesseract.exe",
-    Path(os.environ.get("USERPROFILE", "")) / "scoop" / "apps" / "tesseract" / "current" / "tesseract.exe",
+    Path(os.environ.get("LOCALAPPDATA", ""))
+    / "Programs"
+    / "Tesseract-OCR"
+    / "tesseract.exe",
+    Path(os.environ.get("USERPROFILE", ""))
+    / "scoop"
+    / "apps"
+    / "tesseract"
+    / "current"
+    / "tesseract.exe",
 )
 
 _POSIX_TESSERACT_CANDIDATES: tuple[Path, ...] = (
@@ -139,7 +147,9 @@ def resolve_pdftoppm_cmd() -> str | None:
         for root in (Path(r"D:\dev"), Path(r"C:\Program Files"), Path(r"C:\tools")):
             if not root.is_dir():
                 continue
-            for match in sorted(root.glob("poppler*/Library/bin/pdftoppm.exe"), reverse=True):
+            for match in sorted(
+                root.glob("poppler*/Library/bin/pdftoppm.exe"), reverse=True
+            ):
                 if match.is_file():
                     return str(match)
             for match in sorted(root.glob("poppler*/bin/pdftoppm.exe"), reverse=True):
@@ -444,7 +454,9 @@ def run_tesseract_ocr(
                     processed, lang=selected_langs, psm=psm, timeout=timeout
                 ).strip()
             except Exception as fallback_exc:  # noqa: BLE001
-                logger.warning("Tesseract-Fallback 'eng' fehlgeschlagen: %s", fallback_exc)
+                logger.warning(
+                    "Tesseract-Fallback 'eng' fehlgeschlagen: %s", fallback_exc
+                )
                 return ""
         else:
             logger.warning("Tesseract-OCR-Fehler: %s", exc)
@@ -543,6 +555,8 @@ def render_pdf_pages_to_images(
                         (proc.stderr or "").strip(),
                     )
         except Exception as exc:  # noqa: BLE001
-            logger.warning("pdftoppm-Aufruf fehlgeschlagen für %s: %s", file_path.name, exc)
+            logger.warning(
+                "pdftoppm-Aufruf fehlgeschlagen für %s: %s", file_path.name, exc
+            )
 
     return []

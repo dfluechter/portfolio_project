@@ -47,12 +47,8 @@ class Command(BaseCommand):
         self.stdout.write(
             f"Sprachpakete     : {', '.join(status.languages) if status.languages else '-'}"
         )
-        self.stdout.write(
-            f"  - eng          : {'OK' if status.has_eng else 'FEHLT'}"
-        )
-        self.stdout.write(
-            f"  - deu          : {'OK' if status.has_deu else 'FEHLT'}"
-        )
+        self.stdout.write(f"  - eng          : {'OK' if status.has_eng else 'FEHLT'}")
+        self.stdout.write(f"  - deu          : {'OK' if status.has_deu else 'FEHLT'}")
         self.stdout.write(
             f"PDF-Renderer     : {status.pdf_render_backend or '-'}"
             + (f" ({status.poppler_path})" if status.poppler_path else "")
@@ -85,7 +81,9 @@ class Command(BaseCommand):
             img = Image.new("RGB", (900, 220), color=(255, 255, 255))
             draw = ImageDraw.Draw(img)
             font = ImageFont.load_default(size=36)
-            draw.text((40, 80), "Python Architecture Masterclass", fill=(0, 0, 0), font=font)
+            draw.text(
+                (40, 80), "Python Architecture Masterclass", fill=(0, 0, 0), font=font
+            )
             recognized = run_tesseract_ocr(img)
             if recognized:
                 self.stdout.write(

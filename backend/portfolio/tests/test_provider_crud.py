@@ -15,7 +15,9 @@ class TestProviderAndCertificateCRUD:
         assert response.status_code == status.HTTP_200_OK
         assert not response.data["aktiv"]
 
-    def test_provider_with_certificate_cannot_be_deleted_returns_409(self, staff_client):
+    def test_provider_with_certificate_cannot_be_deleted_returns_409(
+        self, staff_client
+    ):
         provider = Provider.objects.create(provider="Udemy")
         dummy_file = SimpleUploadedFile(
             "cert.pdf", b"data", content_type="application/pdf"

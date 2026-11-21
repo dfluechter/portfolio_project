@@ -220,11 +220,7 @@ class PendingCertificateAdmin(admin.ModelAdmin):
             raise Http404("Ausstehendes Zertifikat oder Dateipfad nicht gefunden.")
 
         file_path = Path(pending.file_path)
-        if (
-            file_path.is_symlink()
-            or not file_path.exists()
-            or not file_path.is_file()
-        ):
+        if file_path.is_symlink() or not file_path.exists() or not file_path.is_file():
             raise Http404(
                 f"Die Datei '{pending.original_file_name}' existiert lokal nicht mehr unter '{pending.file_path}'."
             )

@@ -356,7 +356,6 @@
     "linkTimeline": "Chronologie & Meilensteine",
     "linkContact": "Direkte Kommunikation & Formmailer"
   },
-<<<<<<< HEAD
   "inbox": {
     "title": "Inbox & Zertifikats-Review",
     "pendingBadge": "{{count}} Ausstehend",
@@ -410,23 +409,5 @@
     "notifyBulkApproveError": "Fehler bei der Massenfreigabe der Zertifikate.",
     "notifyBulkRejectSuccess": "{{count}} Zertifikat(e) abgelehnt.",
     "notifyBulkRejectError": "Fehler bei der Massenablehnung der Zertifikate."
-=======
-  "passwordReset": {
-    "backToLogin": "Zurück zum Login",
-    "eyebrow": "AUTH // CREDENTIAL RECOVERY",
-    "title": "Neues Passwort vergeben",
-    "subtitle": "Wähle ein sicheres neues Passwort für deinen Portfolio-Admin-Zugang.",
-    "newPasswordLabel": "Neues Passwort (min. 8 Zeichen)",
-    "confirmPasswordLabel": "Neues Passwort bestätigen",
-    "saveButton": "Neues Passwort speichern",
-    "saving": "Wird gespeichert...",
-    "successTitle": "Passwort erfolgreich geändert!",
-    "successDesc": "Du wirst in wenigen Sekunden automatisch zur Login-Seite weitergeleitet...",
-    "loginNow": "Jetzt direkt anmelden",
-    "invalidLink": "Ungültiger oder unvollständiger Wiederherstellungs-Link.",
-    "passwordTooShort": "Das Passwort muss mindestens 8 Zeichen lang sein.",
-    "passwordMismatch": "Die Passwörter stimmen nicht überein.",
-    "resetFailed": "Fehler beim Zurücksetzen des Passworts. Der Link ist möglicherweise abgelaufen."
->>>>>>> 57004a6 (feat: add backend ocr processing, cert mang, and ci workflows)
   }
 }
